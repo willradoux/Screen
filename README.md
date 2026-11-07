@@ -12,6 +12,7 @@ Salas privadas de áudio, câmera e compartilhamento de tela para a comunidade A
 4. [Preparação do ambiente](docs/ambiente.md)
 5. [Etapas de implementação](docs/backlog.md)
 6. [Roteiro de revisão](docs/revisao.md)
+7. [Sugestão WebRTC + Socket.IO](docs/adr/0013-webrtc-socketio.md)
 
 ## Direção do projeto
 
@@ -41,8 +42,15 @@ Esses componentes ainda não foram inicializados. A estrutura é uma proposta, n
 
 ## Como participar
 
-Leia [CONTRIBUTING.md](CONTRIBUTING.md), comente uma decisão por vez e registre justificativas. Use os modelos de issue e PR incluídos. O backlog é uma lista de tarefas propostas; não são issues já abertas.
+Leia [CONTRIBUTING.md](CONTRIBUTING.md), comente uma decisão por vez e registre justificativas. Use os modelos de issue e PR incluídos. O backlog distingue as primeiras issues abertas das tarefas de implementação ainda propostas.
 
 ## Revisão inicial
 
 As propostas estão em uma branch dedicada e devem ser discutidas no pull request antes da implementação. Nenhuma VPS foi alterada. O próximo passo é validar as decisões e iniciar o bootstrap conforme o [backlog](docs/backlog.md).
+
+## Acompanhamento no GitHub
+
+- [P01 — Validar escopo e arquitetura](https://github.com/willradoux/aceleraScreem/issues/1)
+- [P02 — Inventariar VPS e DNS](https://github.com/willradoux/aceleraScreem/issues/2)
+- [P03 — Preparar bot de teste](https://github.com/willradoux/aceleraScreem/issues/3)
+- [P14 — Avaliar WebRTC e Socket.IO](https://github.com/willradoux/aceleraScreem/issues/4)

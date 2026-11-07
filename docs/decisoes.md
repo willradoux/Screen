@@ -16,6 +16,7 @@ Estado inicial: todas as propostas abaixo estão abertas. As escolhas já expres
 | D10 | Piloto em host único e contingência externa | Orçamento, RTO/RPO e criticidade dos eventos | Proposta |
 | D11 | Web React funcional | Vite e matriz inicial de navegadores | Proposta |
 | D12 | Dados mínimos e sem gravação inicial | Retenção e responsáveis pela operação | Proposta |
+| D13 | [WebRTC + possível Socket.IO](adr/0013-webrtc-socketio.md) | Necessidade do canal de eventos, autorização e recuperação | Proposta |
 
 ## Como registrar aprovação
 

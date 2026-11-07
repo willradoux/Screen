@@ -16,6 +16,7 @@ Validar a proposta do Acelera Screen antes de implementar a aplicação e config
 - [ ] A jornada inicial atende aos encontros da comunidade?
 - [ ] Quem pode entrar, criar e moderar está claro?
 - [ ] As permissões do bot são suficientes e mínimas?
+- [ ] A divisão entre mídia WebRTC e eventos Socket.IO/LiveKit está justificada?
 - [ ] A topologia cabe na VPS e não conflita com serviços existentes?
 - [ ] Os limites globais evitam sobrecarga por várias salas?
 - [ ] A política de revogação é aceitável e verificável?
@@ -28,17 +29,11 @@ Validar a proposta do Acelera Screen antes de implementar a aplicação e config
 
 Referencie Dxx, Pxx ou a seção da RFC. Descreva problema, alternativa e impacto. Não é necessário concordar com toda a proposta: registrar divergências ajuda a escolher.
 
-## Texto sugerido para a primeira issue
+## Discussão principal
 
-Título: Validar escopo, arquitetura e ambiente inicial do Acelera Screen
+Registrar o resultado da revisão na [issue P01](https://github.com/willradoux/aceleraScreem/issues/1). O [backlog](backlog.md) reúne as tarefas abertas e propostas.
 
-O Acelera Screen pretende oferecer salas privadas com áudio, câmera e tela para membros do AceleraDev, integradas ao Discord. Precisamos validar o escopo do piloto, permissões, topologia na KVM1 e critérios de segurança/continuidade antes de implementar.
-
-Os documentos em docs/ reúnem a proposta e decisões abertas. A meta de 500 participantes depende de testes e dimensionamento; o primeiro piloto será controlado. React e TypeScript/Express são as escolhas de partida.
-
-Resultado esperado: decisões registradas, inventário do ambiente e primeiras tarefas prontas para implementação. Revisar os pontos deste documento e vincular o feedback às decisões correspondentes.
-
-## PR de organização proposto
+## PR de organização
 
 Título: docs: organizar escopo, arquitetura e revisão do Acelera Screen
 

@@ -25,6 +25,8 @@ O alvo futuro é até 500 participantes simultâneos sob um perfil de uso defini
 - Limites globais e por sala, com admissão controlada no servidor.
 - Uma única VPS implica ponto único de falha. Não prometer disponibilidade contínua ou chamadas sem interrupção.
 
+A sugestão WebRTC + Socket.IO trazida por Will e atribuída ao colaborador Flazo está registrada em [D13](../adr/0013-webrtc-socketio.md). WebRTC já integra o caminho de mídia do LiveKit. Socket.IO será avaliado para eventos de aplicação; sua inclusão ainda não está aprovada.
+
 ## 3. Componentes e fronteiras
 | Componente | Função | Exposição |
 |---|---|---|

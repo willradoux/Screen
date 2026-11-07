@@ -1,6 +1,6 @@
 # Backlog proposto
 
-Estas são sugestões de issues. Nenhuma foi aberta e nenhum responsável foi atribuído. Os IDs abaixo são referências locais, não números de issues GitHub.
+P01, P02, P03 e P14 já têm issues abertas, vinculadas abaixo. As demais tarefas continuam propostas. Nenhum responsável ou prazo foi atribuído automaticamente. Os IDs Pxx são referências locais, diferentes dos números de issues GitHub.
 
 | ID | Entrega | Dependências | Critério de conclusão |
 |---|---|---|---|
@@ -17,6 +17,7 @@ Estas são sugestões de issues. Nenhuma foi aberta e nenhum responsável foi at
 | P11 | Preparar deploy e recuperação | P02/P04 | Backup restaurado, alerta externo e rollback ensaiados |
 | P12 | Executar piloto e medir carga | P08/P10/P11 | Relatório de capacidade, qualidade, falhas e custo |
 | P13 | Ampliar capacidade | P12 | Novo perfil homologado antes de elevar limites |
+| P14 | Avaliar WebRTC e Socket.IO | P01 | D13 decidida com ensaio de eventos, autorização e reconexão |
 
 ## Primeira rodada de colaboração
 
@@ -26,3 +27,10 @@ Começar por P01, P02 e P03. Depois de resolver as dependências, dividir códig
 
 Usar o modelo de tarefa, vincular decisão/RFC e incluir comportamento esperado, teste e dependências. Substituir referências Pxx por links reais à medida que as issues forem criadas.
 
+
+## Acompanhamento no GitHub
+
+- [P01 — Validar escopo e arquitetura](https://github.com/willradoux/aceleraScreem/issues/1)
+- [P02 — Inventariar VPS e DNS](https://github.com/willradoux/aceleraScreem/issues/2)
+- [P03 — Preparar bot de teste](https://github.com/willradoux/aceleraScreem/issues/3)
+- [P14 — Avaliar WebRTC e Socket.IO](https://github.com/willradoux/aceleraScreem/issues/4)
