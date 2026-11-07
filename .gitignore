@@ -1,0 +1,25 @@
+# Dependências e saídas locais
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# Segredos e estado local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.dump
+*.sql.gz
+backups/
+.volumes/
+
+# Editor e sistema
+.DS_Store
+Thumbs.db
+.idea/
+
