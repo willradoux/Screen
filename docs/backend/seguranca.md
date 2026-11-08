@@ -31,7 +31,7 @@ O link `/r/<roomId>` identifica a sala; **não** concede acesso. Acesso = login 
 - `Cross-Origin-Opener-Policy: same-origin`
 - API não serve HTML, então CSP rígida: `default-src 'none'; frame-ancestors 'none'`.
 
-CSP do **frontend** (configurada na Vercel) deve permitir `connect-src` para a API, `wss://live...` e o CDN de avatar do Discord (`cdn.discordapp.com`).
+CSP do **frontend** (configurada no `apps/web/nginx.conf`) deve permitir `connect-src` para a API, `wss://live...` e o CDN de avatar do Discord (`cdn.discordapp.com`).
 
 ## CORS
 
@@ -90,7 +90,7 @@ Feita sobre o código e a configuração, com testes automáticos para cada pont
 | 4 | `X-Request-Id` do cliente era devolvido sem validação | Reflexão de conteúdo arbitrário em cabeçalho e logs | Só vale se casar com `[\w.-]{1,64}`; senão gera outro |
 | 5 | `room:subscribe` sem limite | Cada chamada consulta o banco: dava para forçar carga | Teto de 30 por minuto por socket (`RATE_LIMITED`) |
 | 6 | `zod` 3.x com vulnerabilidade alta (consumo de memória em coleções gigantes) | Negação de serviço | Atualizado para zod 4; `npm audit --omit=dev` limpo e agora é etapa do CI |
-| 7 | Frontend sem cabeçalhos de segurança | Clickjacking, injeção de scripts, câmera/microfone liberados a terceiros | `vercel.json` com CSP, `X-Frame-Options`, HSTS e `Permissions-Policy` |
+| 7 | Frontend sem cabeçalhos de segurança | Clickjacking, injeção de scripts, câmera/microfone liberados a terceiros | `apps/web/nginx.conf` com CSP, `X-Frame-Options`, HSTS e `Permissions-Policy` |
 
 ### Verificado e já estava certo (com teste)
 
@@ -109,7 +109,7 @@ Feita sobre o código e a configuração, com testes automáticos para cada pont
 | Item | Situação |
 |---|---|
 | Cookies de subdomínios irmãos (`SameSite` considera `app.` e `api.` o mesmo *site*) | Aceito: é o que faz o login funcionar. Não hospede conteúdo de terceiros em outros subdomínios do mesmo domínio |
-| `connect-src https: wss:` no CSP do frontend | Largo de propósito (a API e o LiveKit mudam de domínio por ambiente). Se quiser, troque por seus hosts exatos em `apps/web/vercel.json` |
+| `connect-src https: wss:` no CSP do frontend | Largo de propósito (a API e o LiveKit mudam de domínio por ambiente). Se quiser, troque por seus hosts exatos em `apps/web/nginx.conf` |
 | `/api/v1/docs` e `/ready` são públicos | Aceito: mostram o contrato e o nome das dependências, sem segredos. Remova o `/docs` em produção se preferir |
 | TURN com senha fixa (não efêmera) | A senha do usuário TURN é enviada aos navegadores pelo LiveKit; quem a obtém pode usar o relay (limitado e sem acesso a redes privadas). Credenciais efêmeras ficam como melhoria |
 | Rotação de `TOKEN_ENCRYPTION_KEY` | Hoje trocar a chave invalida as sessões (as pessoas precisam entrar de novo). Aceitável |

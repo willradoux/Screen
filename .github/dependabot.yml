@@ -18,3 +18,7 @@ updates:
     directory: /apps/api
     schedule:
       interval: monthly
+  - package-ecosystem: docker
+    directory: /apps/web
+    schedule:
+      interval: monthly

@@ -6,7 +6,7 @@ Quando alguém entra num canal de voz da categoria de lives, o bot envia um embe
 
 ## Stack
 
-React + TypeScript + Vite + Tailwind (frontend, Vercel) · Node.js + TypeScript + Express + Socket.IO (backend, Docker na VPS) · MongoDB · Discord OAuth2 · WebRTC com LiveKit · Coturn.
+React + TypeScript + Vite + Tailwind (frontend, nginx) · Node.js + TypeScript + Express + Socket.IO (backend) · tudo em Docker numa VPS com Coolify · MongoDB · Discord OAuth2 · WebRTC com LiveKit · Coturn.
 
 ## Documentação
 

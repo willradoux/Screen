@@ -1,6 +1,6 @@
 # Deploy no Coolify (passo a passo manual)
 
-Backend completo (API + bot, LiveKit, Coturn, MongoDB) numa VPS com Coolify. O frontend pode ir na Vercel (ou no Render, veja [deploy-render.md](deploy-render.md)). Arquivo usado: [`infra/coolify/docker-compose.yml`](../../infra/coolify/docker-compose.yml).
+Backend completo (API + bot, LiveKit, Coturn, MongoDB) numa VPS com Coolify. O frontend (nginx) vai no mesmo projeto. Arquivo usado: [`infra/coolify/docker-compose.yml`](../../infra/coolify/docker-compose.yml).
 
 ## 0. Antes de começar
 
@@ -11,7 +11,7 @@ Você precisa de:
   - `api.exemplo.com` (API)
   - `live.exemplo.com` (LiveKit, sinalização)
   - `turn.exemplo.com` (TURN)
-- Um domínio para o frontend, **no mesmo domínio-pai** (`app.exemplo.com`). Isso é obrigatório: o cookie de sessão é compartilhado entre `app.` e `api.` via `SESSION_COOKIE_DOMAIN=.exemplo.com`. Domínios como `*.vercel.app` ou `*.onrender.com` **não** servem para isso.
+- Um domínio para o frontend, **no mesmo domínio-pai** da API (ex.: `screen.exemplo.com` e `api.screen.exemplo.com`). Isso é obrigatório: o cookie de sessão é compartilhado via `SESSION_COOKIE_DOMAIN`. Domínios de plataforma (`*.vercel.app`, `*.onrender.com`) **não** servem para isso.
 - A aplicação do Discord criada ([teste-real.md](teste-real.md), passo 1), mas usando o redirect de produção: `https://api.exemplo.com/api/v1/auth/discord/callback`.
 - O repositório no GitHub (público, ou privado com *Deploy Key*/GitHub App configurado no Coolify).
 
@@ -73,6 +73,7 @@ Na aba **Configuration** do recurso, em cada serviço, preencha **Domains** (com
 |---|---|
 | `api` | `https://api.exemplo.com:3000` |
 | `livekit` | `https://live.exemplo.com:7880` |
+| `web` | `https://screen.exemplo.com:80` |
 | `mongo`, `coturn` | **vazio** (não expor) |
 
 Salve. O Coolify emite os certificados Let's Encrypt sozinho (o DNS precisa estar propagado antes).
@@ -94,12 +95,7 @@ Nos logs da `api` deve aparecer o bot conectado. No Discord, rode `/config` e co
 
 ## 6. Frontend
 
-Na Vercel: importar o repositório, **Root Directory** `apps/web`, variáveis:
-
-- `VITE_API_URL` = `https://api.exemplo.com/api/v1`
-- `VITE_SOCKET_URL` = `https://api.exemplo.com`
-
-Em **Domains** adicione `app.exemplo.com` e crie o CNAME que a Vercel pedir. Se quiser trocar a CSP (`connect-src`), edite `apps/web/vercel.json`.
+Já vem no mesmo compose (serviço `web`), então não há deploy separado. Ele usa `PUBLIC_API_URL` para saber onde está a API e embute isso no build. Se você mudar `PUBLIC_API_URL`, faça **Redeploy** para reconstruir o frontend.
 
 ## 7. Atualizações e rotina
 
@@ -114,7 +110,7 @@ Em **Domains** adicione `app.exemplo.com` e crie o CNAME que a Vercel pedir. Se 
 |---|---|
 | Deploy falha com `required variable X is missing` | Faltou preencher `X` na aba de variáveis |
 | `Bad Gateway` em `api.` | Domínio sem `:3000` no serviço `api`; ou a API ainda subindo (veja logs) |
-| Login volta com `INVALID_STATE` ou fica deslogado | `SESSION_COOKIE_DOMAIN` errado ou frontend em domínio de outro "site" (ex.: `vercel.app`) |
+| Login volta com `INVALID_STATE` ou fica deslogado | `SESSION_COOKIE_DOMAIN` errado ou frontend em domínio de outro "site" (domínio de plataforma) |
 | Entra na sala mas sem vídeo/áudio | Portas 7881/7882 fechadas no firewall, ou DNS do `live.` atrás da Cloudflare laranja |
 | Funciona em casa, não no 4G / rede corporativa | Coturn: portas 3478 e 49152-49252 fechadas, ou `TURN_EXTERNAL_IP` errado |
 | Limite de requisições "para todo mundo junto" | `TRUST_PROXY` incorreto (deve ser `1` atrás do Traefik, `2` com Cloudflare) |

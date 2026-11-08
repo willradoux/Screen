@@ -98,7 +98,7 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 - [x] Painel de moderação (silenciar, palestrante, expulsar, banir, modo palestra, encerrar).
 - [x] Painel de reuniões (criar, agendar, reagendar, abrir, cancelar, relatório), configurações e auditoria.
 - [x] Estados de erro (fora da call, sala encerrada, sem permissão, lotada, banido, removido, conexão perdida).
-- [ ] Deploy na Vercel (configuração e instruções prontas em `docs/frontend/README.md`; falta publicar).
+- [ ] Deploy do frontend na VPS (Coolify): `apps/web/Dockerfile` + `nginx.conf` prontos; falta publicar. Guia em `docs/infra/deploy-coolify.md`.
 
 **Aceite:** fluxo completo UC1 a UC4 funciona em Chrome, Firefox e Safari.
 

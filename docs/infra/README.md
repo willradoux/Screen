@@ -1,6 +1,6 @@
 # Infraestrutura e deploy
 
-Tudo do backend roda em Docker numa VPS. O frontend roda na Vercel. Os arquivos reais estão em [`infra/`](../../infra):
+Tudo do backend roda em Docker numa VPS. O frontend também roda na VPS (nginx). Os arquivos reais estão em [`infra/`](../../infra):
 
 ```
 infra/
@@ -33,7 +33,7 @@ Decisões:
 
 | Host | Aponta para | Serviço |
 |---|---|---|
-| `app.exemplo.com` | Vercel (CNAME) | Frontend |
+| `app.exemplo.com` | A (IP da VPS) | Frontend (nginx) |
 | `api.exemplo.com` | IP da VPS | Caddy -> api:3000 |
 | `live.exemplo.com` | IP da VPS | Caddy -> livekit:7880 |
 | `turn.exemplo.com` | IP da VPS | Coturn (sem proxy) |
@@ -96,7 +96,7 @@ openssl rand -hex 24      # TURN_PASSWORD, MONGO_PASSWORD
    ```
    `/ready` entra na Fase 2.
 9. Convidar o bot e rodar `/config` (Fase 4).
-10. Deploy do frontend na Vercel com `VITE_API_URL`.
+10. Frontend: serviço `web` do compose (`VITE_API_URL` vem de `PUBLIC_API_URL`).
 
 Atalho para não repetir flags:
 

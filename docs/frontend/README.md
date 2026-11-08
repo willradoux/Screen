@@ -1,6 +1,6 @@
 # Frontend
 
-Stack: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, `livekit-client` e `socket.io-client`. Hospedado na Vercel (`apps/web`).
+Stack: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, `livekit-client` e `socket.io-client`. Hospedado na VPS: build estático servido por nginx (`apps/web/Dockerfile`).
 
 **Este frontend é descartável.** Tudo que ele sabe vem do contrato do backend ([backend/](../backend/README.md)); nada de regra de negócio mora aqui. A interface só esconde ou desabilita o que o servidor recusaria, e o servidor confere tudo de novo.
 
@@ -134,13 +134,14 @@ O campo de horário usa o **fuso do navegador** (`datetime-local`) e a API receb
 
 O que **não** é coberto por teste automático: a captura real de câmera, microfone e tela, a reprodução de vídeo/áudio e o LiveKit de verdade. Isso exige navegador com dispositivos e um servidor LiveKit; veja o checklist de paridade abaixo.
 
-## Deploy na Vercel
+## Deploy (VPS, Coolify)
 
-- Framework: Vite. Raiz do projeto: `apps/web`. Antes do build é preciso compilar o pacote compartilhado: comando de build `cd ../.. && npm ci && npm run build:shared && npm run build -w @screem/web`, saída `apps/web/dist`.
-- `vercel.json` já reescreve todas as rotas para `index.html` (SPA).
-- Variáveis `VITE_API_URL` e `VITE_SOCKET_URL` do ambiente de produção.
-- Domínio `app.exemplo.com`, **irmão** do da API, para o cookie funcionar.
-- Cabeçalhos de segurança (CSP) na Vercel: `connect-src` para a API e para `wss://live...`, e `img-src` com `cdn.discordapp.com` (avatares). Veja [seguranca.md](../backend/seguranca.md#cabeçalhos-http).
+O frontend é o serviço `web` de `infra/coolify/docker-compose.yml`: `apps/web/Dockerfile` compila o Vite e o nginx (`apps/web/nginx.conf`) serve os arquivos.
+
+- `VITE_API_URL` e `VITE_SOCKET_URL` são derivados de `PUBLIC_API_URL` e **embutidos no build**: mudou a URL da API, faça Redeploy.
+- O nginx reescreve qualquer rota para `index.html` (SPA) e define os cabeçalhos de segurança (CSP com `connect-src` para a API e `wss://live...`, `img-src` com `cdn.discordapp.com`, `Permissions-Policy` liberando câmera, microfone e tela só para o próprio site). Veja [seguranca.md](../backend/seguranca.md#cabeçalhos-http).
+- Domínio `screen.exemplo.com`, **irmão** do da API, para o cookie funcionar.
+- Passo a passo: [deploy-coolify.md](../infra/deploy-coolify.md).
 
 ## Trocando o frontend
 

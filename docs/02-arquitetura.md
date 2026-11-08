@@ -4,7 +4,7 @@
 
 | Camada | Tecnologia | Onde roda |
 |---|---|---|
-| Frontend | React, TypeScript, Vite, Tailwind CSS | Vercel |
+| Frontend | React, TypeScript, Vite, Tailwind CSS | VPS (nginx, via Coolify) |
 | Backend | Node.js, TypeScript, Express, Socket.IO | Docker na VPS |
 | Banco | MongoDB | Docker na VPS |
 | Autenticação | Discord OAuth2 | Backend |
@@ -25,7 +25,7 @@
                              |         |
 +----------+  HTTPS/WSS  +---+---------+----+   gRPC/HTTP   +-----------+
 | Frontend | <---------> |      Backend     | <-----------> |  LiveKit  |
-| (Vercel) |             | Express+Socket.IO|   tokens,     |  (SFU)    |
+| (nginx)  |             | Express+Socket.IO|   tokens,     |  (SFU)    |
 +----+-----+             |   + Bot Discord  |   webhooks    +-----+-----+
      |                   +---------+--------+                     |
      |                             |                              |
@@ -115,7 +115,7 @@ Em reuniões o acesso não depende de estar em canal de voz, e sim de ter o carg
 
 | # | Decisão | Motivo |
 |---|---|---|
-| ADR-1 | Separar frontend e backend | Backend fica na VPS, frontend na Vercel e pode ser trocado |
+| ADR-1 | Separar frontend e backend | Backend fica na VPS, frontend em outro container (nginx), e pode ser trocado |
 | ADR-2 | LiveKit como SFU | Escala melhor que mesh P2P para salas com vários espectadores, SDKs prontos, moderação via API |
 | ADR-3 | Backend emite tokens LiveKit | Autorização centralizada; o LiveKit nunca confia no cliente |
 | ADR-4 | Sessão por cookie httpOnly | Evita expor token em JS; exige domínios irmãos (veja abaixo) |
@@ -128,7 +128,7 @@ Em reuniões o acesso não depende de estar em canal de voz, e sim de ter o carg
 
 Use subdomínios do mesmo site para o cookie funcionar sem fricção:
 
-- `app.exemplo.com` -> frontend (Vercel)
+- `app.exemplo.com` -> frontend (nginx na VPS)
 - `api.exemplo.com` -> backend (VPS)
 - `live.exemplo.com` -> LiveKit (WSS)
 - `turn.exemplo.com` -> Coturn

@@ -28,7 +28,7 @@ O link identifica a sala, mas **não é credencial de acesso**. Lives admitem um
 
 | Camada | Tecnologias e destino pretendido |
 | --- | --- |
-| Frontend | React + TypeScript, Vite, Tailwind CSS; **Render** para o site estático, conforme conversa mais recente. |
+| Frontend | React + TypeScript, Vite, Tailwind CSS; site estático servido por nginx na própria VPS (Coolify); Render e Vercel foram descartados. |
 | API e bot | Node.js + TypeScript, Express, Socket.IO e discord.js; Docker na **Hostinger KVM1**, com Coolify em configuração. |
 | Estado e autenticação | MongoDB/Mongoose, login Discord OAuth2, sessão por cookie; bot acompanha cargos e voice state. |
 | Mídia | WebRTC via LiveKit (SFU) e Coturn para redes restritivas; ambos na VPS; Socket.IO transporta eventos de aplicação, não vídeo/áudio. |
@@ -41,7 +41,7 @@ Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio p
 
 - Monorepo npm workspaces, Node.js `>=22`: `apps/api`, `apps/web` e `packages/shared`. O backend concentra API REST, Socket.IO, bot e integração LiveKit. O front já tem login, sala, controles de mídia, grid, reuniões, moderação, configurações e auditoria.
 - Contratos em `docs/backend/` e OpenAPI em `/api/v1/docs`; documentação do front em `docs/frontend/README.md`; visão, arquitetura e roadmap em `docs/`. Seguir esses contratos ao mudar API ou UI e atualizar docs/testes quando houver alteração de comportamento.
-- Infra declarada em `infra/`, Dockerfiles e `render.yaml`; CI do GitHub Actions executa lint, typecheck, testes e build. Existem testes automatizados, inclusive integração com substitutos de serviços externos; isso **não equivale a um teste real** de Discord, LiveKit e redes móveis.
+- Infra declarada em `infra/`, Dockerfiles (`apps/api`, `apps/web`) e `infra/coolify/docker-compose.yml`; CI do GitHub Actions executa lint, typecheck, testes e build. Existem testes automatizados, inclusive integração com substitutos de serviços externos; isso **não equivale a um teste real** de Discord, LiveKit e redes móveis.
 - O último commit incorporado antes deste arquivo, `0ab17f8`, adicionou `ADMIN_ROLE_IDS` para cargos admin fixos via ambiente; consultar `docs/backend/permissoes.md` e a implementação atual antes de configurar privilégios.
 - As fases 0–8 constam como implementadas no `docs/03-roadmap.md`; a fase 9 é parcial. **Não há comprovação aqui** de deploy operacional, webhook de deploy automático ativado, teste em VPS limpa, restauração de backup, teste real entre navegadores ou teste de carga na KVM1. Flazo está trabalhando no deploy; pedir/registrar evidência após executar cada etapa.
 
@@ -51,7 +51,7 @@ Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio p
 
 **Marujo / backend, após divisão com a equipe:** ajudar a revisar segurança do acesso, presença e capacidade, integração Discord/LiveKit, falhas e contratos que o front consome. Evitar desenvolver em paralelo com Flazo nas mesmas áreas sem combinar limites de responsabilidade.
 
-**Flazo / infraestrutura:** concluir e documentar o deploy automático de `main` com separação web/serviços da VPS, segredos no painel, health/readiness, monitoramento, rollback e backup com restauração testada. O repositório contém instruções manuais; configuração ativa no Coolify/Render deve ser confirmada na plataforma.
+**Flazo / infraestrutura:** concluir e documentar o deploy automático de `main` com separação web/serviços da VPS, segredos no painel, health/readiness, monitoramento, rollback e backup com restauração testada. O repositório contém instruções manuais; configuração ativa no Coolify deve ser confirmada na plataforma.
 
 **Escala:** o objetivo discutido é atender a comunidade (~1.000 membros) e, idealmente, centenas de espectadores, **sem pressupor 500 transmissores simultâneos**. Uma KVM1 é uma restrição de CPU, memória e, sobretudo, banda de saída. `docs/infra/teste-de-carga.md` propõe primeiro um piloto de **25 participantes com 5 publicando**; não extrapolar esse número para 500 sem medição real, limites de sala/publicadores, observabilidade e plano de crescimento.
 
@@ -60,8 +60,8 @@ Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio p
 - Confirmação da exceção para staff entrar em live sem estar na voz; revisar também o acesso quando o bot perde a conexão ou uma pessoa perde o cargo.
 - Ao sair da voz, o código usa timers em memória para a tolerância e remove a pessoa do LiveKit. Testar reinícios durante a tolerância e tentativa de reutilizar token já emitido; a remoção de participante por si só não deve ser tratada como revogação criptográfica do token.
 - Confirmar comportamento de lotação em entradas simultâneas, limites de publicação por sala e distribuição de banda; medir em 4G e redes corporativas para validar Coturn.
-- Conferir proteção de cookies, CORS, CSP no **Render**, assinatura dos webhooks, escopos mínimos do bot, backup externo e restauração. Não publicar portas do MongoDB ou métricas.
-- Definir operacionalmente: domínios, quem administra Discord/Render/Coolify, como fazer rollback, alertas, contato em incidentes e critérios de aceite do piloto. Evitar registrar segredos ou dados reais no Git.
+- Conferir proteção de cookies, CORS, CSP no nginx do frontend (`apps/web/nginx.conf`), assinatura dos webhooks, escopos mínimos do bot, backup externo e restauração. Não publicar portas do MongoDB ou métricas.
+- Definir operacionalmente: domínios, quem administra Discord/Coolify, como fazer rollback, alertas, contato em incidentes e critérios de aceite do piloto. Evitar registrar segredos ou dados reais no Git.
 
 ## Instrução de trabalho para o agente
 

@@ -80,6 +80,17 @@ services:
       timeout: 5s
       retries: 5
 
+  # Frontend (arquivos estáticos servidos pelo nginx). Domínio na interface do Coolify: https://screen.exemplo.com:80
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Embutidos no JavaScript no build; mudou a URL da API, faça Redeploy.
+        VITE_API_URL: ${PUBLIC_API_URL}/api/v1
+        VITE_SOCKET_URL: ${PUBLIC_API_URL}
+    restart: unless-stopped
+
   livekit:
     image: livekit/livekit-server:v1.9
     restart: unless-stopped
