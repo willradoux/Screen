@@ -194,3 +194,28 @@ describe('ADMIN_ROLE_IDS (cargos fixos de admin)', () => {
     expect(loadEnv({ NODE_ENV: 'test' }).adminRoleIds).toEqual([]);
   });
 });
+
+describe('loadEnv tolera espaços e aspas vindos de painéis (Coolify)', () => {
+  it('valor só com espaços ou aspas vazias vale como ausente', () => {
+    for (const v of [' ', '  ', '""', "''", '" "']) {
+      expect(
+        loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: v }).MEETING_MENTION_ROLE_ID,
+      ).toBeUndefined();
+    }
+  });
+  it('ID entre aspas ou com espaços é aceito', () => {
+    expect(
+      loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: ' "123456789012345678" ' })
+        .MEETING_MENTION_ROLE_ID,
+    ).toBe('123456789012345678');
+    expect(
+      loadEnv({ NODE_ENV: 'test', ADMIN_ROLE_IDS: '"111111111111111111, 222222222222222222"' })
+        .adminRoleIds,
+    ).toHaveLength(2);
+  });
+  it('valor realmente inválido continua sendo recusado', () => {
+    expect(() => loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: '@everyone' })).toThrow(
+      /MEETING_MENTION_ROLE_ID/,
+    );
+  });
+});

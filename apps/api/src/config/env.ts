@@ -78,7 +78,27 @@ const TEST_DEFAULTS: Record<string, string> = {
   TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
 };
 
-export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
+/**
+ * Painéis como o Coolify podem entregar o valor com espaços nas pontas ou entre aspas
+ * (`FOO=" "`, `FOO=\"123\"`). Tira isso antes de validar; senão um campo "vazio" falha como inválido.
+ */
+function clean(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {};
+  for (const [key, raw] of Object.entries(source)) {
+    if (raw === undefined) continue;
+    let value = raw.trim();
+    // Aspas iguais nas duas pontas ("x" ou 'x').
+    const q = value[0];
+    if (value.length >= 2 && (q === '"' || q === "'") && value.endsWith(q)) {
+      value = value.slice(1, -1).trim();
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
+  const source = clean(rawSource);
   const input = source.NODE_ENV === 'test' ? { ...TEST_DEFAULTS, ...source } : source;
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
