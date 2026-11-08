@@ -6,11 +6,11 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 - [x] Repositório limpo, histórico reiniciado.
 - [x] Documentação inicial (este diretório).
-- [ ] Monorepo com `apps/api`, `apps/web`, `packages/shared` (npm workspaces).
-- [ ] TypeScript, ESLint, Prettier, EditorConfig.
-- [ ] CI no GitHub Actions: lint, typecheck, testes, build.
+- [x] Monorepo com `apps/api`, `apps/web`, `packages/shared` (npm workspaces).
+- [x] TypeScript, ESLint, Prettier, EditorConfig.
+- [x] CI no GitHub Actions: lint, typecheck, testes, build.
 - [ ] Commits convencionais e hooks (husky + commitlint).
-- [ ] `.env.example` completo.
+- [x] `.env.example` (cresce a cada fase).
 
 **Aceite:** `npm ci && npm run lint && npm run typecheck && npm test && npm run build` passa em CI.
 
