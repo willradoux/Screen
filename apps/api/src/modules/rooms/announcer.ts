@@ -1,7 +1,12 @@
-import { buildRoomMessage } from '../../discord/embeds.js';
+import {
+  buildMeetingNotice,
+  buildRoomMessage,
+  type MeetingNoticeKind,
+} from '../../discord/embeds.js';
 import type { DiscordGateway } from '../../discord/gateway.js';
 import type { Logger } from '../../shared/logger.js';
 import type { Scheduler } from '../../shared/scheduler.js';
+import type { MeetingSummary } from '../meetings/report.js';
 import type { SettingsRepo } from '../settings/settings.types.js';
 import type { RoomRecord, RoomRepo } from './rooms.types.js';
 
@@ -18,6 +23,8 @@ export interface AnnouncerDeps {
   countParticipants: (room: RoomRecord) => number;
   /** Intervalo mínimo entre edições do mesmo embed (limite de taxa do Discord). */
   debounceMs?: number;
+  /** Números de uma reunião encerrada, para o embed final. */
+  summary?: (room: RoomRecord) => Promise<MeetingSummary | null>;
 }
 
 /**
@@ -37,12 +44,34 @@ export class RoomAnnouncer {
     return room.type === 'LIVE' ? s.liveTextChannelId : s.announceChannelId;
   }
 
-  private render(room: RoomRecord) {
+  private async render(room: RoomRecord) {
+    const summary =
+      room.type === 'MEETING' && room.status === 'ENDED' && this.deps.summary
+        ? await this.deps.summary(room).catch(() => null)
+        : null;
     return buildRoomMessage(room, {
       webUrl: this.deps.webUrl,
       participants: this.deps.countParticipants(room),
       mentionRoleId: this.deps.mentionRoleId,
+      summary,
     });
+  }
+
+  /**
+   * Mensagem nova e curta no canal de avisos (lembrete, reagendamento, cancelamento).
+   * `false` se não há canal de avisos configurado.
+   */
+  async sendNotice(room: RoomRecord, kind: MeetingNoticeKind): Promise<boolean> {
+    const channelId = room.announceChannelId ?? (await this.targetChannel(room));
+    if (!channelId) return false;
+    await this.deps.gateway.sendMessage(
+      channelId,
+      buildMeetingNotice(room, kind, {
+        webUrl: this.deps.webUrl,
+        mentionRoleId: this.deps.mentionRoleId,
+      }),
+    );
+    return true;
   }
 
   /** Envia uma mensagem nova e grava o ID. `false` se não houver canal configurado. */
@@ -55,7 +84,7 @@ export class RoomAnnouncer {
       );
       return false;
     }
-    const messageId = await this.deps.gateway.sendMessage(channelId, this.render(room));
+    const messageId = await this.deps.gateway.sendMessage(channelId, await this.render(room));
     await this.deps.rooms.setAnnouncement(room.id, channelId, messageId);
     room.announceChannelId = channelId;
     room.announceMessageId = messageId;
@@ -71,7 +100,7 @@ export class RoomAnnouncer {
     const result = await this.deps.gateway.editMessage(
       room.announceChannelId,
       room.announceMessageId,
-      this.render(room),
+      await this.render(room),
     );
     if (result === 'not_found') await this.publish(room);
   }

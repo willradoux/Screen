@@ -199,13 +199,17 @@ Lista os conectados. Visível para moderação e para quem tem acesso à sala (o
 
 ## Reuniões
 
-Detalhes de comportamento em [reunioes.md](reunioes.md). Todas exigem ADMIN, exceto `GET`.
+**Implementado** (Fase 7). Comportamento completo em [reunioes.md](reunioes.md). Os comandos `/reuniao` do bot usam o mesmo serviço, então as regras e os erros são os mesmos. `GET` é para qualquer membro; o resto é **ADMIN** (e exige `Origin`).
+
+A reunião é a `Room` mais `allowedRoleIds` (vazio = qualquer membro) e `reminders`: `[{ "minutesBefore": 1440, "sent": false }]`.
 
 ### `GET /meetings`
-Query: `status`, `from`, `to`. Lista reuniões.
+Query: `status` (padrão: abertas **e** agendadas), `from` e `to` (ISO 8601, filtram pelo horário de início), `limit` (1 a 100, padrão 50). Ordenadas da mais próxima para a mais distante. Sem paginação por cursor.
+
+### `GET /meetings/:id`
+Uma reunião. `404 ROOM_NOT_FOUND` para ids inexistentes e para salas que são lives.
 
 ### `POST /meetings`
-Cria reunião.
 ```json
 { "title": "Reunião mensal de dezembro",
   "description": "Pauta: novidades, retrospectiva, votação.",
@@ -215,27 +219,31 @@ Cria reunião.
   "announce": true,
   "reminders": [1440, 60, 5] }
 ```
-- `startsAt` ausente = reunião **imediata** (abre agora).
-- `announce` publica no canal de avisos.
-- `reminders` em minutos antes do início.
-Resposta `201` com `Room`.
-Erros: `400 VALIDATION_ERROR`, `400 STARTS_AT_IN_PAST`, `409 ANNOUNCE_CHANNEL_NOT_SET`.
+- `title` (3 a 100) é o único obrigatório; campos desconhecidos são recusados.
+- `startsAt` ausente ou `null`: abre **agora**. Com `startsAt`: agendada, pelo menos 2 minutos no futuro.
+- `announce` (padrão `true`) publica o aviso no canal de avisos.
+- `reminders`: até 5 valores em minutos antes do início (1 a 43200), repetidos são ignorados e a lista é ordenada do maior para o menor; `[]` = nenhum; padrão `[1440, 60, 5]`. Os que já passaram são descartados.
+- `allowedRoleIds` (até 25, precisam existir no Discord): se omitido, vale o `/config cargo-reuniao`.
+Resposta `201`. Erros: `400 VALIDATION_ERROR`, `400 STARTS_AT_IN_PAST`, `400 INVALID_DISCORD_REFERENCE`, `409 ANNOUNCE_CHANNEL_NOT_SET` (nada é criado).
 
 ### `PATCH /meetings/:id`
-Edita título, descrição, `startsAt`, `maxParticipants`, `reminders`. Só enquanto `SCHEDULED`. Reagendar reenvia o aviso.
+Qualquer subconjunto de `title`, `description`, `startsAt`, `maxParticipants`, `allowedRoleIds`, `reminders` (ao menos um). Só enquanto `SCHEDULED` (`409 MEETING_NOT_EDITABLE`). **Mudar `startsAt` reagenda**: os lembretes voltam a ser pendentes, o aviso é editado e o canal recebe uma mensagem de reagendamento. Registra `MEETING_UPDATED`. `200` com a reunião.
 
 ### `POST /meetings/:id/open`
-Abre antes do horário. `200`.
+Abre antes do horário. Só `SCHEDULED`. `200` com a reunião. Registra `MEETING_OPENED`.
 
 ### `POST /meetings/:id/cancel`
-Cancela e avisa no canal. `204`.
+Só `SCHEDULED`: reunião aberta se encerra com `POST /rooms/:id/end`. Edita o aviso, manda uma mensagem silenciosa no canal e registra `MEETING_CANCELED`. `204`.
 
 ### `GET /meetings/:id/report`
-Lista de presença e duração (ADMIN). Disponível após `ENDED`.
+Lista de presença, duração e pico. Só depois de `ENDED` (`409 REPORT_NOT_AVAILABLE` antes).
 ```json
 { "data": { "durationMinutes": 62, "peakParticipants": 41,
-            "attendees": [ { "userId": "1234", "displayName": "Fulano", "joinedAt": "...", "leftAt": "...", "minutes": 58 } ] } }
+            "attendees": [ { "userId": "1234", "displayName": "Fulano",
+                             "joinedAt": "2026-12-05T23:00:12.000Z",
+                             "leftAt": "2026-12-06T00:02:00.000Z", "minutes": 58 } ] } }
 ```
+`minutes` é a soma dos períodos em que a pessoa ficou (quem saiu e voltou aparece uma vez).
 
 ---
 

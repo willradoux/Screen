@@ -3,7 +3,11 @@ import type { Env } from '../config/env.js';
 import { RoomAnnouncer } from '../modules/rooms/announcer.js';
 import { RoomService } from '../modules/rooms/rooms.service.js';
 import type { AuditLog } from '../modules/audit/audit.service.js';
+import { buildReport, summarize } from '../modules/meetings/report.js';
+import { MeetingService } from '../modules/meetings/meetings.service.js';
+import { MeetingScheduler } from '../modules/meetings/scheduler.js';
 import { RoleResolver } from '../modules/permissions/role-resolver.js';
+import type { ParticipationRepo } from '../modules/rooms/participations.js';
 import type { PresenceService } from '../modules/rooms/presence.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
@@ -24,6 +28,9 @@ export interface DiscordSystem {
   roomService: RoomService;
   announcer: RoomAnnouncer;
   roles: RoleResolver;
+  meetings: MeetingService;
+  /** Abre reuniões no horário, manda lembretes e encerra reuniões abandonadas. */
+  meetingScheduler: MeetingScheduler;
   voiceCache: VoiceCache;
 }
 
@@ -38,6 +45,7 @@ export function createDiscordSystem(
     voiceCache: VoiceCache;
     presence: PresenceService;
     audit: AuditLog;
+    participations: ParticipationRepo;
   },
 ): DiscordSystem {
   const repos = deps;
@@ -65,8 +73,36 @@ export function createDiscordSystem(
     webUrl: env.WEB_URL,
     mentionRoleId: env.MEETING_MENTION_ROLE_ID,
     countParticipants: (room) => (room.voiceChannelId ? voiceCache.count(room.voiceChannelId) : 0),
+    // Embed final da reunião: duração, participantes e pico.
+    summary: async (room) =>
+      summarize(buildReport(room, await deps.participations.listAll(room.id), new Date())),
   });
   const roomService = new RoomService({ rooms: repos.rooms, announcer, logger });
+
+  const meetings = new MeetingService({
+    rooms: repos.rooms,
+    roomService,
+    announcer,
+    settings: repos.settings,
+    gateway,
+    participations: deps.participations,
+    audit: deps.audit,
+    logger,
+    guildId,
+  });
+
+  const meetingScheduler = new MeetingScheduler({
+    rooms: repos.rooms,
+    roomService,
+    announcer,
+    participations: deps.participations,
+    audit: deps.audit,
+    scheduler: realScheduler,
+    logger,
+    guildId,
+    intervalMs: env.SCHEDULER_INTERVAL_SECONDS * 1000,
+    emptyEndMinutes: env.EMPTY_MEETING_END_MINUTES,
+  });
 
   const live = new LiveVoiceHandler({
     gateway,
@@ -98,9 +134,7 @@ export function createDiscordSystem(
     config: new ConfigHandler({ settings: repos.settings, gateway, audit: deps.audit, guildId }),
     meetings: new MeetingHandler({
       rooms: repos.rooms,
-      roomService,
-      settings: repos.settings,
-      audit: deps.audit,
+      meetings,
       guildId,
       webUrl: env.WEB_URL,
       timezone: env.TIMEZONE,
@@ -116,7 +150,9 @@ export function createDiscordSystem(
     router,
     settings: repos.settings,
     logger,
+    // Só liga o relógio das reuniões com o bot conectado (avisos e lembretes precisam dele).
+    onReady: () => meetingScheduler.start(),
   });
 
-  return { bot, gateway, roomService, announcer, roles, voiceCache };
+  return { bot, gateway, roomService, announcer, roles, meetings, meetingScheduler, voiceCache };
 }

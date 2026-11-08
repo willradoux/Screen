@@ -30,6 +30,10 @@ const schema = z.object({
 
   // Regras de negócio
   EMPTY_LIVE_END_SECONDS: z.coerce.number().int().min(5).default(60),
+  /** Reunião aberta e vazia por tanto tempo é encerrada. */
+  EMPTY_MEETING_END_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+  /** De quanto em quanto tempo o agendador de reuniões verifica. */
+  SCHEDULER_INTERVAL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
 
   // LiveKit (servidor de mídia)
   /** URL interna, usada pela API para falar com o LiveKit. */

@@ -28,6 +28,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
       { name: 'LiveKit', description: 'Webhook do servidor de mídia' },
       { name: 'Moderation', description: 'Mutar, expulsar, banir e palestrantes (MOD ou ADMIN)' },
       { name: 'Admin', description: 'Configurações da guilda e auditoria (ADMIN)' },
+      { name: 'Meetings', description: 'Reuniões: agendar, avisar, abrir, cancelar e relatório' },
     ],
     paths: {
       '/health': {
@@ -588,12 +589,247 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
           },
         },
       },
+
+      '/meetings': {
+        get: {
+          tags: ['Meetings'],
+          summary: 'Lista reuniões',
+          description:
+            'Qualquer membro vê. Sem `status`, devolve as abertas e as agendadas, da mais próxima para a mais distante. `from` e `to` filtram pelo horário de início.',
+          operationId: 'listMeetings',
+          security: [{ sessionCookie: [] }],
+          parameters: [
+            { name: 'status', in: 'query', schema: { $ref: '#/components/schemas/RoomStatus' } },
+            { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responses: {
+            '200': { description: 'Reuniões', content: meetingListContent },
+            '400': errorResponse('VALIDATION_ERROR'),
+            '401': errorResponse('UNAUTHENTICATED'),
+          },
+        },
+        post: {
+          tags: ['Meetings'],
+          summary: 'Cria uma reunião (ADMIN)',
+          description:
+            'Sem `startsAt` a reunião abre agora; com `startsAt` ela é agendada, abre sozinha no horário e manda lembretes. `reminders` são minutos antes do início (padrão 1440, 60 e 5; até 5; `[]` = nenhum); os que já passaram são descartados. `announce` (padrão `true`) publica o aviso no canal de avisos. Se `allowedRoleIds` não vier, vale o `/config cargo-reuniao`.',
+          operationId: 'createMeeting',
+          security: [{ sessionCookie: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/MeetingCreate' } },
+            },
+          },
+          responses: {
+            '201': { description: 'Reunião criada', content: meetingContent },
+            '400': errorResponse(
+              'VALIDATION_ERROR, STARTS_AT_IN_PAST ou INVALID_DISCORD_REFERENCE',
+            ),
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '409': errorResponse('ANNOUNCE_CHANNEL_NOT_SET'),
+          },
+        },
+      },
+      '/meetings/{id}': {
+        get: {
+          tags: ['Meetings'],
+          summary: 'Detalhes de uma reunião',
+          operationId: 'getMeeting',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': { description: 'Reunião', content: meetingContent },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+        patch: {
+          tags: ['Meetings'],
+          summary: 'Edita ou reagenda uma reunião agendada (ADMIN)',
+          description:
+            'Só enquanto `SCHEDULED`. Mudar `startsAt` reagenda: os lembretes voltam a ser pendentes (só os que ainda fazem sentido), o aviso é editado e o canal recebe uma mensagem de reagendamento. Mudar só os demais campos edita o aviso sem mensagem nova.',
+          operationId: 'updateMeeting',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/MeetingUpdate' } },
+            },
+          },
+          responses: {
+            '200': { description: 'Reunião atualizada', content: meetingContent },
+            '400': errorResponse(
+              'VALIDATION_ERROR, STARTS_AT_IN_PAST ou INVALID_DISCORD_REFERENCE',
+            ),
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('MEETING_NOT_EDITABLE'),
+          },
+        },
+      },
+      '/meetings/{id}/open': {
+        post: {
+          tags: ['Meetings'],
+          summary: 'Abre uma reunião agendada antes do horário (ADMIN)',
+          operationId: 'openMeeting',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': { description: 'Reunião aberta', content: meetingContent },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('MEETING_NOT_EDITABLE'),
+          },
+        },
+      },
+      '/meetings/{id}/cancel': {
+        post: {
+          tags: ['Meetings'],
+          summary: 'Cancela uma reunião agendada (ADMIN)',
+          description:
+            'Edita o aviso para "cancelada" e manda uma mensagem curta e silenciosa no canal. Reunião já aberta não se cancela: encerre-a (`POST /rooms/{id}/end`).',
+          operationId: 'cancelMeeting',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '204': { description: 'Reunião cancelada' },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('MEETING_NOT_EDITABLE'),
+          },
+        },
+      },
+      '/meetings/{id}/report': {
+        get: {
+          tags: ['Meetings'],
+          summary: 'Relatório de presença (ADMIN)',
+          description:
+            'Só depois que a reunião termina. Quem saiu e voltou aparece uma vez, com a soma dos períodos. Quem ainda estava conectado no fim conta até o fim.',
+          operationId: 'getMeetingReport',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': {
+              description: 'Relatório',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: { data: { $ref: '#/components/schemas/MeetingReport' } },
+                  },
+                },
+              },
+            },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('REPORT_NOT_AVAILABLE'),
+          },
+        },
+      },
     },
     components: {
       securitySchemes: {
         sessionCookie: { type: 'apiKey', in: 'cookie', name: 'screem_sid' },
       },
       schemas: {
+        Meeting: {
+          allOf: [
+            { $ref: '#/components/schemas/Room' },
+            {
+              type: 'object',
+              properties: {
+                allowedRoleIds: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Vazio = qualquer membro. MOD e ADMIN entram sempre.',
+                },
+                reminders: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      minutesBefore: { type: 'integer' },
+                      sent: { type: 'boolean' },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        MeetingCreate: {
+          type: 'object',
+          required: ['title'],
+          additionalProperties: false,
+          properties: {
+            title: { type: 'string', minLength: 3, maxLength: 100 },
+            description: { type: ['string', 'null'], maxLength: 1000 },
+            startsAt: {
+              type: ['string', 'null'],
+              format: 'date-time',
+              description: 'Ausente ou null: abre agora',
+            },
+            maxParticipants: { type: 'integer', minimum: 2, maximum: 300, default: 100 },
+            allowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
+            announce: { type: 'boolean', default: true },
+            reminders: {
+              type: 'array',
+              maxItems: 5,
+              items: { type: 'integer', minimum: 1, maximum: 43200 },
+            },
+          },
+        },
+        MeetingUpdate: {
+          type: 'object',
+          minProperties: 1,
+          additionalProperties: false,
+          properties: {
+            title: { type: 'string', minLength: 3, maxLength: 100 },
+            description: { type: ['string', 'null'], maxLength: 1000 },
+            startsAt: { type: 'string', format: 'date-time' },
+            maxParticipants: { type: 'integer', minimum: 2, maximum: 300 },
+            allowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
+            reminders: {
+              type: 'array',
+              maxItems: 5,
+              items: { type: 'integer', minimum: 1, maximum: 43200 },
+            },
+          },
+        },
+        MeetingReport: {
+          type: 'object',
+          properties: {
+            durationMinutes: { type: 'integer' },
+            peakParticipants: { type: 'integer' },
+            attendees: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  userId: { type: 'string' },
+                  displayName: { type: 'string' },
+                  joinedAt: { type: 'string', format: 'date-time' },
+                  leftAt: { type: 'string', format: 'date-time' },
+                  minutes: { type: 'integer' },
+                },
+              },
+            },
+          },
+        },
         Participant: {
           type: 'object',
           properties: {
@@ -847,6 +1083,26 @@ function moderationAction(
     },
   };
 }
+
+const meetingContent = {
+  'application/json': {
+    schema: {
+      type: 'object',
+      required: ['data'],
+      properties: { data: { $ref: '#/components/schemas/Meeting' } },
+    },
+  },
+};
+
+const meetingListContent = {
+  'application/json': {
+    schema: {
+      type: 'object',
+      required: ['data'],
+      properties: { data: { type: 'array', items: { $ref: '#/components/schemas/Meeting' } } },
+    },
+  },
+};
 
 function readyContent(status: 'ok' | 'unavailable') {
   return {

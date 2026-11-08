@@ -40,6 +40,10 @@ export interface ParticipationRepo {
   findOpen(roomId: string, userId: string): Promise<Participation | null>;
   listOpen(roomId: string): Promise<Participation[]>;
   countOpen(roomId: string): Promise<number>;
+  /** Todas as participações (abertas e fechadas), da mais antiga para a mais nova. */
+  listAll(roomId: string): Promise<Participation[]>;
+  /** Último momento em que alguém entrou ou saiu. `null` se nunca houve ninguém. */
+  lastActivityAt(roomId: string): Promise<Date | null>;
   /**
    * Fontes silenciadas pela moderação para essa pessoa nesta sala. Vale a participação mais
    * recente (aberta ou não): sair e voltar não desfaz o silenciamento.
@@ -179,6 +183,22 @@ export function createParticipationRepo(): ParticipationRepo {
     },
 
     countOpen: (roomId) => ParticipationModel.countDocuments({ roomId, leftAt: null }),
+
+    async listAll(roomId) {
+      const docs = await ParticipationModel.find({ roomId }).sort({ joinedAt: 1 }).lean();
+      return docs.map((d) => toParticipation(d as PDoc));
+    },
+
+    async lastActivityAt(roomId) {
+      const [joined, left] = await Promise.all([
+        ParticipationModel.findOne({ roomId }).sort({ joinedAt: -1 }).lean(),
+        ParticipationModel.findOne({ roomId, leftAt: { $ne: null } })
+          .sort({ leftAt: -1 })
+          .lean(),
+      ]);
+      const times = [joined?.joinedAt, left?.leftAt].filter((d): d is Date => d instanceof Date);
+      return times.length ? new Date(Math.max(...times.map((d) => d.getTime()))) : null;
+    },
   };
 }
 

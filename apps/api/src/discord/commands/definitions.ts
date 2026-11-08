@@ -135,6 +135,24 @@ export function buildCommandDefinitions() {
     )
     .addSubcommand((s) =>
       s
+        .setName('reagendar')
+        .setDescription('Muda o horário de uma reunião agendada')
+        .addStringOption((o) =>
+          o.setName('reuniao').setDescription('A reunião').setRequired(true).setAutocomplete(true),
+        )
+        .addStringOption((o) =>
+          o.setName('data').setDescription('DD/MM/AAAA').setRequired(true).setMaxLength(10),
+        )
+        .addStringOption((o) =>
+          o
+            .setName('hora')
+            .setDescription('HH:mm (horário de Brasília)')
+            .setRequired(true)
+            .setMaxLength(5),
+        ),
+    )
+    .addSubcommand((s) =>
+      s
         .setName('cancelar')
         .setDescription('Cancela uma reunião agendada')
         .addStringOption((o) =>

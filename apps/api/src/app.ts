@@ -9,6 +9,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { sessionLoader } from './modules/auth/auth.middleware.js';
 import type { AuthService } from './modules/auth/auth.service.js';
 import { docsRoutes } from './modules/docs/docs.routes.js';
+import { meetingsRoutes, type MeetingsApi } from './modules/meetings/meetings.routes.js';
 import { moderationRoutes, type ModerationApi } from './modules/moderation/moderation.routes.js';
 import { roomsRoutes, WEBHOOK_PATH, type RoomsApi } from './modules/rooms/rooms.routes.js';
 import { adminRoutes, type AdminApi } from './modules/settings/settings.routes.js';
@@ -29,6 +30,8 @@ export interface AppDeps {
   moderation?: ModerationApi;
   /** Configurações da guilda e auditoria (ADMIN). Exige `auth`. */
   admin?: AdminApi;
+  /** Reuniões: criar, agendar, editar, abrir, cancelar e relatório. Exige `auth`. */
+  meetings?: MeetingsApi;
 }
 
 export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
@@ -80,6 +83,7 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   if (deps.auth && deps.rooms) api.use(roomsRoutes(deps.rooms, deps.auth));
   if (deps.auth && deps.moderation) api.use(moderationRoutes(deps.moderation, deps.auth));
   if (deps.auth && deps.admin) api.use(adminRoutes(deps.admin, deps.auth));
+  if (deps.auth && deps.meetings) api.use(meetingsRoutes(deps.meetings, deps.auth));
   app.use('/api/v1', api);
 
   app.use((_req, _res, next) => next(new AppError('ROUTE_NOT_FOUND', 404, 'Rota não encontrada.')));

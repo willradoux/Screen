@@ -1,4 +1,5 @@
 import { discordTime } from '../shared/time.js';
+import type { MeetingSummary } from '../modules/meetings/report.js';
 import type { RoomRecord } from '../modules/rooms/rooms.types.js';
 import type { MessagePayload } from './gateway.js';
 
@@ -8,6 +9,8 @@ export interface EmbedContext {
   participants: number;
   /** Cargo marcado no aviso de reunião; vazio = @everyone. */
   mentionRoleId?: string | undefined;
+  /** Números da reunião encerrada (aparecem no embed final). */
+  summary?: MeetingSummary | null | undefined;
 }
 
 const COLORS = {
@@ -93,7 +96,9 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
 
   if (room.status === 'ENDED') {
     return {
-      embeds: [base(`⚫ Reunião encerrada: ${room.title}`, COLORS.ended, [])],
+      embeds: [
+        base(`⚫ Reunião encerrada: ${room.title}`, COLORS.ended, summaryFields(ctx.summary)),
+      ],
       components: [],
       allowed_mentions: { parse: [] },
     };
@@ -122,6 +127,66 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
     content: mention,
     embeds: [embed],
     components: linkButton(open ? 'Entrar na reunião' : 'Ver sala', url),
+    allowed_mentions: ctx.mentionRoleId ? { roles: [ctx.mentionRoleId] } : { parse: ['everyone'] },
+  };
+}
+
+function summaryFields(summary: MeetingSummary | null | undefined): Record<string, unknown>[] {
+  if (!summary) return [];
+  return [
+    { name: 'Duração', value: `${summary.durationMinutes} min`, inline: true },
+    { name: 'Participantes', value: String(summary.attendeeCount), inline: true },
+    { name: 'Pico', value: String(summary.peakParticipants), inline: true },
+  ];
+}
+
+export type MeetingNoticeKind = 'reminder' | 'rescheduled' | 'canceled';
+
+/**
+ * Mensagem curta e nova no canal de avisos (lembrete, reagendamento, cancelamento).
+ * Lembrete e reagendamento marcam o mesmo cargo/@everyone do aviso original e têm o botão
+ * para a sala; o cancelamento é silencioso e sem botão.
+ */
+export function buildMeetingNotice(
+  room: RoomRecord,
+  kind: MeetingNoticeKind,
+  ctx: Pick<EmbedContext, 'webUrl' | 'mentionRoleId'>,
+): MessagePayload {
+  const when = room.startsAt
+    ? `${discordTime(room.startsAt, 'F')} (${discordTime(room.startsAt, 'R')})`
+    : 'agora';
+
+  if (kind === 'canceled') {
+    return {
+      embeds: [
+        { title: `🚫 Reunião cancelada: ${room.title}`, color: COLORS.canceled, footer: FOOTER },
+      ],
+      components: [],
+      allowed_mentions: { parse: [] },
+    };
+  }
+
+  const mention = ctx.mentionRoleId ? `<@&${ctx.mentionRoleId}>` : '@everyone';
+  const embed =
+    kind === 'reminder'
+      ? {
+          title: `⏰ Reunião em breve: ${room.title}`,
+          description: `Começa ${room.startsAt ? discordTime(room.startsAt, 'R') : 'agora'}.`,
+          color: COLORS.scheduled,
+          fields: [{ name: 'Quando', value: when, inline: false }],
+          footer: FOOTER,
+        }
+      : {
+          title: `🔁 Reunião reagendada: ${room.title}`,
+          description: `Nova data: ${when}`,
+          color: COLORS.scheduled,
+          footer: FOOTER,
+        };
+
+  return {
+    content: mention,
+    embeds: [embed],
+    components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id)),
     allowed_mentions: ctx.mentionRoleId ? { roles: [ctx.mentionRoleId] } : { parse: ['everyone'] },
   };
 }

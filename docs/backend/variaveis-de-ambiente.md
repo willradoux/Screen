@@ -61,6 +61,7 @@ Gerar: `openssl rand -base64 32`. `TOKEN_ENCRYPTION_KEY` precisa decodificar par
 |---|---|---|
 | `DEFAULT_GRACE_SECONDS` | `30` | Tolerância após sair da call |
 | `EMPTY_LIVE_END_SECONDS` | `60` | Encerra live sem ninguém no canal (mínimo 5) |
+| `SCHEDULER_INTERVAL_SECONDS` | `15` | De quanto em quanto tempo o agendador de reuniões verifica (1 a 300) |
 | `EMPTY_MEETING_END_MINUTES` | `15` | Encerra reunião vazia |
 | `JOIN_TOKEN_TTL_SECONDS` | `600` | Validade do token do LiveKit emitido no `join` (30 a 3600) |
 

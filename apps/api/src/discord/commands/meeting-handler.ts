@@ -1,14 +1,12 @@
-import { roomUrl } from '../embeds.js';
+import { AppError } from '../../shared/errors.js';
 import { discordTime, parseDateTime } from '../../shared/time.js';
-import type { AuditLog } from '../../modules/audit/audit.service.js';
-import type { RoomService } from '../../modules/rooms/rooms.service.js';
+import type { MeetingService } from '../../modules/meetings/meetings.service.js';
 import {
-  DEFAULT_MEETING_CAPACITY,
   DEFAULT_REMINDERS,
   type RoomRecord,
   type RoomRepo,
 } from '../../modules/rooms/rooms.types.js';
-import type { SettingsRepo } from '../../modules/settings/settings.types.js';
+import { roomUrl } from '../embeds.js';
 import {
   UserError,
   type AutocompleteChoice,
@@ -19,16 +17,12 @@ import {
 
 export interface MeetingHandlerDeps {
   rooms: RoomRepo;
-  roomService: RoomService;
-  settings: SettingsRepo;
-  audit: AuditLog;
+  meetings: MeetingService;
   guildId: string;
   webUrl: string;
   timezone: string;
-  now?: () => Date;
 }
 
-const MIN_LEAD_MS = 2 * 60_000;
 const MAX_REMINDERS = 5;
 const MAX_REMINDER_MINUTES = 43_200; // 30 dias
 
@@ -66,33 +60,58 @@ export function parseReminders(input: string | undefined): number[] {
   return [...new Set(values)].sort((a, b) => b - a);
 }
 
-/** `/reuniao ...` — criar, agendar e cancelar são só de ADMIN; encerrar é de MOD+. */
+/**
+ * `/reuniao ...` — criar, agendar, reagendar, cancelar e listar são só de ADMIN;
+ * encerrar é de MOD+. Aqui só se interpreta o que foi digitado; as regras estão no
+ * `MeetingService`, o mesmo usado pela API REST.
+ */
 export class MeetingHandler {
-  private readonly now: () => Date;
-
-  constructor(private readonly deps: MeetingHandlerDeps) {
-    this.now = deps.now ?? (() => new Date());
-  }
+  constructor(private readonly deps: MeetingHandlerDeps) {}
 
   async handle(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
-    switch (call.sub) {
-      case 'criar':
-        return this.create(ctx, call, false);
-      case 'agendar':
-        return this.create(ctx, call, true);
-      case 'cancelar':
-        return this.cancel(ctx, call);
-      case 'encerrar':
-        return this.end(ctx, call);
-      case 'listar':
-        return this.list();
-      default:
-        throw new UserError('Subcomando desconhecido.');
+    try {
+      switch (call.sub) {
+        case 'criar':
+          return await this.create(ctx, call, false);
+        case 'agendar':
+          return await this.create(ctx, call, true);
+        case 'reagendar':
+          return await this.reschedule(ctx, call);
+        case 'cancelar':
+          return await this.cancel(ctx, call);
+        case 'encerrar':
+          return await this.end(ctx, call);
+        case 'listar':
+          return await this.list();
+        default:
+          throw new UserError('Subcomando desconhecido.');
+      }
+    } catch (err) {
+      // Erros de regra (AppError) viram a resposta do comando, com a mesma mensagem da API.
+      if (err instanceof AppError && err.status < 500) throw new UserError(err.message);
+      throw err;
     }
   }
 
   private link(room: RoomRecord): string {
     return roomUrl(this.deps.webUrl, room.id);
+  }
+
+  private actor(ctx: CommandContext) {
+    return { id: ctx.userId, via: 'command' as const, role: ctx.role };
+  }
+
+  /** `DD/MM/AAAA` + `HH:mm` no fuso do servidor. */
+  private parseWhen(call: CommandCall): Date {
+    const date = text(call, 'data', 8, 10);
+    const time = text(call, 'hora', 4, 5);
+    const startsAt = parseDateTime(date, time, this.deps.timezone);
+    if (!startsAt) {
+      throw new UserError(
+        'Data ou hora inválida. Use `DD/MM/AAAA` e `HH:mm`, por exemplo `05/12/2026` e `20:00`.',
+      );
+    }
+    return startsAt;
   }
 
   private async create(
@@ -103,58 +122,19 @@ export class MeetingHandler {
     const title = text(call, 'titulo', 3, 100);
     const description = optionalText(call, 'descricao', 1000);
     const announce = call.options.avisar !== false;
+    const startsAt = scheduled ? this.parseWhen(call) : null;
+    const reminders = scheduled
+      ? parseReminders(
+          typeof call.options.lembretes === 'string' ? call.options.lembretes : undefined,
+        )
+      : [];
 
-    let startsAt: Date | null = null;
-    if (scheduled) {
-      const date = text(call, 'data', 8, 10);
-      const time = text(call, 'hora', 4, 5);
-      startsAt = parseDateTime(date, time, this.deps.timezone);
-      if (!startsAt) {
-        throw new UserError(
-          'Data ou hora inválida. Use `DD/MM/AAAA` e `HH:mm`, por exemplo `05/12/2026` e `20:00`.',
-        );
-      }
-      if (startsAt.getTime() < this.now().getTime() + MIN_LEAD_MS) {
-        throw new UserError('O horário precisa estar pelo menos 2 minutos no futuro.');
-      }
-    }
-
-    const settings = await this.deps.settings.get(this.deps.guildId);
-    if (announce && !settings.announceChannelId) {
-      throw new UserError(
-        'O canal de avisos ainda não foi configurado. Use `/config canal-avisos` (ou crie sem aviso com `avisar: não`).',
-      );
-    }
-
-    // Só lembretes que ainda fazem sentido (começam depois de agora).
-    let reminders: number[] = [];
-    if (startsAt) {
-      const minutesAway = (startsAt.getTime() - this.now().getTime()) / 60_000;
-      reminders = parseReminders(
-        typeof call.options.lembretes === 'string' ? call.options.lembretes : undefined,
-      ).filter((m) => m < minutesAway);
-    }
-
-    const { room, announced } = await this.deps.roomService.createMeeting(
-      {
-        guildId: this.deps.guildId,
-        title,
-        description,
-        startsAt,
-        createdBy: ctx.userId,
-        maxParticipants: DEFAULT_MEETING_CAPACITY,
-        allowedRoleIds: settings.meetingAllowedRoleIds,
-        reminders,
-        now: this.now(),
-      },
+    const { room, announced } = await this.deps.meetings.create(this.actor(ctx), {
+      title,
+      description,
+      startsAt,
       announce,
-    );
-
-    await this.deps.audit.record({
-      actorId: ctx.userId,
-      roomId: room.id,
-      action: 'MEETING_CREATED',
-      meta: { title: room.title, startsAt: startsAt?.toISOString() ?? null, announced },
+      reminders,
     });
 
     const lines = [
@@ -172,28 +152,29 @@ export class MeetingHandler {
     return { content: lines.join('\n') };
   }
 
+  private async reschedule(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
+    const id = text(call, 'reuniao', 1, 100);
+    const startsAt = this.parseWhen(call);
+    const room = await this.deps.meetings.update(this.actor(ctx), id, { startsAt });
+    return {
+      content: [
+        `✅ Reunião **${room.title}** reagendada para ${discordTime(startsAt, 'F')} (${discordTime(startsAt, 'R')}).`,
+        `🔗 ${this.link(room)}`,
+      ].join('\n'),
+    };
+  }
+
   private async cancel(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
     const id = text(call, 'reuniao', 1, 100);
-    const room = await this.deps.rooms.findById(id);
-    if (!room || room.type !== 'MEETING') throw new UserError('Não encontrei essa reunião.');
-    if (room.status === 'OPEN') {
-      throw new UserError('Essa reunião já está aberta. Use `/reuniao encerrar`.');
-    }
-    const canceled = await this.deps.roomService.cancelMeeting(id);
-    if (!canceled)
-      throw new UserError(`Essa reunião não pode ser cancelada (estado: ${room.status}).`);
-    await this.deps.audit.record({ actorId: ctx.userId, roomId: id, action: 'MEETING_CANCELED' });
+    const canceled = await this.deps.meetings.cancel(this.actor(ctx), id);
     return { content: `✅ Reunião **${canceled.title}** cancelada.` };
   }
 
   private async end(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
     const given = typeof call.options.reuniao === 'string' ? call.options.reuniao.trim() : '';
-    let room: RoomRecord | null;
+    let id = given;
 
-    if (given) {
-      room = await this.deps.rooms.findById(given);
-      if (!room || room.type !== 'MEETING') throw new UserError('Não encontrei essa reunião.');
-    } else {
+    if (!id) {
       const open = await this.deps.rooms.listMeetings(this.deps.guildId, ['OPEN']);
       if (open.length === 0) throw new UserError('Não há nenhuma reunião aberta.');
       if (open.length > 1) {
@@ -201,20 +182,10 @@ export class MeetingHandler {
           'Há mais de uma reunião aberta. Escolha qual encerrar na opção `reuniao`.',
         );
       }
-      room = open[0]!;
+      id = open[0]!.id;
     }
 
-    if (room.status !== 'OPEN') {
-      throw new UserError(`Essa reunião não está aberta (estado: ${room.status}).`);
-    }
-    const ended = await this.deps.roomService.endRoom(room.id, 'ENDED_BY_ADMIN');
-    if (!ended) throw new UserError('Essa reunião já foi encerrada.');
-    await this.deps.audit.record({
-      actorId: ctx.userId,
-      roomId: ended.id,
-      action: 'ROOM_ENDED',
-      meta: { via: 'command' },
-    });
+    const ended = await this.deps.meetings.end(this.actor(ctx), id);
     return { content: `✅ Reunião **${ended.title}** encerrada.` };
   }
 

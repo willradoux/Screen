@@ -105,15 +105,15 @@ Implementação: `discord/commands/` (`definitions.ts` descreve, `router.ts` aut
 |---|---|---|
 | `/reuniao criar` | `titulo`, `descricao?`, `avisar?` (padrão sim) | cria e abre agora; avisa no canal |
 | `/reuniao agendar` | `titulo`, `data` (`DD/MM/AAAA`), `hora` (`HH:mm`), `descricao?`, `lembretes?` | agenda; avisa no canal |
-| `/reuniao reagendar` | `reuniao` (autocomplete), `data`, `hora` | muda o horário e reavisa. **[Fase 7]** |
-| `/reuniao cancelar` | `reuniao` (autocomplete) | só reunião `SCHEDULED`; edita o aviso para "cancelada" |
+| `/reuniao reagendar` | `reuniao` (autocomplete), `data`, `hora` | muda o horário de uma reunião agendada: zera os lembretes que ainda fazem sentido, edita o aviso e manda `🔁 Reunião reagendada` no canal |
+| `/reuniao cancelar` | `reuniao` (autocomplete) | só reunião `SCHEDULED`; edita o aviso para "cancelada" e manda uma mensagem curta e silenciosa no canal |
 | `/reuniao encerrar` | `reuniao?` (padrão: a única aberta; se houver várias, escolha) | encerra e edita o aviso |
 | `/reuniao listar` | - | próximas reuniões |
 
 Regras do `criar`/`agendar`:
 - Título de 3 a 100 caracteres; descrição até 1000.
 - `agendar` exige o horário pelo menos 2 minutos no futuro e rejeita datas inexistentes (31/02) e formatos diferentes de `DD/MM/AAAA` e `HH:mm`.
-- `lembretes`: até 5 valores em minutos, separados por vírgula (padrão `1440,60,5`; `0` = nenhum). Lembretes que já passaram (reunião marcada para daqui a 30 min não recebe o de 1 h) são descartados. O **envio** dos lembretes e a abertura automática no horário são da Fase 7.
+- `lembretes`: até 5 valores em minutos, separados por vírgula (padrão `1440,60,5`; `0` = nenhum). Lembretes que já passaram (reunião marcada para daqui a 30 min não recebe o de 1 h) são descartados. Os lembretes e a abertura automática no horário saem do agendador de reuniões ([reunioes.md](reunioes.md)), que só liga depois que o bot está conectado.
 - Com `avisar` (padrão sim) é obrigatório ter `/config canal-avisos`; senão o comando recusa e **não cria** a reunião.
 - Se criar a reunião mas o envio do aviso falhar (bot sem permissão), a reunião existe e o admin é avisado na resposta.
 - Quem pode entrar (`allowedRoleIds`) é copiado de `/config cargo-reuniao` no momento da criação.

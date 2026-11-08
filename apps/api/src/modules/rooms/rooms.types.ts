@@ -35,6 +35,7 @@ export interface RoomPatch {
   description?: string | null;
   maxParticipants?: number;
   lectureMode?: boolean;
+  allowedRoleIds?: string[];
 }
 
 export interface NewMeeting {
@@ -77,6 +78,18 @@ export interface RoomRepo {
   ): Promise<{ items: RoomRecord[]; next: string | null }>;
   setAnnouncement(id: string, channelId: string, messageId: string): Promise<void>;
   update(id: string, patch: RoomPatch): Promise<RoomRecord | null>;
+  /**
+   * Reagenda e/ou troca os lembretes de uma reunião `SCHEDULED` (`null` se já não estiver).
+   * Os lembretes voltam a ser pendentes, só os que ainda fazem sentido (o início é depois deles).
+   */
+  updateSchedule(
+    id: string,
+    input: { startsAt?: Date; reminders?: number[]; now: Date },
+  ): Promise<RoomRecord | null>;
+  /** Reserva o envio de um lembrete. `true` só para quem conseguiu (evita envio duplo). */
+  claimReminder(id: string, minutesBefore: number, at: Date): Promise<boolean>;
+  /** Devolve um lembrete reservado cujo envio falhou, para tentar de novo. */
+  releaseReminder(id: string, minutesBefore: number): Promise<void>;
   /** Adiciona ou remove um palestrante (sem duplicar). */
   updateSpeakers(id: string, action: 'add' | 'remove', userId: string): Promise<RoomRecord | null>;
   /** Muda o estado só se o atual estiver em `from`. `null` se não estava. */

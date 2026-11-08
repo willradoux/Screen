@@ -11,6 +11,7 @@ import { createDiscordApi } from './modules/discord/discord-api.js';
 import { createLiveKitGateway } from './modules/livekit/livekit.gateway.js';
 import { LiveKitWebhookHandler } from './modules/livekit/livekit.webhook.js';
 import { ModerationService } from './modules/moderation/moderation.service.js';
+import type { MeetingsApi } from './modules/meetings/meetings.routes.js';
 import type { ModerationApi } from './modules/moderation/moderation.routes.js';
 import { RoomAccess } from './modules/rooms/access.js';
 import { createBanRepo, createParticipationRepo } from './modules/rooms/participations.js';
@@ -60,7 +61,14 @@ const presence = new PresenceService({
 
 // O bot é opcional em desenvolvimento: sem token, a API sobe sem ele (e sem salas).
 const discord = env.DISCORD_BOT_TOKEN
-  ? createDiscordSystem(env, logger, { rooms, settings, voiceCache, presence, audit })
+  ? createDiscordSystem(env, logger, {
+      rooms,
+      settings,
+      voiceCache,
+      presence,
+      audit,
+      participations,
+    })
   : null;
 if (!discord) logger.warn('DISCORD_BOT_TOKEN ausente: o bot e as salas não serão iniciados');
 
@@ -77,6 +85,7 @@ const auth = new AuthService({
 let roomsApi: RoomsApi | undefined;
 let moderationApi: ModerationApi | undefined;
 let adminApi: AdminApi | undefined;
+let meetingsApi: MeetingsApi | undefined;
 let access: RoomAccess | undefined;
 if (discord) {
   access = new RoomAccess({
@@ -126,6 +135,12 @@ if (discord) {
     webUrl: env.WEB_URL,
   };
 
+  meetingsApi = {
+    meetings: discord.meetings,
+    participations,
+    webUrl: env.WEB_URL,
+  };
+
   adminApi = {
     settings: new SettingsService({
       settings,
@@ -144,6 +159,7 @@ const app = createApp(env, logger, {
   ...(roomsApi ? { rooms: roomsApi } : {}),
   ...(moderationApi ? { moderation: moderationApi } : {}),
   ...(adminApi ? { admin: adminApi } : {}),
+  ...(meetingsApi ? { meetings: meetingsApi } : {}),
 });
 const server = createServer(app);
 
@@ -173,6 +189,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     logger.info(`${sig} recebido, encerrando`);
     void (async () => {
+      discord?.meetingScheduler.stop();
       await sockets?.close();
       await discord?.bot.stop();
       await new Promise<void>((resolve) => server.close(() => resolve()));

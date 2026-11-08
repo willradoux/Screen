@@ -21,6 +21,8 @@ export interface BotDeps {
   router: CommandRouter;
   settings: SettingsRepo;
   logger: Logger;
+  /** Chamado quando o bot já está conectado e reconciliado (ex.: ligar o agendador). */
+  onReady?: () => void;
 }
 
 /** Liga o discord.js às regras de negócio. Sem lógica própria. */
@@ -90,6 +92,7 @@ export class DiscordBot {
       logger.error({ err }, 'falha ao registrar comandos (o bot está no servidor certo?)');
     }
     await this.reconcile();
+    this.deps.onReady?.();
   }
 
   private async reconcile(): Promise<void> {

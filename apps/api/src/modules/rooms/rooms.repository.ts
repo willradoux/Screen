@@ -168,6 +168,45 @@ export function createRoomRepo(): RoomRepo {
       return doc ? toRecord(doc as Doc) : null;
     },
 
+    async updateSchedule(id, input) {
+      const current = await RoomModel.findOne({ _id: id, status: 'SCHEDULED' }).lean();
+      if (!current) return null;
+      const startsAt = input.startsAt ?? current.startsAt;
+      if (!startsAt) return null;
+      const wanted = input.reminders ?? (current.reminders ?? []).map((r) => r.minutesBefore ?? 0);
+      const minutesAway = (startsAt.getTime() - input.now.getTime()) / 60_000;
+      const reminders = [...new Set(wanted)]
+        .filter((m) => m > 0 && m < minutesAway)
+        .sort((a, b) => b - a)
+        .map((minutesBefore) => ({ minutesBefore, sentAt: null }));
+      const doc = await RoomModel.findOneAndUpdate(
+        { _id: id, status: 'SCHEDULED' },
+        { $set: { startsAt, reminders } },
+        { new: true, lean: true },
+      );
+      return doc ? toRecord(doc as Doc) : null;
+    },
+
+    async claimReminder(id, minutesBefore, at) {
+      const res = await RoomModel.updateOne(
+        {
+          _id: id,
+          status: 'SCHEDULED',
+          reminders: { $elemMatch: { minutesBefore, sentAt: null } },
+        },
+        { $set: { 'reminders.$.sentAt': at } },
+      );
+      return res.modifiedCount === 1;
+    },
+
+    async releaseReminder(id, minutesBefore) {
+      await RoomModel.updateOne(
+        { _id: id },
+        { $set: { 'reminders.$[r].sentAt': null } },
+        { arrayFilters: [{ 'r.minutesBefore': minutesBefore }] },
+      );
+    },
+
     async updateSpeakers(id, action, userId) {
       const op =
         action === 'add'

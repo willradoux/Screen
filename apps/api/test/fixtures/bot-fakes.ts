@@ -12,6 +12,9 @@ import type {
 } from '../../src/discord/gateway.js';
 import { LiveVoiceHandler } from '../../src/discord/live-handler.js';
 import { AuditService } from '../../src/modules/audit/audit.service.js';
+import { buildReport, summarize } from '../../src/modules/meetings/report.js';
+import { MeetingService } from '../../src/modules/meetings/meetings.service.js';
+import { MeetingScheduler } from '../../src/modules/meetings/scheduler.js';
 import { RoleResolver } from '../../src/modules/permissions/role-resolver.js';
 import { VoiceCache } from '../../src/discord/voice-cache.js';
 import { RoomAnnouncer } from '../../src/modules/rooms/announcer.js';
@@ -20,6 +23,7 @@ import type { NewMeeting, RoomRecord, RoomRepo } from '../../src/modules/rooms/r
 import type { Scheduler } from '../../src/shared/scheduler.js';
 import { createLogger } from '../../src/shared/logger.js';
 import { MemoryAuditRepo } from './audit-fake.js';
+import { MemoryParticipations } from './participations-fake.js';
 import { ADMIN_ROLE, FakeClock, GUILD_ID, MOD_ROLE, MemorySettings } from './fakes.js';
 
 export const CATEGORY = '500000000000000001';
@@ -246,6 +250,31 @@ export class MemoryRooms implements RoomRepo {
         : r.speakerIds.filter((s) => s !== userId);
     return structuredClone(r);
   }
+  async updateSchedule(id: string, input: { startsAt?: Date; reminders?: number[]; now: Date }) {
+    const r = this.rooms.get(id);
+    if (!r || r.status !== 'SCHEDULED') return null;
+    const startsAt = input.startsAt ?? r.startsAt;
+    if (!startsAt) return null;
+    const wanted = input.reminders ?? r.reminders.map((x) => x.minutesBefore);
+    const away = (startsAt.getTime() - input.now.getTime()) / 60_000;
+    r.startsAt = startsAt;
+    r.reminders = [...new Set(wanted)]
+      .filter((m) => m > 0 && m < away)
+      .sort((a, b) => b - a)
+      .map((minutesBefore) => ({ minutesBefore, sentAt: null }));
+    return structuredClone(r);
+  }
+  async claimReminder(id: string, minutesBefore: number, at: Date) {
+    const r = this.rooms.get(id);
+    const rem = r?.reminders.find((x) => x.minutesBefore === minutesBefore && x.sentAt === null);
+    if (!r || r.status !== 'SCHEDULED' || !rem) return false;
+    rem.sentAt = at;
+    return true;
+  }
+  async releaseReminder(id: string, minutesBefore: number) {
+    const rem = this.rooms.get(id)?.reminders.find((x) => x.minutesBefore === minutesBefore);
+    if (rem) rem.sentAt = null;
+  }
   async setAnnouncement(id: string, channelId: string, messageId: string) {
     const r = this.rooms.get(id);
     if (r) {
@@ -278,6 +307,7 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
   const settings = new MemorySettings();
   const rooms = new MemoryRooms();
   const cache = new VoiceCache();
+  const participations = new MemoryParticipations();
   const auditRepo = new MemoryAuditRepo();
   const audit = new AuditService({ repo: auditRepo, logger, now: clock.now });
 
@@ -300,8 +330,35 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
     webUrl: WEB_URL,
     mentionRoleId: opts.mentionRoleId,
     countParticipants: (room) => (room.voiceChannelId ? cache.count(room.voiceChannelId) : 0),
+    summary: async (room) =>
+      summarize(buildReport(room, await participations.listAll(room.id), clock.now())),
   });
   const roomService = new RoomService({ rooms, announcer, logger, now: clock.now });
+  const meetings = new MeetingService({
+    rooms,
+    roomService,
+    announcer,
+    settings,
+    gateway,
+    participations,
+    audit,
+    logger,
+    guildId: GUILD_ID,
+    now: clock.now,
+  });
+  const meetingScheduler = new MeetingScheduler({
+    rooms,
+    roomService,
+    announcer,
+    participations,
+    audit,
+    scheduler,
+    logger,
+    guildId: GUILD_ID,
+    intervalMs: 15_000,
+    emptyEndMinutes: 15,
+    now: clock.now,
+  });
   const live = new LiveVoiceHandler({
     gateway,
     settings,
@@ -320,13 +377,10 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
     config: new ConfigHandler({ settings, gateway, audit, guildId: GUILD_ID }),
     meetings: new MeetingHandler({
       rooms,
-      roomService,
-      settings,
-      audit,
+      meetings,
       guildId: GUILD_ID,
       webUrl: WEB_URL,
       timezone: opts.timezone ?? 'America/Sao_Paulo',
-      now: clock.now,
     }),
     logger,
   });
@@ -352,6 +406,9 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
     audit,
     auditRepo,
     roles,
+    participations,
+    meetings,
+    meetingScheduler,
     configureLives,
   };
 }

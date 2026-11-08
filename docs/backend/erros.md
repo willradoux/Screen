@@ -96,8 +96,9 @@ Erros do handshake chegam em `connect_error.message`; erros de comandos, no ack 
 ### Reuniões e configuração
 | Código | HTTP | Descrição |
 |---|---|---|
-| `STARTS_AT_IN_PAST` | 400 | |
-| `MEETING_NOT_EDITABLE` | 409 | Só `SCHEDULED` pode ser editada |
+| `STARTS_AT_IN_PAST` | 400 | O horário precisa estar pelo menos 2 minutos no futuro |
+| `MEETING_NOT_EDITABLE` | 409 | Só reunião `SCHEDULED` pode ser editada, reagendada, aberta antes da hora ou cancelada |
+| `REPORT_NOT_AVAILABLE` | 409 | O relatório só existe depois que a reunião termina |
 | `ANNOUNCE_CHANNEL_NOT_SET` | 409 | Configure o canal de avisos |
 | `INVALID_DISCORD_REFERENCE` | 400 | Canal/cargo informado não existe na guilda |
 

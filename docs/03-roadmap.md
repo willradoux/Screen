@@ -81,12 +81,12 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 7 - Reuniões
 
-- [ ] Criação imediata e agendada, com título e descrição.
-- [ ] Aviso no canal de avisos com embed e botão.
-- [ ] Lembretes programados (24h, 1h, 5min).
-- [ ] Abertura automática no horário.
-- [ ] Lista de presença e resumo ao final.
-- [ ] Reagendar e cancelar.
+- [x] Criação imediata e agendada, com título e descrição (comando `/reuniao` e `POST /meetings`, mesmo serviço).
+- [x] Aviso no canal de avisos com embed e botão.
+- [x] Lembretes programados (24 h, 1 h e 5 min por padrão, ou personalizados): envio atômico sem duplicar, nova tentativa se falhar, descarte dos atrasados.
+- [x] Abertura automática no horário (e antes da hora, por `POST /meetings/:id/open`).
+- [x] Lista de presença e resumo ao final (`GET /meetings/:id/report` e resumo no embed). Reunião vazia por 15 min é encerrada.
+- [x] Reagendar (`/reuniao reagendar`, `PATCH /meetings/:id`) e cancelar.
 
 **Aceite:** reunião agendada abre sozinha no horário e avisa no canal.
 
