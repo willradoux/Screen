@@ -11,6 +11,7 @@ import { toParticipantDto, toRoomDto } from '../modules/rooms/dto.js';
 import type { ParticipationRepo } from '../modules/rooms/participations.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import { AppError } from '../shared/errors.js';
+import { metrics } from '../observability/metrics.js';
 import type { Logger } from '../shared/logger.js';
 import type { RealtimeEmitter } from './emitter.js';
 
@@ -34,6 +35,8 @@ type Ack = (response: unknown) => void;
 
 const MAX_SOCKETS_PER_USER = 3;
 const MAX_PAYLOAD_BYTES = 16 * 1024;
+/** Assinaturas de sala por socket: cada uma consulta o banco, então têm teto. */
+const SUBSCRIBES_PER_MINUTE = 30;
 const roomPayload = z.object({ roomId: z.string().regex(/^[\w-]{22}$/) });
 
 const fail = (code: string, message: string) => ({ ok: false, error: { code, message } });
@@ -55,6 +58,13 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
     path: '/socket.io',
     cors: { origin: env.corsOrigins, credentials: true },
     maxHttpBufferSize: MAX_PAYLOAD_BYTES,
+    // WebSocket não passa pelo CORS do navegador: sem isto, qualquer site poderia abrir uma
+    // conexão em nome de quem está logado. Navegadores sempre mandam `Origin`; clientes
+    // que não são navegadores não carregam cookie de ninguém, então sem `Origin` passa.
+    allowRequest: (req, callback) => {
+      const origin = req.headers.origin;
+      callback(null, !origin || env.corsOrigins.includes(origin));
+    },
   });
 
   const connections = new Map<string, number>();
@@ -81,10 +91,13 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
   io.on('connection', (socket) => {
     const { userId, role } = data(socket);
     connections.set(userId, (connections.get(userId) ?? 0) + 1);
+    metrics.socketConnections.inc();
+    const subscribeTimes: number[] = [];
     void socket.join(`user:${userId}`);
     if (role === 'ADMIN') void socket.join('admins');
 
     socket.on('disconnect', () => {
+      metrics.socketConnections.dec();
       const left = (connections.get(userId) ?? 1) - 1;
       if (left <= 0) connections.delete(userId);
       else connections.set(userId, left);
@@ -94,6 +107,14 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
     socket.on('room:subscribe', async (payload: unknown, ack?: Ack) => {
       const reply = typeof ack === 'function' ? ack : () => undefined;
       try {
+        const now = Date.now();
+        while (subscribeTimes.length > 0 && now - subscribeTimes[0]! > 60_000)
+          subscribeTimes.shift();
+        if (subscribeTimes.length >= SUBSCRIBES_PER_MINUTE) {
+          return reply(fail('RATE_LIMITED', 'Muitas tentativas. Aguarde um instante.'));
+        }
+        subscribeTimes.push(now);
+
         const parsed = roomPayload.safeParse(payload);
         if (!parsed.success) return reply(fail('VALIDATION_ERROR', 'roomId inválido.'));
 

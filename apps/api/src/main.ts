@@ -21,6 +21,7 @@ import type { RoomsApi } from './modules/rooms/rooms.routes.js';
 import { createSettingsRepo } from './modules/settings/settings.repository.js';
 import type { AdminApi } from './modules/settings/settings.routes.js';
 import { SettingsService } from './modules/settings/settings.service.js';
+import { refreshGauges, startMetricsServer } from './observability/metrics.js';
 import { LateBoundEmitter } from './realtime/emitter.js';
 import { createSocketServer, type SocketServer } from './realtime/socket.js';
 import { createLogger } from './shared/logger.js';
@@ -178,6 +179,22 @@ if (access) {
 
 server.listen(env.PORT, () => logger.info(`API ouvindo na porta ${env.PORT}`));
 
+// Métricas numa porta interna (o compose não a publica); só liga se METRICS_PORT > 0.
+const metricsServer =
+  env.METRICS_PORT > 0
+    ? startMetricsServer(
+        env.METRICS_PORT,
+        () =>
+          refreshGauges({
+            openLiveCount: async () => (await rooms.listOpenLive(env.DISCORD_GUILD_ID)).length,
+            openMeetingCount: async () =>
+              (await rooms.listMeetings(env.DISCORD_GUILD_ID, ['OPEN'])).length,
+            connectedParticipants: () => participations.countAllOpen(),
+          }),
+        logger,
+      )
+    : null;
+
 if (discord) {
   discord.bot.start().catch((err) => {
     logger.fatal({ err }, 'Falha ao iniciar o bot do Discord');
@@ -190,6 +207,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     logger.info(`${sig} recebido, encerrando`);
     void (async () => {
       discord?.meetingScheduler.stop();
+      metricsServer?.close();
       await sockets?.close();
       await discord?.bot.stop();
       await new Promise<void>((resolve) => server.close(() => resolve()));

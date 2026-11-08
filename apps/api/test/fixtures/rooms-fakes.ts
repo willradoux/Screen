@@ -303,11 +303,15 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
 
 export type RoomsCtx = ReturnType<typeof buildRoomsApp>;
 
-export function connectSocket(url: string, cookie: string): Socket {
+export function connectSocket(
+  url: string,
+  cookie: string,
+  headers: Record<string, string> = {},
+): Socket {
   return connectClient(url, {
     path: '/socket.io',
     transports: ['websocket'],
-    extraHeaders: { cookie },
+    extraHeaders: { cookie, ...headers },
     forceNew: true,
     reconnection: false,
   });

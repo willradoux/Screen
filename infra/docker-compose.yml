@@ -36,6 +36,10 @@ services:
       LIVEKIT_PUBLIC_URL: wss://${LIVE_DOMAIN}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      # Atrás do Caddy: sem isto o limite de requisições enxerga só o IP do proxy e todo mundo divide o mesmo limite.
+      TRUST_PROXY: '1'
+      # Métricas Prometheus em porta interna. NÃO há `ports:` aqui de propósito: só a rede do Docker alcança.
+      METRICS_PORT: '9100'
     depends_on:
       mongo: { condition: service_healthy }
       livekit: { condition: service_started }
@@ -114,6 +118,22 @@ services:
       - --denied-peer-ip=192.168.0.0-192.168.255.255
     logging: *logging
 
+  # Opcional: docker compose --profile monitoring up -d
+  # Sem porta publicada; para ver a interface use um túnel SSH (veja docs/infra/README.md).
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    networks: [internal]
+    logging: *logging
+
   caddy:
     image: caddy:2
     restart: unless-stopped
@@ -138,3 +158,4 @@ volumes:
   mongo_data: {}
   caddy_data: {}
   caddy_config: {}
+  prometheus_data: {}

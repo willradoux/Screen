@@ -104,12 +104,12 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 9 - Qualidade e endurecimento
 
-- [ ] Testes e2e do fluxo principal.
-- [ ] Testes de carga (25 participantes, 5 publicando).
-- [ ] Revisão de segurança ([seguranca.md](backend/seguranca.md)).
-- [ ] Métricas (Prometheus) e dashboards.
-- [ ] Backups do MongoDB.
-- [ ] Documentação revisada.
+- [x] Testes e2e do fluxo principal (`apps/api/test/db/e2e.test.ts`: MongoDB real, serviços reais; Discord/LiveKit falsos). Roteiro com o Discord e o LiveKit reais em `docs/infra/teste-real.md` (a executar).
+- [ ] Testes de carga (25 participantes, 5 publicando): plano e comandos prontos em `docs/infra/teste-de-carga.md`; **falta executar** na VPS.
+- [x] Revisão de segurança ([seguranca.md](backend/seguranca.md#revisão-de-segurança-fase-9)): 7 problemas corrigidos, riscos aceitos documentados.
+- [x] Métricas Prometheus em porta interna e alertas prontos. Dashboards (Grafana) não foram criados.
+- [ ] Backups do MongoDB: scripts prontos; **falta testar a restauração** (roteiro em `docs/infra/README.md`).
+- [x] Documentação revisada (índice, testes, segurança, infra e frontend em dia).
 
 **Aceite:** checklist de segurança fechado; piloto com a comunidade sem incidentes críticos.
 

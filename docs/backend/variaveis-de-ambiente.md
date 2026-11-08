@@ -15,7 +15,8 @@ Arquivo de exemplo: `apps/api/.env.example`. Nunca commitar `.env`.
 | `CORS_ORIGINS` | não | `https://app.exemplo.com` | Lista separada por vírgula; padrão `WEB_URL` |
 | `LOG_LEVEL` | não | `info` | `debug`, `info`, `warn`, `error` |
 | `TIMEZONE` | não | `America/Sao_Paulo` | Fuso dos comandos |
-| `TRUST_PROXY` | não | `1` | Número de proxies confiáveis (para IP real) |
+| `TRUST_PROXY` | não | `1` | Número de proxies confiáveis na frente da API. **Em produção atrás do Caddy use `1`** (o compose já define). Com `0`, o limite de requisições enxerga só o IP do proxy. Se a Cloudflare também estiver na frente, use `2` |
+| `METRICS_PORT` | não | `9100` | Porta **interna** das métricas Prometheus (`0` = desligado). Nunca publique esta porta |
 
 ## Banco
 

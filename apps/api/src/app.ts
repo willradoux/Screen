@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
+import { stdSerializers } from 'pino';
 import { pinoHttp } from 'pino-http';
 import type { Env } from './config/env.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
@@ -13,11 +14,14 @@ import { meetingsRoutes, type MeetingsApi } from './modules/meetings/meetings.ro
 import { moderationRoutes, type ModerationApi } from './modules/moderation/moderation.routes.js';
 import { roomsRoutes, WEBHOOK_PATH, type RoomsApi } from './modules/rooms/rooms.routes.js';
 import { adminRoutes, type AdminApi } from './modules/settings/settings.routes.js';
+import { httpMetrics, mountPoint } from './observability/metrics.js';
 import { healthRoutes, type ReadinessChecks } from './modules/health/health.routes.js';
 import { errorHandler } from './shared/error-handler.js';
 import { AppError } from './shared/errors.js';
 import { originCheck } from './shared/origin-check.js';
 import type { Logger } from './shared/logger.js';
+
+const REQUEST_ID = /^[\w.-]{1,64}$/;
 
 export interface AppDeps {
   /** Verificações usadas por GET /ready (ex.: { mongo: pingDb }). */
@@ -43,12 +47,27 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
     pinoHttp({
       logger,
       genReqId: (req, res) => {
-        const id = (req.headers['x-request-id'] as string | undefined) ?? randomUUID().slice(0, 8);
+        // O id vem do cliente (ou de um proxy): só vale se tiver cara de id, senão geramos outro.
+        const given = req.headers['x-request-id'];
+        const id =
+          typeof given === 'string' && REQUEST_ID.test(given) ? given : randomUUID().slice(0, 8);
         res.setHeader('X-Request-Id', id);
         return id;
       },
+      serializers: {
+        // Nunca registra a query: no retorno do Discord ela traz o `code` do OAuth.
+        req: (req) => {
+          const out: Record<string, unknown> = { ...stdSerializers.req(req) };
+          if (typeof out.url === 'string') out.url = out.url.split('?')[0];
+          // `query` repete a query string já separada, inclusive o `code` do OAuth.
+          delete out.query;
+          delete out.params;
+          return out;
+        },
+      },
     }),
   );
+  app.use(httpMetrics());
   app.use(
     helmet({
       contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
@@ -74,6 +93,7 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   );
 
   const api = express.Router();
+  api.use(mountPoint);
   // O webhook é servidor-a-servidor: não tem Origin e é validado pela assinatura.
   api.use(originCheck(env.corsOrigins, [WEBHOOK_PATH]));
   if (deps.auth) api.use(sessionLoader(deps.auth, env));

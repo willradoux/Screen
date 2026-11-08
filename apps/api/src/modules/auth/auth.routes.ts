@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import type { Env } from '../../config/env.js';
+import { metrics } from '../../observability/metrics.js';
 import { AppError } from '../../shared/errors.js';
 import { getValidated, validate } from '../../shared/validate.js';
 import {
@@ -63,10 +64,12 @@ export function authRoutes(service: AuthService, env: Env): Router {
         stateCookie,
         meta: { ip: req.ip ?? null, userAgent: req.headers['user-agent'] ?? null },
       });
+      metrics.logins.inc({ result: 'ok' });
       res.cookie(SESSION_COOKIE, sessionId, sessionCookieOptions(env, service.sessionTtlMs));
       return res.redirect(302, new URL(redirect, env.WEB_URL).toString());
     } catch (err) {
       if (err instanceof AppError) {
+        metrics.logins.inc({ result: err.code });
         req.log.warn({ code: err.code }, 'falha no login');
         return res.redirect(302, loginError(err.code));
       }

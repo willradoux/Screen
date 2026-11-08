@@ -69,6 +69,10 @@ export class MemoryParticipations implements ParticipationRepo {
     return this.rows.filter((r) => r.roomId === roomId && !r.leftAt).length;
   }
 
+  async countAllOpen() {
+    return this.rows.filter((r) => !r.leftAt).length;
+  }
+
   async listAll(roomId: string) {
     return this.rows
       .filter((r) => r.roomId === roomId)

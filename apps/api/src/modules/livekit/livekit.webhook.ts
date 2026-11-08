@@ -5,6 +5,7 @@ import type { Logger } from '../../shared/logger.js';
 import type { ParticipationRepo } from '../rooms/participations.js';
 import type { PresenceService } from '../rooms/presence.js';
 import type { RoomRepo } from '../rooms/rooms.types.js';
+import { metrics } from '../../observability/metrics.js';
 import type { LiveKitEvent, LiveKitGateway } from './livekit.gateway.js';
 
 export interface WebhookDeps {
@@ -47,6 +48,7 @@ export class LiveKitWebhookHandler {
   /** Lança `InvalidWebhookError` se a assinatura for inválida. */
   async handle(rawBody: string, authHeader: string | undefined): Promise<void> {
     const event = await this.deps.livekit.verifyWebhook(rawBody, authHeader);
+    metrics.webhookEvents.inc({ event: event.event });
     switch (event.event) {
       case 'participant_joined':
         return this.onJoined(event);

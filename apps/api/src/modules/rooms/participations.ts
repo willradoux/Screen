@@ -40,6 +40,8 @@ export interface ParticipationRepo {
   findOpen(roomId: string, userId: string): Promise<Participation | null>;
   listOpen(roomId: string): Promise<Participation[]>;
   countOpen(roomId: string): Promise<number>;
+  /** Pessoas conectadas em todas as salas (para as métricas). */
+  countAllOpen(): Promise<number>;
   /** Todas as participações (abertas e fechadas), da mais antiga para a mais nova. */
   listAll(roomId: string): Promise<Participation[]>;
   /** Último momento em que alguém entrou ou saiu. `null` se nunca houve ninguém. */
@@ -183,6 +185,8 @@ export function createParticipationRepo(): ParticipationRepo {
     },
 
     countOpen: (roomId) => ParticipationModel.countDocuments({ roomId, leftAt: null }),
+
+    countAllOpen: () => ParticipationModel.countDocuments({ leftAt: null }),
 
     async listAll(roomId) {
       const docs = await ParticipationModel.find({ roomId }).sort({ joinedAt: 1 }).lean();

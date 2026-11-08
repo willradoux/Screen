@@ -117,10 +117,50 @@ Reiniciar a API derruba os sockets (o cliente reconecta sozinho), mas **não** d
 
 - Logs: `docker compose ... logs -f api` (JSON do pino). Rotação já configurada: 10 MB x 5 arquivos por serviço.
 - Healthcheck do `mongo` e da `api` no compose.
-- Métricas Prometheus (`/metrics`, LiveKit `prometheus_port`): [planejado].
-- Alertas mínimos: `/health` falhando, disco acima de 80%, CPU acima de 85% por 5 min.
+### Métricas (Prometheus)
+
+A API expõe métricas em **`METRICS_PORT`** (o compose usa `9100`), numa porta **separada e interna**: o compose não publica essa porta e o Caddy não a encaminha, então só quem está na rede do Docker alcança. Nunca publique essa porta nem a coloque atrás do proxy público.
+
+Subir com o Prometheus (opcional, perfil `monitoring`):
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file infra/.env --profile monitoring up -d prometheus
+# interface em http://localhost:9090 por túnel SSH (a porta não é publicada):
+ssh -L 9090:$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' screem-prometheus-1):9090 usuario@vps
+```
+
+O que existe (todas com prefixo `screem_`):
+
+| Métrica | Tipo | O que mostra |
+|---|---|---|
+| `http_requests_total{method,route,status}` | contador | Requisições por rota (padrão, ex.: `/api/v1/rooms/:id`, nunca o caminho real) e status |
+| `http_request_duration_seconds{method,route}` | histograma | Duração das requisições |
+| `logins_total{result}` | contador | `ok` ou o código da falha (`NOT_IN_GUILD`, `INVALID_STATE`...) |
+| `livekit_webhook_events_total{event}` | contador | Eventos recebidos do LiveKit (só os com assinatura válida) |
+| `audit_actions_total{action}` | contador | Ações de moderação, reuniões e configurações |
+| `scheduler_actions_total{kind}` | contador | `opened`, `reminded`, `ended` pelo agendador |
+| `socket_connections` | medidor | Conexões Socket.IO abertas |
+| `rooms_open{type}` | medidor | Salas abertas (`LIVE`, `MEETING`) |
+| `participants_connected` | medidor | Pessoas conectadas às salas |
+| `bot_ready` | medidor | `1` se o bot está conectado ao Discord |
+| `process_*`, `nodejs_*` | padrão | CPU, memória, event loop, GC |
+
+As métricas não carregam dados pessoais: nenhum rótulo é ID de usuário, nome ou token (há teste para isso). `rooms_open` e `participants_connected` vêm do banco e são atualizados a cada leitura de `/metrics`.
+
+Alertas prontos em [`infra/prometheus/alerts.yml`](../../infra/prometheus/alerts.yml): API fora do ar, bot desconectado, mais de 5% de erros 5xx, LiveKit sem enviar eventos com gente na sala, pico de falhas de login, event loop lento e memória alta. **Os limites são chutes iniciais**: ajuste depois de ver o uso real. Para o LiveKit, ative `prometheus_port` no `livekit.yaml` e descomente o job em `infra/prometheus/prometheus.yml`.
+
+Faltam alertas de disco e CPU **da VPS**; eles vêm do `node_exporter` ou do painel da hospedagem, não da aplicação.
 
 ## Backup e restauração
+
+> **Teste a restauração antes de precisar dela.** Um backup que nunca foi restaurado é uma esperança, não um backup. Procedimento (leva 5 minutos, numa máquina com Docker):
+>
+> 1. `bash infra/scripts/backup.sh` e confira que `screem-AAAA-MM-DD.gz` foi criado e não está vazio.
+> 2. Num ambiente **de teste** (nunca na produção): suba um MongoDB limpo e rode `bash infra/scripts/restore.sh <arquivo>`.
+> 3. Confira os números: `docker compose exec mongo mongosh -u ... --eval 'db.getSiblingDB("screem").rooms.countDocuments()'` e `audit_logs`, `users`.
+> 4. Anote a data do teste abaixo.
+>
+> Último teste de restauração: _nunca executado_.
 
 ```bash
 # cron diário às 03:00
@@ -145,7 +185,7 @@ LiveKit em modo dev usa as chaves `devkey` / `secret`. Para parar: `docker compo
 
 ## Dimensionamento
 
-Mídia consome sobretudo **banda de saída** e CPU. Medir no piloto ([03-roadmap.md](../03-roadmap.md), Fase 9) e registrar aqui.
+Mídia consome sobretudo **banda de saída** e CPU. O roteiro de medição está em [teste-de-carga.md](teste-de-carga.md); registre os números aqui. Para testar tudo com o Discord de verdade antes da VPS, siga [teste-real.md](teste-real.md).
 
 | Medição | Resultado |
 |---|---|

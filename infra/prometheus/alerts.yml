@@ -1,0 +1,56 @@
+# Alertas mínimos do Screem. Ajuste os limites depois de medir o uso real (docs/infra/README.md).
+groups:
+  - name: screem
+    rules:
+      - alert: ApiForaDoAr
+        expr: up{job="screem-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: 'A API não responde às métricas há 2 minutos'
+
+      - alert: BotDesconectado
+        expr: screem_bot_ready == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: 'O bot do Discord está desconectado há 5 minutos (lives e avisos param)'
+
+      - alert: ErrosDoServidor
+        expr: |
+          sum(rate(screem_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(screem_http_requests_total[5m])), 1) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Mais de 5% das requisições estão falhando (5xx) há 10 minutos'
+
+      - alert: LiveKitSemEventos
+        # Há gente nas salas mas o LiveKit parou de avisar: webhook quebrado ou LiveKit fora.
+        expr: |
+          screem_participants_connected > 0
+            and sum(increase(screem_livekit_webhook_events_total[15m])) == 0
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Há participantes, mas nenhum webhook do LiveKit chegou em 15 minutos'
+
+      - alert: PicoDeFalhasDeLogin
+        expr: sum(increase(screem_logins_total{result!="ok"}[10m])) > 20
+        labels: { severity: warning }
+        annotations:
+          summary: 'Muitas falhas de login em 10 minutos (Discord instável ou tentativa de abuso)'
+
+      - alert: EventLoopLento
+        expr: screem_nodejs_eventloop_lag_p99_seconds > 0.5
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: 'O servidor está lento (event loop atrasado em mais de 500 ms)'
+
+      - alert: MemoriaAlta
+        expr: screem_process_resident_memory_bytes > 800 * 1024 * 1024
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: 'A API está usando mais de 800 MB de memória'

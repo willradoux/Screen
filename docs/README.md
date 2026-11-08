@@ -16,6 +16,8 @@ Screem é uma plataforma open-source de transmissão de tela, câmera e microfon
 | [Backend](backend/README.md) | Índice da documentação do backend |
 | [Frontend](frontend/README.md) | Contrato do frontend e como trocá-lo |
 | [Infra](infra/README.md) | Deploy, Docker, LiveKit, Coturn, observabilidade |
+| [Teste real](infra/teste-real.md) | Roteiro passo a passo para testar com o Discord e o LiveKit de verdade |
+| [Teste de carga](infra/teste-de-carga.md) | Plano e comandos para medir a capacidade (ainda não executado) |
 
 ## Documentação do backend (a mais importante)
 

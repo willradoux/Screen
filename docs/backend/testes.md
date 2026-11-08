@@ -19,6 +19,18 @@
 3. **Contrato**: o `openapi.json` gerado é comparado com o commitado; divergência quebra o CI.
 4. **E2E**: poucos cenários críticos.
 
+## Camadas que existem hoje
+
+| Pasta | O que cobre | Banco |
+|---|---|---|
+| `test/unit` | Funções puras: permissões, relatório, datas, LiveKit (SDK real), embeds | – |
+| `test/integration` | Rotas, bot, moderação, reuniões, Socket.IO, segurança e métricas, com Discord e LiveKit falsos | memória |
+| `test/db` | Repositórios e **fluxos completos (`e2e.test.ts`)** contra um MongoDB **real** em memória | MongoDB real |
+
+O `e2e.test.ts` monta o sistema inteiro com os serviços de verdade e conta o dia de uso: canal de voz → embed → login → join → webhook → silenciar → sair da call → fim da live, e agendar → lembretes → abrir sozinha → entrar → encerrar → relatório. Só o Discord, o LiveKit e o relógio são dublês.
+
+**O que os testes automáticos NÃO provam:** o comportamento do Discord real (permissões do bot, limites de taxa), o LiveKit de verdade (mídia, TURN, NAT), câmera/microfone/tela em navegadores reais e a carga. Para isso: [../infra/teste-real.md](../infra/teste-real.md) e [../infra/teste-de-carga.md](../infra/teste-de-carga.md).
+
 ## Cenários obrigatórios
 
 ### Autenticação

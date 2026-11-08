@@ -1,3 +1,4 @@
+import { metrics } from '../../observability/metrics.js';
 import type { Logger } from '../../shared/logger.js';
 import type { Scheduler } from '../../shared/scheduler.js';
 import type { AuditLog } from '../audit/audit.service.js';
@@ -95,6 +96,9 @@ export class MeetingScheduler {
     } finally {
       this.running = false;
     }
+    metrics.schedulerActions.inc({ kind: 'opened' }, result.opened);
+    metrics.schedulerActions.inc({ kind: 'reminded' }, result.reminded);
+    metrics.schedulerActions.inc({ kind: 'ended' }, result.ended);
     return result;
   }
 

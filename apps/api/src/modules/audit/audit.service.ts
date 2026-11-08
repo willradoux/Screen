@@ -1,4 +1,5 @@
 import { AuditLogModel } from '../../db/models.js';
+import { metrics } from '../../observability/metrics.js';
 import type { Logger } from '../../shared/logger.js';
 
 /** Ações auditadas. Catálogo em docs/backend/modelo-de-dados.md. */
@@ -84,6 +85,7 @@ export class AuditService implements AuditLog {
    * ação (já aconteceu), mas é registrada em log como erro para ser investigada.
    */
   async record(entry: AuditEntry): Promise<void> {
+    metrics.auditActions.inc({ action: entry.action });
     try {
       await this.deps.repo.insert({ ...entry, at: this.now() });
     } catch (err) {

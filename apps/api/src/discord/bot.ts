@@ -6,6 +6,7 @@ import {
   type Client,
   type Interaction,
 } from 'discord.js';
+import { metrics } from '../observability/metrics.js';
 import type { Logger } from '../shared/logger.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
 import { buildCommandDefinitions } from './commands/definitions.js';
@@ -38,7 +39,11 @@ export class DiscordBot {
     });
 
     // Reconexão do gateway: o que aconteceu enquanto estávamos fora não chegou como evento.
-    client.on(Events.ShardResume, () => void this.reconcile());
+    client.on(Events.ShardResume, () => {
+      metrics.botReady.set(1);
+      void this.reconcile();
+    });
+    client.on(Events.ShardDisconnect, () => metrics.botReady.set(0));
 
     client.on(Events.VoiceStateUpdate, (oldState, newState) => {
       if (newState.guild.id !== this.deps.guildId) return;
@@ -78,6 +83,7 @@ export class DiscordBot {
   }
 
   async stop(): Promise<void> {
+    metrics.botReady.set(0);
     await this.deps.client.destroy();
   }
 
@@ -92,6 +98,7 @@ export class DiscordBot {
       logger.error({ err }, 'falha ao registrar comandos (o bot está no servidor certo?)');
     }
     await this.reconcile();
+    metrics.botReady.set(1);
     this.deps.onReady?.();
   }
 
