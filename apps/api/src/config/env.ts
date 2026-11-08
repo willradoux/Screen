@@ -30,7 +30,7 @@ const schema = z.object({
   ADMIN_ROLE_IDS: z.string().optional(),
   /** Sem o token o bot não inicia (a API sobe normalmente). Obrigatório em produção. */
   DISCORD_BOT_TOKEN: optional(z.string().min(1)),
-  /** Cargo marcado nos avisos de reunião. Vazio = @everyone. */
+  /** Cargo marcado nos avisos de reunião. Vazio = não marca ninguém. */
   MEETING_MENTION_ROLE_ID: optional(snowflake),
 
   // Regras de negócio

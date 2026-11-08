@@ -319,7 +319,8 @@ describe('PATCH /meetings/:id', () => {
     expect(ctx.gateway.sent.map((s) => s.payload.embeds[0]!.title)).toEqual([
       '🔁 Reunião reagendada: Reunião mensal',
     ]);
-    expect(ctx.gateway.sent[0]!.payload.content).toBe('@everyone');
+    expect(ctx.gateway.sent[0]!.payload.content).toBeUndefined();
+    expect(ctx.gateway.sent[0]!.payload.allowed_mentions).toEqual({ parse: [] });
   });
 
   it('trocar só os lembretes não manda aviso novo', async () => {

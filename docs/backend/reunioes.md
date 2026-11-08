@@ -38,7 +38,7 @@ Efeitos: grava a reunião (`SCHEDULED`, ou `OPEN` se não houver `startsAt`), pu
 
 Os lembretes saem do `MeetingScheduler`, que verifica a cada `SCHEDULER_INTERVAL_SECONDS` (padrão 15 s) e logo ao iniciar.
 
-- Cada lembrete é uma **mensagem nova e curta** no canal de avisos: `⏰ Reunião em breve`, o horário em `<t:UNIX:R>` e o botão da sala. Marca o mesmo cargo (ou `@everyone`) do aviso original.
+- Cada lembrete é uma **mensagem nova e curta** no canal de avisos: `⏰ Reunião em breve`, o horário em `<t:UNIX:R>` e o botão da sala. Marca o mesmo cargo do aviso original (se não houver cargo configurado, não marca ninguém).
 - **Sem repetir:** antes de enviar, o lembrete é *reservado* no banco por uma operação atômica; só quem conseguiu reservar envia. Duas rodadas ao mesmo tempo, ou dois servidores, nunca duplicam.
 - **Se o envio falha**, a reserva é desfeita e a próxima rodada tenta de novo.
 - **Atrasados são descartados:** se o servidor ficou fora do ar e o lembrete venceu há mais de 10 minutos (ou a reunião já começou), ele é marcado como enviado e **não** é mandado. A abertura da reunião, ao contrário, nunca é descartada.
@@ -136,4 +136,4 @@ Como é calculado (`modules/meetings/report.ts`, função pura):
 |---|---|---|
 | `SCHEDULER_INTERVAL_SECONDS` | `15` | De quanto em quanto tempo o agendador verifica |
 | `EMPTY_MEETING_END_MINUTES` | `15` | Reunião aberta e vazia por tanto tempo é encerrada |
-| `MEETING_MENTION_ROLE_ID` | vazio | Cargo marcado nos avisos e lembretes (vazio = `@everyone`) |
+| `MEETING_MENTION_ROLE_ID` | vazio | Cargo marcado nos avisos e lembretes (vazio = não marca ninguém) |

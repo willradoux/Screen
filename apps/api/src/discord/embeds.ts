@@ -7,7 +7,7 @@ export interface EmbedContext {
   webUrl: string;
   /** Pessoas no canal de voz agora (só lives). */
   participants: number;
-  /** Cargo marcado no aviso de reunião; vazio = @everyone. */
+  /** Cargo marcado no aviso de reunião; vazio = não marca ninguém. */
   mentionRoleId?: string | undefined;
   /** Números da reunião encerrada (aparecem no embed final). */
   summary?: MeetingSummary | null | undefined;
@@ -122,13 +122,25 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
   );
 
   // A menção só vale na mensagem inicial; edições não notificam de novo.
-  const mention = ctx.mentionRoleId ? `<@&${ctx.mentionRoleId}>` : '@everyone';
+  const mention = mentionOf(ctx.mentionRoleId);
   return {
-    content: mention,
+    ...mention,
     embeds: [embed],
     components: linkButton(open ? 'Entrar na reunião' : 'Ver sala', url),
-    allowed_mentions: ctx.mentionRoleId ? { roles: [ctx.mentionRoleId] } : { parse: ['everyone'] },
   };
+}
+
+/**
+ * Menção do aviso. Com cargo configurado marca só esse cargo; sem cargo NÃO marca ninguém
+ * (nem @everyone, nem @here): sem `content` e com `allowed_mentions` vazio.
+ */
+function mentionOf(roleId: string | undefined): {
+  content?: string;
+  allowed_mentions: Record<string, unknown>;
+} {
+  return roleId
+    ? { content: `<@&${roleId}>`, allowed_mentions: { roles: [roleId] } }
+    : { allowed_mentions: { parse: [] } };
 }
 
 function summaryFields(summary: MeetingSummary | null | undefined): Record<string, unknown>[] {
@@ -166,7 +178,7 @@ export function buildMeetingNotice(
     };
   }
 
-  const mention = ctx.mentionRoleId ? `<@&${ctx.mentionRoleId}>` : '@everyone';
+  const mention = mentionOf(ctx.mentionRoleId);
   const embed =
     kind === 'reminder'
       ? {
@@ -184,9 +196,8 @@ export function buildMeetingNotice(
         };
 
   return {
-    content: mention,
+    ...mention,
     embeds: [embed],
     components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id)),
-    allowed_mentions: ctx.mentionRoleId ? { roles: [ctx.mentionRoleId] } : { parse: ['everyone'] },
   };
 }

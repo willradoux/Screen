@@ -199,7 +199,7 @@ describe('/config', () => {
 });
 
 describe('/reuniao criar', () => {
-  it('abre a reunião agora, avisa no canal com @everyone e botão', async () => {
+  it('abre a reunião agora, avisa no canal sem marcar ninguém e com botão', async () => {
     const b = buildBot();
     b.configureLives();
     const r = await b.router.handle(
@@ -214,14 +214,14 @@ describe('/reuniao criar', () => {
     expect(b.gateway.sent).toHaveLength(1);
     const msg = b.gateway.sent[0]!;
     expect(msg.channelId).toBe(ANNOUNCE);
-    expect(msg.payload.content).toBe('@everyone');
-    expect(msg.payload.allowed_mentions).toEqual({ parse: ['everyone'] });
+    expect(msg.payload.content).toBeUndefined();
+    expect(msg.payload.allowed_mentions).toEqual({ parse: [] });
     expect(msg.payload.embeds[0]!.title).toBe('🟢 Reunião aberta agora: Reunião mensal');
     expect(msg.payload.embeds[0]!.description).toBe('Pauta do mês');
     expect(JSON.stringify(msg.payload.components)).toContain(`${WEB_URL}/r/${room.id}`);
   });
 
-  it('usa o cargo configurado em vez de @everyone', async () => {
+  it('marca só o cargo configurado', async () => {
     const b = buildBot({ mentionRoleId: '650000000000000001' });
     b.configureLives();
     await b.router.handle(ADMIN, call('reuniao', 'criar', { titulo: 'Reunião mensal' }));

@@ -135,7 +135,7 @@ Título:  📅 Reunião: Reunião mensal de dezembro
 Corpo:   <descrição>
 Campos:  Quando: <t:1796511600:F> (<t:1796511600:R>) · Quem pode: todos os membros
 Botão:   [Entrar na reunião] -> https://app.exemplo.com/r/<roomId>
-Menção:  @everyone ou cargo (configurável por `MEETING_MENTION_ROLE_ID`); só na mensagem inicial, edições não notificam de novo
+Menção:  um cargo (`MEETING_MENTION_ROLE_ID`); se vazio, não marca ninguém (nem @everyone); só na mensagem inicial, edições não notificam de novo
 ```
 
 Quando a reunião abre: o mesmo aviso é editado para "🟢 Reunião aberta agora" e o botão fica ativo.

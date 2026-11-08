@@ -50,7 +50,7 @@ describe('lembretes', () => {
     expect(state(b, room.id).status).toBe('SCHEDULED'); // ainda não começou
   });
 
-  it('o lembrete vai para o canal de avisos, marca @everyone e leva o botão da sala', async () => {
+  it('o lembrete vai para o canal de avisos, não marca ninguém e leva o botão da sala', async () => {
     const b = buildBot();
     const room = await scheduled(b);
     b.clock.advance(2 * H);
@@ -58,13 +58,13 @@ describe('lembretes', () => {
 
     const sent = b.gateway.sent[0]!;
     expect(sent.channelId).toBe(ANNOUNCE);
-    expect(sent.payload.content).toBe('@everyone');
-    expect(sent.payload.allowed_mentions).toEqual({ parse: ['everyone'] });
+    expect(sent.payload.content).toBeUndefined();
+    expect(sent.payload.allowed_mentions).toEqual({ parse: [] });
     expect(sent.payload.embeds[0]!.description).toMatch(/^Começa <t:\d+:R>\.$/);
     expect(JSON.stringify(sent.payload.components)).toContain(`/r/${room.id}`);
   });
 
-  it('marca o cargo configurado, e não @everyone', async () => {
+  it('marca o cargo configurado', async () => {
     const b = buildBot({ mentionRoleId: '650000000000000001' });
     await scheduled(b);
     b.clock.advance(2 * H);
