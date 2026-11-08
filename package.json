@@ -16,9 +16,9 @@
     "build:shared": "npm run build -w @screem/shared",
     "build": "npm run build:shared && npm run build -w @screem/api && npm run build -w @screem/web",
     "dev:api": "npm run build:shared && npm run dev -w @screem/api",
-    "dev:web": "npm run dev -w @screem/web",
+    "dev:web": "npm run build:shared && npm run dev -w @screem/web",
     "typecheck": "npm run build:shared && npm run typecheck -w @screem/api && npm run typecheck -w @screem/web",
-    "test": "npm run build:shared && npm test -w @screem/api",
+    "test": "npm run build:shared && npm test -w @screem/api && npm test -w @screem/web",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -92,13 +92,13 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 8 - Frontend (primeira versão)
 
-- [ ] Login com Discord e tela de sala.
-- [ ] Controles: câmera, tela, microfone, dispositivos.
-- [ ] Grid de participantes, destaque de quem compartilha tela.
-- [ ] Painel de moderação.
-- [ ] Painel de reuniões.
-- [ ] Estados de erro (fora da call, sala encerrada, sem permissão).
-- [ ] Deploy na Vercel.
+- [x] Login com Discord e tela de sala (`/r/:roomId`, o link do bot).
+- [x] Controles: câmera, tela e microfone (seleção de dispositivos fica para depois; usa os padrões do navegador).
+- [x] Grid de participantes, destaque de quem compartilha tela e de quem está falando.
+- [x] Painel de moderação (silenciar, palestrante, expulsar, banir, modo palestra, encerrar).
+- [x] Painel de reuniões (criar, agendar, reagendar, abrir, cancelar, relatório), configurações e auditoria.
+- [x] Estados de erro (fora da call, sala encerrada, sem permissão, lotada, banido, removido, conexão perdida).
+- [ ] Deploy na Vercel (configuração e instruções prontas em `docs/frontend/README.md`; falta publicar).
 
 **Aceite:** fluxo completo UC1 a UC4 funciona em Chrome, Firefox e Safari.
 

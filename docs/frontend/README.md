@@ -1,93 +1,163 @@
 # Frontend
 
-Stack inicial: React, TypeScript, Vite, Tailwind CSS, hospedado na Vercel. **Este frontend é descartável**: o contrato com o backend está em [../backend/](../backend/README.md), e qualquer novo frontend (outro framework, app nativo) pode substituí-lo.
+Stack: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, `livekit-client` e `socket.io-client`. Hospedado na Vercel (`apps/web`).
 
-## Contrato mínimo que todo frontend precisa cumprir
+**Este frontend é descartável.** Tudo que ele sabe vem do contrato do backend ([backend/](../backend/README.md)); nada de regra de negócio mora aqui. A interface só esconde ou desabilita o que o servidor recusaria, e o servidor confere tudo de novo.
 
-1. **Login**: redirecionar o navegador para `GET {API}/auth/discord?redirect=/r/<id>`. Após o retorno, chamar `GET /auth/me`. Todas as chamadas com `credentials: 'include'`.
-2. **Rota de sala `/r/:roomId`** (os embeds do bot apontam para ela). Fluxo:
-   1. `GET /auth/me` -> se `401`, iniciar login.
-   2. `GET /rooms/:id/access` -> decidir a tela (`canJoin`, `reason`).
-   3. `POST /rooms/:id/join` -> receber `livekit.url` e `livekit.token`.
-   4. Conectar no LiveKit com `livekit-client` e abrir o socket (`room:subscribe`).
-3. **Tratar eventos** `room:ended`, `moderation:action`, `voice:warning` e `participant:*` ([eventos-socketio.md](../backend/eventos-socketio.md)).
-4. **Decidir por `error.code`**, nunca por texto ([erros.md](../backend/erros.md)).
-5. **Rota `/login`** que mostra `?error=<CODE>` (ex.: `NOT_IN_GUILD`).
+## Rodando
 
-## Telas necessárias
-
-| Tela | Rota sugerida | Dados |
-|---|---|---|
-| Login | `/login` | - |
-| Sala | `/r/:roomId` | `access`, `join`, LiveKit, Socket.IO |
-| Lista de salas | `/` | `GET /rooms` |
-| Reuniões | `/reunioes` | `GET /meetings` |
-| Admin: reuniões | `/admin/reunioes` | CRUD `/meetings` (ADMIN) |
-| Admin: configurações | `/admin/config` | `/settings` (ADMIN) |
-| Admin: auditoria | `/admin/auditoria` | `/audit` (ADMIN) |
-
-## Estados da tela de sala
-
-| Situação | Origem | O que mostrar |
-|---|---|---|
-| Não logado | `401` | Botão "Entrar com Discord" |
-| Fora da guilda | `NOT_IN_GUILD` | Convite para o servidor |
-| Fora da call | `access.reason = NOT_IN_VOICE` | Instrução: entre no canal `voiceChannelName`; recheque a cada 5 s |
-| Reunião não começou | `ROOM_NOT_OPEN` + `startsAt` | Contagem regressiva |
-| Sala lotada / banido / sem cargo | códigos correspondentes | Mensagem clara |
-| Conectado | `join` ok | Grid, controles, chat |
-| Removido | `moderation:action` KICKED/BANNED | Mensagem com motivo |
-| Encerrada | `room:ended` | Resumo e botão de voltar |
-| Aviso de saída da call | `voice:warning` | Contagem de `secondsLeft` |
-
-## Controles esperados
-
-- Ligar/desligar microfone, câmera e compartilhamento de tela.
-- Seleção de dispositivos; teste de microfone antes de entrar.
-- Indicador de quem está falando.
-- Destaque automático de quem compartilha tela.
-- Painel de moderação (visível se `permissions.canModerate`): mutar, expulsar, banir, promover.
-- Chat da sala.
-
-## Configuração do LiveKit no cliente
-
-```ts
-const room = new Room({
-  adaptiveStream: true,
-  dynacast: true,
-  publishDefaults: { simulcast: true, videoCodec: 'vp8', red: true, dtx: true },
-  videoCaptureDefaults: { resolution: VideoPresets.h720.resolution },
-});
-await room.connect(data.livekit.url, data.livekit.token);
+```bash
+npm run dev:api      # backend em :3000 (precisa do .env, veja docs/infra)
+npm run dev:web      # frontend em :5173 (compila o pacote shared antes)
+npm test -w @screem/web
 ```
 
-Mais detalhes em [livekit-webrtc.md](../backend/livekit-webrtc.md#qualidade-e-capacidade).
+Variáveis (`apps/web/.env`, só as com prefixo `VITE_` vão para o navegador; **nunca** coloque segredos):
 
-## Variáveis (Vite)
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:3000/api/v1` | Base da API REST |
+| `VITE_SOCKET_URL` | `http://localhost:3000` | Origem do Socket.IO |
 
-`VITE_API_URL`, `VITE_SOCKET_URL`. Veja [variaveis-de-ambiente.md](../backend/variaveis-de-ambiente.md).
+Em desenvolvimento, `localhost:5173` e `localhost:3000` são o mesmo *site* para cookies, então o login funciona sem configurar domínio. Em produção use subdomínios do mesmo domínio ([02-arquitetura.md](../02-arquitetura.md#domínios-e-cookies)).
+
+## Estrutura
+
+```
+apps/web/src/
+  main.tsx, App.tsx          entrada e rotas (sala e admin carregam sob demanda)
+  auth/AuthProvider.tsx      quem está logado (GET /auth/me)
+  lib/
+    api.ts                   cliente da API: um método por rota, erros como ApiError
+    errors.ts                código de erro -> texto para a pessoa
+    format.ts                datas, contagens, redirect seguro
+    moderation-rules.ts      hierarquia espelhada do backend (só para a interface)
+    media.ts                 erros de câmera/microfone/tela em texto útil
+    types.ts, config.ts
+  components/                Layout, guardas de rota, UI básica, avisos (toasts)
+  room/
+    sessionReducer.ts        máquina de estados da entrada na sala (pura)
+    useRoomSession.ts        orquestra API + LiveKit + Socket.IO
+    useParticipants.ts       pessoas e faixas do LiveKit
+    Stage.tsx                grade de vídeos, destaque de tela, áudio remoto
+    Controls.tsx             microfone, câmera, tela, sair
+    ParticipantsPanel.tsx    lista de pessoas e moderação
+    Screens.tsx              telas de bloqueio, encerrada, removido, erro
+    publish-rules.ts         por que o botão está desabilitado
+  pages/                     Login, Salas, Reuniões, Sala, e admin/ (reuniões, config, auditoria)
+```
+
+## Rotas
+
+| Rota | Quem | Conteúdo |
+|---|---|---|
+| `/login` | todos | Botão "Entrar com Discord"; mostra `?error=` |
+| `/` | logado | Salas abertas e agendadas (`GET /rooms`) |
+| `/reunioes` | logado | Reuniões e a próxima com contagem regressiva |
+| `/r/:roomId` | logado | **A sala.** É o link que o bot manda no Discord e **não pode mudar** |
+| `/admin/reunioes` | ADMIN | Criar, agendar, reagendar, abrir, cancelar, encerrar, relatório |
+| `/admin/config` | ADMIN | Canais, cargos e limites |
+| `/admin/auditoria` | ADMIN | Registros com filtros e "carregar mais" |
+
+Quem não está logado vai para `/login?redirect=<caminho>` e volta para onde estava. O `redirect` só aceita caminhos do próprio site (o backend valida de novo).
+
+## Login
+
+1. O botão aponta para `GET {API}/auth/discord?redirect=/r/abc` (navegação, não `fetch`).
+2. O Discord devolve para a API, que cria a sessão (cookie `HttpOnly`) e redireciona de volta.
+3. O frontend chama `GET /auth/me` com `credentials: 'include'`.
+   - `401`: anônimo. `403 NOT_IN_GUILD` / `ACCOUNT_BLOCKED`: vai ao login com a explicação.
+   - Falhas do callback chegam em `/login?error=<CODE>` (`INVALID_STATE`, `ACCESS_DENIED`, `NOT_IN_GUILD`, `ACCOUNT_BLOCKED`, `DISCORD_OAUTH_FAILED`, `DISCORD_UNAVAILABLE`).
+
+## A tela de sala
+
+Estados (em `sessionReducer.ts`):
+
+```
+checking ─▶ ready ─▶ joining ─▶ connected ─▶ disconnected
+    │                               │              │
+    └─▶ blocked (consulta de novo)  └─▶ ended / removed (finais)
+```
+
+| Estado | Origem | O que mostra |
+|---|---|---|
+| `checking` | `GET /rooms/:id` + `GET /rooms/:id/access` | "Verificando seu acesso" |
+| `blocked` | `access.canJoin = false` | O motivo e o que fazer (abaixo) |
+| `ready` | `access.canJoin = true` | Tela de entrada com o botão **Entrar na sala** |
+| `joining` | `POST /rooms/:id/join` e conexão | "Conectando" |
+| `connected` | LiveKit + Socket.IO conectados | Vídeos, controles, lista de pessoas |
+| `disconnected` | LiveKit caiu | Aviso com **Reconectar** (refaz o `join`) |
+| `ended` | `room:ended` | Motivo do encerramento |
+| `removed` | `moderation:action` KICKED/BANNED | Motivo e até quando |
+| `error` | qualquer falha | Texto do erro e **Tentar de novo** (exceto sala inexistente) |
+
+Bloqueios (`access.reason`) e se a tela continua consultando sozinha:
+
+| Motivo | Tela | Consulta de novo? |
+|---|---|---|
+| `NOT_IN_VOICE` | "Entre no canal de voz “X” no Discord" | a cada 5 s; entra assim que a pessoa está na call |
+| `ROOM_NOT_OPEN` + `SCHEDULED` | Horário e contagem regressiva | a cada 10 s; abre sozinha |
+| `ROOM_NOT_OPEN` + `ENDED`/`CANCELED` | Sala encerrada / reunião cancelada | não |
+| `ROOM_FULL` | "A sala está lotada" | a cada 10 s |
+| `BANNED_FROM_ROOM` | Prazo do banimento | não |
+| `ROLE_NOT_ALLOWED` | Reunião restrita | não |
+
+**Por que existe a tela "Entrar na sala":** os navegadores só tocam áudio e liberam captura depois de um clique. O clique chama `room.startAudio()`. Câmera e microfone sempre começam **desligados**.
+
+Depois de entrar:
+
+- `POST /rooms/:id/join` devolve `livekit.url` e `livekit.token`; o frontend conecta com as opções recomendadas ([livekit-webrtc.md](../backend/livekit-webrtc.md#qualidade-e-capacidade)): `adaptiveStream`, `dynacast`, simulcast, DTX e câmera em 720p. Tela: até 1080p/30 fps, com `contentHint: 'detail'` (legibilidade acima de fluidez).
+- Em seguida abre o Socket.IO, envia `room:subscribe` (e de novo a cada reconexão) e trata os eventos: `room:ended`, `moderation:action`, `voice:warning`/`voice:restored`, `room:updated`, `participant:updated`, `participant:joined`/`left`, `session:revoked`.
+- Quem compartilha tela ganha destaque (tela grande e pessoas numa faixa); sem compartilhamento, grade. Quem está falando ganha borda.
+- O áudio de todos e o áudio de tela tocam em elementos escondidos; são recriados só quando as faixas mudam.
+- Sair: derruba LiveKit e Socket.IO, chama `POST /rooms/:id/leave` (falha dele não trava) e volta para `/`.
+
+### Botões desabilitados e por quê
+
+`publish-rules.ts` explica em texto, na ordem: silenciado pela moderação, modo palestra sem ser palestrante, sem nenhuma fonte permitida. Moderação e admin nunca são restringidos. O LiveKit é quem impede de verdade (permissões do token e mudanças em tempo real); a interface só evita um botão que não funcionaria.
+
+### Moderação (MOD e ADMIN)
+
+O painel de pessoas mostra, para cada uma, só as ações que a hierarquia permite ([permissoes.md](../backend/permissoes.md)): silenciar/liberar, tornar/tirar palestrante, expulsar e banir (com confirmação). Banir "até o fim da sala" só aparece para admin. Há ainda **Modo palestra** e **Encerrar sala**. Se o servidor recusar, o motivo aparece num aviso.
+
+## Erros
+
+Decide-se sempre pelo `code`, nunca pelo texto do servidor. `lib/errors.ts` traduz cada código; um código desconhecido cai numa frase genérica (nunca quebra). Falha de rede vira `NETWORK_ERROR`.
+
+## Reuniões no painel de admin
+
+O campo de horário usa o **fuso do navegador** (`datetime-local`) e a API recebe ISO 8601 em UTC. Já o comando `/reuniao agendar` do bot usa o fuso do servidor (`TIMEZONE`, padrão Brasília). Lembretes: 24 h, 1 h e 5 min, desmarcáveis. Reuniões encerradas têm botão **Ver relatório** (duração, pico e presença).
+
+## Testes
+
+`npm test -w @screem/web` (Vitest + Testing Library, jsdom). Cobrem o cliente da API, as mensagens de erro, a máquina de estados da sala, as regras de hierarquia e de publicação, as guardas de rota, o login, a tela de sala inteira (com dublês de LiveKit e Socket.IO: bloqueios, entrada, controles, remoção, encerramento, queda e reconexão), o painel de moderação e as telas de admin.
+
+O que **não** é coberto por teste automático: a captura real de câmera, microfone e tela, a reprodução de vídeo/áudio e o LiveKit de verdade. Isso exige navegador com dispositivos e um servidor LiveKit; veja o checklist de paridade abaixo.
 
 ## Deploy na Vercel
 
-- Framework preset: Vite. Build `npm run build -w apps/web`, saída `apps/web/dist`.
-- Reescrita SPA: todas as rotas -> `index.html` (`vercel.json`).
-- Domínio: `app.exemplo.com` (mesmo site do backend, para o cookie).
-- Cabeçalhos de segurança (CSP) conforme [seguranca.md](../backend/seguranca.md#cabeçalhos-http).
+- Framework: Vite. Raiz do projeto: `apps/web`. Antes do build é preciso compilar o pacote compartilhado: comando de build `cd ../.. && npm ci && npm run build:shared && npm run build -w @screem/web`, saída `apps/web/dist`.
+- `vercel.json` já reescreve todas as rotas para `index.html` (SPA).
+- Variáveis `VITE_API_URL` e `VITE_SOCKET_URL` do ambiente de produção.
+- Domínio `app.exemplo.com`, **irmão** do da API, para o cookie funcionar.
+- Cabeçalhos de segurança (CSP) na Vercel: `connect-src` para a API e para `wss://live...`, e `img-src` com `cdn.discordapp.com` (avatares). Veja [seguranca.md](../backend/seguranca.md#cabeçalhos-http).
 
 ## Trocando o frontend
 
-1. Leia o contrato acima e a [API REST](../backend/api-rest.md).
-2. Implemente login, rota `/r/:roomId` e os eventos.
+1. Leia o contrato: [api-rest.md](../backend/api-rest.md), [eventos-socketio.md](../backend/eventos-socketio.md) e [autenticacao.md](../backend/autenticacao.md).
+2. Implemente login, a rota `/r/:roomId` com todos os estados da tabela acima, e os eventos.
 3. Aponte o domínio ou ajuste `WEB_URL` no backend (muda CORS e os links dos embeds).
-4. Nada mais muda no backend.
 
-## Checklist de paridade
+Nada mais muda no backend.
 
-- [ ] Login e logout
-- [ ] Rota `/r/:roomId` com todos os estados
-- [ ] Publicar câmera, tela e microfone
-- [ ] Assistir e grid
-- [ ] Reconexão (Socket.IO e LiveKit)
-- [ ] Moderação
-- [ ] Telas de admin
-- [ ] Tratamento de todos os `error.code` relevantes
+## Checklist de paridade (para qualquer frontend)
+
+- [x] Login e logout
+- [x] Rota `/r/:roomId` com todos os estados
+- [x] Publicar câmera, tela e microfone (código pronto; falta teste com dispositivos reais)
+- [x] Assistir e grade, com destaque de tela
+- [x] Reconexão (Socket.IO reassina a sala; LiveKit tem botão de reconectar)
+- [x] Moderação
+- [x] Telas de admin
+- [x] Tratamento dos códigos de erro relevantes
+- [ ] Testado em Chrome, Firefox e Safari com câmera, microfone e tela de verdade

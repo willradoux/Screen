@@ -14,4 +14,4 @@ Tudo está em [`docs/`](docs/README.md): visão geral, arquitetura, roadmap e, p
 
 ## Status
 
-Fase 0 do [roadmap](docs/03-roadmap.md): documentação concluída, código em andamento.
+Fases 0 a 8 do [roadmap](docs/03-roadmap.md) implementadas (backend completo e primeira versão do frontend). Falta publicar, testar com dispositivos reais e a Fase 9 (qualidade e endurecimento).
