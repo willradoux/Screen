@@ -54,7 +54,13 @@ interface Room {
 Sem autenticação. `200 { "data": { "status": "ok", "uptime": 1234 } }`
 
 ### `GET /ready`
-Checa Mongo, LiveKit e Discord. `200` ou `503` com detalhes por dependência.
+Checa as dependências (hoje: MongoDB; LiveKit e Discord entram nas Fases 4 e 5). Cada checagem tem timeout de 3 s. `200` se todas respondem, `503` caso contrário. O corpo **não** usa o formato de erro, para o orquestrador ler o detalhe:
+```json
+{ "data": { "status": "unavailable", "checks": { "mongo": "fail" } } }
+```
+
+### `GET /openapi.json` e `GET /docs`
+Especificação OpenAPI 3.1 e Swagger UI interativo (`/api/v1/docs`). O arquivo `apps/api/openapi.json` é versionado e um teste falha se ele divergir do código (`npm run openapi -w @screem/api` regenera).
 
 ---
 

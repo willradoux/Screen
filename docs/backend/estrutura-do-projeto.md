@@ -12,7 +12,8 @@ apps/api/
       logger.ts             pino
       errors.ts             AppError e subclasses
       http.ts               helpers de resposta e paginação
-      validate.ts           middleware de validação (zod)
+      validate.ts           middleware de validação (zod) + getValidated
+      error-handler.ts      converte erros no formato padrão
       time.ts
     db/
       connection.ts

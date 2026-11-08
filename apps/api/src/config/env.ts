@@ -10,6 +10,7 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   TIMEZONE: z.string().default('America/Sao_Paulo'),
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/screem'),
 });
 
 export type Env = z.infer<typeof schema> & { corsOrigins: string[] };

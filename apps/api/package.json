@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "openapi": "tsx scripts/generate-openapi.ts"
   },
   "dependencies": {
     "@screem/shared": "*",
@@ -16,8 +17,10 @@
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "mongoose": "^8.24.8",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "@types/supertest": "^6.0.2",
+    "@types/swagger-ui-express": "^4.1.8",
     "supertest": "^7.0.0",
     "tsx": "^4.19.0",
     "vitest": "^3.0.0"

@@ -31,6 +31,7 @@ Nos acks do Socket.IO: `{ ok: false, error: { code, message } }`.
 | 403 | Autenticado, sem permissão ou sem acesso |
 | 404 | Recurso inexistente |
 | 409 | Conflito de estado (sala fechada, cheia, já encerrada) |
+| 413 | Corpo grande demais |
 | 429 | Rate limit |
 | 502 | Falha em serviço externo (Discord, LiveKit) |
 | 503 | Dependência indisponível |
@@ -43,6 +44,8 @@ Nos acks do Socket.IO: `{ ok: false, error: { code, message } }`.
 |---|---|---|
 | `VALIDATION_ERROR` | 400 | Campos inválidos; `details.fields` lista os erros |
 | `INVALID_STATE` | 400 | `state` do OAuth inválido |
+| `INVALID_JSON` | 400 | Corpo não é JSON válido |
+| `PAYLOAD_TOO_LARGE` | 413 | Corpo acima de 100 KB |
 | `UNAUTHENTICATED` | 401 | Sem sessão |
 | `FORBIDDEN` | 403 | Sem capacidade para a ação |
 | `NOT_FOUND` | 404 | Recurso inexistente |

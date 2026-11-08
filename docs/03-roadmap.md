@@ -26,12 +26,12 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 2 - Backend base
 
-- [ ] Express com helmet, CORS restrito, rate limit, logger (pino).
-- [ ] Config tipada e validada com zod.
-- [ ] Conexão MongoDB (mongoose ou driver oficial) e índices.
-- [ ] Tratamento de erros padronizado ([erros.md](backend/erros.md)).
-- [ ] Healthcheck e readiness.
-- [ ] OpenAPI gerada e servida em `/api/docs`.
+- [x] Express com helmet, CORS restrito, rate limit, logger (pino).
+- [x] Config tipada e validada com zod.
+- [x] Conexão MongoDB (mongoose) com falha rápida na inicialização e encerramento limpo. Os índices entram junto com cada model, nas fases seguintes.
+- [x] Tratamento de erros padronizado ([erros.md](backend/erros.md)).
+- [x] Healthcheck (`/health`) e readiness (`/ready`, com ping no Mongo).
+- [x] OpenAPI servida em `/api/v1/docs` e `/api/v1/openapi.json`, com teste de contrato.
 
 **Aceite:** testes de integração do esqueleto passam; OpenAPI publicada.
 

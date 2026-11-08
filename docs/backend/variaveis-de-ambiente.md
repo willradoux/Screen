@@ -21,7 +21,7 @@ Arquivo de exemplo: `apps/api/.env.example`. Nunca commitar `.env`.
 
 | Variável | Obrig. | Exemplo | Descrição |
 |---|:-:|---|---|
-| `MONGODB_URI` | sim | `mongodb://screem:senha@mongo:27017/screem?authSource=admin` | String de conexão |
+| `MONGODB_URI` | não | `mongodb://screem:senha@mongo:27017/screem?authSource=admin` | String de conexão (padrão: `mongodb://localhost:27017/screem`). Em produção o compose injeta |
 
 ## Sessão e criptografia
 

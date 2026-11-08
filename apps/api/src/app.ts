@@ -1,15 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import cors from 'cors';
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-import type { ApiErrorBody } from '@screem/shared';
 import type { Env } from './config/env.js';
+import { docsRoutes } from './modules/docs/docs.routes.js';
+import { healthRoutes, type ReadinessChecks } from './modules/health/health.routes.js';
+import { errorHandler } from './shared/error-handler.js';
 import { AppError } from './shared/errors.js';
 import type { Logger } from './shared/logger.js';
 
-export function createApp(env: Env, logger: Logger) {
+export interface AppDeps {
+  /** Verificações usadas por GET /ready (ex.: { mongo: pingDb }). */
+  readiness?: ReadinessChecks;
+}
+
+export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', env.TRUST_PROXY);
@@ -42,27 +49,12 @@ export function createApp(env: Env, logger: Logger) {
   );
 
   const api = express.Router();
-  api.get('/health', (_req, res) => {
-    res.json({ data: { status: 'ok', uptime: Math.round(process.uptime()) } });
-  });
+  api.use(healthRoutes(deps.readiness ?? {}));
+  api.use(docsRoutes(env.PUBLIC_API_URL));
   app.use('/api/v1', api);
 
   app.use((_req, _res, next) => next(new AppError('NOT_FOUND', 404, 'Rota não encontrada.')));
-
-  const onError: ErrorRequestHandler = (err, req, res, _next) => {
-    const known = err instanceof AppError;
-    if (!known) req.log.error({ err }, 'erro inesperado');
-    const body: ApiErrorBody = {
-      error: {
-        code: known ? err.code : 'INTERNAL_ERROR',
-        message: known ? err.message : 'Erro interno. Tente novamente.',
-        ...(known && err.details !== undefined ? { details: err.details } : {}),
-        requestId: String(req.id),
-      },
-    };
-    res.status(known ? err.status : 500).json(body);
-  };
-  app.use(onError);
+  app.use(errorHandler);
 
   return app;
 }
