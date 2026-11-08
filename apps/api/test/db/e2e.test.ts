@@ -443,13 +443,15 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
     // 8. Ana sai: o canal esvazia e, em 60 s, a sala termina sozinha e o embed muda.
     await w.live.handle({ userId: ids.ana, oldChannelId: VOICE_1, newChannelId: null });
     await w.scheduler.advance(60_000);
-    expect(await RoomModel.findById(roomId).lean()).toMatchObject({
-      status: 'ENDED',
-      endReason: 'VOICE_EMPTY',
+    await eventually(async () => {
+      expect(await RoomModel.findById(roomId).lean()).toMatchObject({
+        status: 'ENDED',
+        endReason: 'VOICE_EMPTY',
+      });
+      expect(w.livekit.deleted).toContain(roomId);
+      expect(w.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('⚫ Live encerrada');
+      expect(await ParticipationModel.countDocuments({ roomId, leftAt: null })).toBe(0);
     });
-    expect(w.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('⚫ Live encerrada');
-    expect(await ParticipationModel.countDocuments({ roomId, leftAt: null })).toBe(0);
-    expect(w.livekit.deleted).toContain(roomId);
 
     // 9. Tudo ficou na auditoria, que só o admin lê.
     const admin = await w.login(ids.admin, [ADMIN_ROLE], 'Admin');
