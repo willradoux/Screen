@@ -28,7 +28,9 @@ services:
 
   api:
     build:
-      context: ../..
+      # O Coolify roda o compose com a raiz do repositório (Base Directory "/") como diretório do projeto,
+      # então os caminhos são relativos à raiz, não a esta pasta.
+      context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     # Domínio desta API (ex.: https://api.exemplo.com:3000) é definido na interface do Coolify.
