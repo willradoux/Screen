@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import type { Env } from '../config/env.js';
 import { RoomAnnouncer } from '../modules/rooms/announcer.js';
 import { RoomService } from '../modules/rooms/rooms.service.js';
+import type { PresenceService } from '../modules/rooms/presence.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
 import type { Logger } from '../shared/logger.js';
@@ -26,8 +27,15 @@ export interface DiscordSystem {
 export function createDiscordSystem(
   env: Env,
   logger: Logger,
-  repos: { rooms: RoomRepo; settings: SettingsRepo },
+  deps: {
+    rooms: RoomRepo;
+    settings: SettingsRepo;
+    /** Compartilhado com a API: é a fonte da verdade de "quem está na call". */
+    voiceCache: VoiceCache;
+    presence: PresenceService;
+  },
 ): DiscordSystem {
+  const repos = deps;
   const token = env.DISCORD_BOT_TOKEN;
   if (!token) throw new Error('DISCORD_BOT_TOKEN ausente');
 
@@ -40,7 +48,7 @@ export function createDiscordSystem(
   });
   const guildId = env.DISCORD_GUILD_ID;
   const gateway = new DiscordJsGateway(client, guildId);
-  const voiceCache = new VoiceCache();
+  const voiceCache = deps.voiceCache;
 
   const announcer = new RoomAnnouncer({
     gateway,
@@ -66,7 +74,11 @@ export function createDiscordSystem(
     logger,
     guildId,
     emptyEndSeconds: env.EMPTY_LIVE_END_SECONDS,
+    presence: deps.presence,
   });
+
+  // Sala encerrada (por qualquer motivo): derruba o LiveKit e avisa os clientes.
+  roomService.onEnded((room, reason) => deps.presence.onRoomEnded(room, reason));
 
   const router = new CommandRouter({
     gateway,

@@ -49,6 +49,7 @@ Nos acks do Socket.IO: `{ ok: false, error: { code, message } }`.
 | `UNAUTHENTICATED` | 401 | Sem sessão |
 | `FORBIDDEN` | 403 | Sem capacidade para a ação |
 | `NOT_FOUND` | 404 | Recurso inexistente |
+| `ROUTE_NOT_FOUND` | 404 | A rota não existe na API |
 | `RATE_LIMITED` | 429 | Muitas requisições |
 | `INTERNAL_ERROR` | 500 | Erro inesperado |
 | `SERVICE_UNAVAILABLE` | 503 | Dependência fora do ar |
@@ -73,6 +74,17 @@ Nos acks do Socket.IO: `{ ok: false, error: { code, message } }`.
 | `ROOM_NOT_OPEN` | 409 | Sala agendada, encerrada ou cancelada; `details.startsAt` |
 | `ROOM_FULL` | 409 | Lotada |
 | `ROOM_ALREADY_ENDED` | 409 | |
+
+### Tempo real (Socket.IO)
+Erros do handshake chegam em `connect_error.message`; erros de comandos, no ack `{ ok: false, error: { code } }`.
+| Código | Onde | Descrição |
+|---|---|---|
+| `UNAUTHENTICATED` | handshake | Sem cookie de sessão válido |
+| `NOT_IN_GUILD` / `ACCOUNT_BLOCKED` | handshake | Mesmos significados da REST |
+| `TOO_MANY_CONNECTIONS` | handshake | Mais de 3 sockets do mesmo usuário |
+| `VALIDATION_ERROR` | ack | Payload inválido |
+| `ROOM_NOT_FOUND` | ack | Sala inexistente |
+| `FORBIDDEN` | ack | Você não tem acesso a esta sala |
 
 ### Moderação
 | Código | HTTP | Descrição |

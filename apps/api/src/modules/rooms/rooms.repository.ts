@@ -22,6 +22,7 @@ type Doc = {
   speakerIds?: string[];
   reminders?: { minutesBefore?: number | null; sentAt?: Date | null }[];
   endReason?: string | null;
+  createdAt?: Date;
 };
 
 const newRoomId = () => randomToken(16); // 22 caracteres base64url (128 bits)
@@ -50,6 +51,7 @@ function toRecord(d: Doc): RoomRecord {
       sentAt: r.sentAt ?? null,
     })),
     endReason: d.endReason ?? null,
+    createdAt: d.createdAt ?? new Date(0),
   };
 }
 
@@ -133,6 +135,32 @@ export function createRoomRepo(): RoomRepo {
         .sort({ startsAt: 1, createdAt: 1 })
         .lean();
       return docs.map((d) => toRecord(d as Doc));
+    },
+
+    async list(guildId, filter, page) {
+      const query: Record<string, unknown> = { guildId };
+      if (filter.statuses?.length) query.status = { $in: filter.statuses };
+      if (filter.type) query.type = filter.type;
+
+      // Cursor opaco: base64url("<createdAtMs>|<id>"). Ordem estável por (createdAt, _id).
+      if (page.cursor) {
+        const [ms, id] = Buffer.from(page.cursor, 'base64url').toString('utf8').split('|');
+        const at = new Date(Number(ms));
+        if (!id || Number.isNaN(at.getTime())) throw new Error('cursor inválido');
+        query.$or = [{ createdAt: { $lt: at } }, { createdAt: at, _id: { $lt: id } }];
+      }
+
+      const docs = await RoomModel.find(query)
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(page.limit + 1)
+        .lean();
+      const items = docs.slice(0, page.limit).map((d) => toRecord(d as Doc));
+      const last = items.at(-1);
+      const next =
+        docs.length > page.limit && last
+          ? Buffer.from(`${last.createdAt.getTime()}|${last.id}`).toString('base64url')
+          : null;
+      return { items, next };
     },
 
     async setAnnouncement(id, channelId, messageId) {

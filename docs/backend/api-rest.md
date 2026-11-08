@@ -90,53 +90,62 @@ Auth: obrigatória. Apaga a sessão e o cookie. `204`.
 
 ## Salas
 
+**Implementado** (Fase 5). Todas exigem login. `:id` é o id da sala (22 caracteres); id malformado ou inexistente responde `404 ROOM_NOT_FOUND`.
+
 ### `GET /rooms`
-Lista salas visíveis ao usuário.
-Query: `status` (`OPEN|SCHEDULED|ENDED`), `type`, `limit`, `cursor`.
+Lista salas, das mais novas para as mais antigas.
+Query: `status` (`OPEN|SCHEDULED|ENDED|CANCELED`; padrão: abertas **e** agendadas), `type` (`LIVE|MEETING`), `limit` (1 a 50, padrão 20), `cursor` (o `page.next` da resposta anterior; cursor inválido dá `400 VALIDATION_ERROR`).
 ```json
-{ "data": [ { "id": "kF3x9QzP2mT7vB1nLw0aYc", "type": "LIVE", "status": "OPEN",
-              "title": "Live - Sala 1", "participantCount": 4, "url": "https://app.exemplo.com/r/kF3x9QzP2mT7vB1nLw0aYc" } ],
-  "page": { "next": null, "limit": 20 } }
+{ "data": [ { "id": "kF3x9QzP2mT7vB1nLw0aYc", "type": "LIVE", "status": "OPEN", "title": "Live - Live 1",
+              "voiceChannelId": "5000...", "participantCount": 4, "maxParticipants": 25, "lectureMode": false,
+              "url": "https://app.exemplo.com/r/kF3x9QzP2mT7vB1nLw0aYc", "...": "..." } ],
+  "page": { "next": "MTc5...", "limit": 20 } }
 ```
+`participantCount` é quem está conectado de fato (webhooks do LiveKit).
 
 ### `GET /rooms/:id`
-Detalhes da sala. Qualquer usuário autenticado pode **ver** os dados públicos; entrar exige `join`.
-Erros: `404 ROOM_NOT_FOUND`.
+Dados públicos da sala. Ver a sala não dá acesso: para entrar use `join`.
 
 ### `GET /rooms/:id/access`
-Diz se o usuário **pode entrar agora**, e por quê não. Útil para o frontend decidir a tela.
+Diz se **você pode entrar agora** e por que não. Sem efeitos colaterais: não emite token. Use para escolher a tela.
 ```json
-{ "data": { "canJoin": false, "reason": "NOT_IN_VOICE",
-            "voiceChannelName": "Live 1", "hint": "Entre no canal de voz Live 1 no Discord." } }
+{ "data": { "canJoin": false, "reason": "NOT_IN_VOICE", "voiceChannelName": "Live 1",
+            "hint": "Entre no canal de voz \"Live 1\" no Discord para participar." } }
 ```
-`reason`: `null | NOT_IN_VOICE | ROOM_NOT_OPEN | ROOM_FULL | BANNED_FROM_ROOM | ROLE_NOT_ALLOWED`.
+Quando pode: `{ "canJoin": true, "reason": null, "hint": null }`.
+`reason`: `ROOM_NOT_OPEN` (traz `status` e `startsAt` para a contagem regressiva), `BANNED_FROM_ROOM` (traz `expiresAt`, `null` = até o fim da sala), `ROLE_NOT_ALLOWED`, `NOT_IN_VOICE` (traz `voiceChannelName`), `ROOM_FULL` (traz `maxParticipants`).
 
 ### `POST /rooms/:id/join`
-Entra na sala. Valida presença/cargo e devolve o token LiveKit.
+Entra na sala. **Toda a validação é feita aqui, no servidor**, na ordem: sala aberta, não banido, cargo (reuniões), presença no canal de voz (lives) e lotação. Limite: 20 chamadas por minuto por usuário (`429`).
 Resposta `200`:
 ```json
 { "data": {
     "livekit": { "url": "wss://live.exemplo.com", "token": "eyJhbGciOi..." },
-    "participant": { "identity": "123456789012345678", "name": "Fulano", "role": "MOD" },
-    "permissions": { "canPublish": true, "canPublishSources": ["microphone","camera","screen_share"], "canModerate": true },
+    "participant": { "identity": "123456789012345678", "name": "Fulano", "role": "MEMBER" },
+    "permissions": { "canPublish": true,
+                     "canPublishSources": ["microphone","camera","screen_share","screen_share_audio"],
+                     "canModerate": false },
     "room": { "id": "kF3x9QzP2mT7vB1nLw0aYc", "lectureMode": false }
 } }
 ```
-Erros: `403 NOT_IN_VOICE`, `403 ROLE_NOT_ALLOWED`, `403 BANNED_FROM_ROOM`, `409 ROOM_NOT_OPEN`, `409 ROOM_FULL`.
-Notas: o token expira em 10 minutos e é só para **conectar**; depois o SDK renova a sessão. Para reconectar, chame `join` de novo.
+Erros: `403 NOT_IN_VOICE` (`details.voiceChannelName`), `403 ROLE_NOT_ALLOWED`, `403 BANNED_FROM_ROOM` (`details.expiresAt`), `409 ROOM_NOT_OPEN` (`details.status`, `details.startsAt`), `409 ROOM_FULL`, `502 LIVEKIT_UNAVAILABLE`.
+
+Notas:
+- O token expira em `JOIN_TOKEN_TTL_SECONDS` (padrão 10 min) e serve **para conectar**; depois o SDK mantém a sessão. Para reconectar, chame `join` de novo.
+- `MOD` e `ADMIN` entram em qualquer live sem estar na call e passam pela restrição de cargo das reuniões.
+- Quem já está dentro pode reconectar mesmo com a sala lotada.
+- Modo palestra e silenciamento por moderação aparecem em `permissions.canPublish = false`.
+- Mesmo com o token em mãos, quem conectar ao LiveKit **fora da call** (membro comum, live) é derrubado em seguida; veja [livekit-webrtc.md](livekit-webrtc.md#o-que-acontece-depois-do-join).
 
 ### `POST /rooms/:id/leave`
-Registra saída. `204`.
+Registra a saída e derruba a conexão no LiveKit. `204`, idempotente.
 
 ### `POST /rooms/:id/end`
-Capacidade: `room.end` (MOD+). Encerra a sala e desconecta todos. `204`.
-Erros: `403 FORBIDDEN`, `409 ROOM_ALREADY_ENDED`.
+Capacidade `room.end` (MOD+). Encerra a sala: avisa `room:ended`, apaga a sala no LiveKit, fecha as participações e edita o embed no Discord. `204`.
+Erros: `403 FORBIDDEN`, `409 ROOM_ALREADY_ENDED`, `409 ROOM_NOT_OPEN` (agendada ou cancelada).
 
-### `PATCH /rooms/:id`
-Capacidade: ADMIN para reunião; MOD+ para `lectureMode` em live.
-Body (qualquer campo): `{ "title": "...", "description": "...", "maxParticipants": 30, "lectureMode": true }`.
-
----
+### `PATCH /rooms/:id` — [Fase 6]
+Título, descrição, `maxParticipants` e `lectureMode`. Ainda não implementado.
 
 ## Moderação
 
@@ -245,7 +254,7 @@ ADMIN. Query: `actorId`, `targetId`, `action`, `roomId`, `from`, `to`, `limit`, 
 ## Webhook do LiveKit
 
 ### `POST /livekit/webhook`
-Chamado pelo LiveKit. Valida o cabeçalho `Authorization` (JWT assinado com a chave da API do LiveKit). Não é para frontends. Eventos tratados: `participant_joined`, `participant_left`, `track_published`, `room_finished`. Detalhes em [livekit-webrtc.md](livekit-webrtc.md#webhooks).
+**Implementado.** Chamado pelo LiveKit. Valida o cabeçalho `Authorization` (JWT assinado com a chave da API do LiveKit). Não é para frontends. Eventos tratados: `participant_joined`, `participant_left`, `track_published`, `room_finished`. Detalhes em [livekit-webrtc.md](livekit-webrtc.md#webhooks).
 
 ---
 

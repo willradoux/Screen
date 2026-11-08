@@ -22,6 +22,8 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
     tags: [
       { name: 'Health', description: 'Saúde e prontidão do serviço' },
       { name: 'Auth', description: 'Login com Discord e sessão' },
+      { name: 'Rooms', description: 'Salas de live e reuniões' },
+      { name: 'LiveKit', description: 'Webhook do servidor de mídia' },
     ],
     paths: {
       '/health': {
@@ -157,12 +159,281 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
           },
         },
       },
+
+      '/rooms': {
+        get: {
+          tags: ['Rooms'],
+          summary: 'Lista salas',
+          description:
+            'Das mais novas para as mais antigas. Sem `status`, devolve só as abertas e as agendadas. Paginação por cursor opaco.',
+          operationId: 'listRooms',
+          security: [{ sessionCookie: [] }],
+          parameters: [
+            { name: 'status', in: 'query', schema: { $ref: '#/components/schemas/RoomStatus' } },
+            { name: 'type', in: 'query', schema: { $ref: '#/components/schemas/RoomType' } },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: 50, default: 20 },
+            },
+            { name: 'cursor', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'Salas',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data', 'page'],
+                    properties: {
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Room' } },
+                      page: {
+                        type: 'object',
+                        properties: {
+                          next: { type: ['string', 'null'] },
+                          limit: { type: 'integer' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '400': errorResponse('VALIDATION_ERROR (ex.: cursor inválido)'),
+            '401': errorResponse('UNAUTHENTICATED'),
+          },
+        },
+      },
+      '/rooms/{id}': {
+        get: {
+          tags: ['Rooms'],
+          summary: 'Detalhes de uma sala',
+          description:
+            'Dados públicos da sala. Ver a sala não dá acesso a ela: para entrar use `join`.',
+          operationId: 'getRoom',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': { description: 'Sala', content: roomContent },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+      },
+      '/rooms/{id}/access': {
+        get: {
+          tags: ['Rooms'],
+          summary: 'Posso entrar agora?',
+          description:
+            'Sem efeitos colaterais. Útil para o frontend escolher a tela (ex.: "entre no canal de voz"). `reason` é `null` quando pode entrar.',
+          operationId: 'getRoomAccess',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': {
+              description: 'Resultado',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: {
+                      data: {
+                        type: 'object',
+                        required: ['canJoin', 'reason', 'hint'],
+                        properties: {
+                          canJoin: { type: 'boolean' },
+                          reason: {
+                            oneOf: [
+                              { $ref: '#/components/schemas/AccessReason' },
+                              { type: 'null' },
+                            ],
+                          },
+                          hint: { type: ['string', 'null'] },
+                          voiceChannelName: { type: 'string' },
+                          startsAt: { type: ['string', 'null'], format: 'date-time' },
+                          expiresAt: { type: ['string', 'null'], format: 'date-time' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+      },
+      '/rooms/{id}/join': {
+        post: {
+          tags: ['Rooms'],
+          summary: 'Entra na sala e recebe o token do LiveKit',
+          description:
+            'Valida no servidor: sala aberta, não banido, cargo (reuniões), **presença no canal de voz (lives)** e lotação. O token vale só para conectar (TTL curto); para reconectar, chame de novo. Limite de 20 chamadas por minuto por usuário.',
+          operationId: 'joinRoom',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': {
+              description: 'Acesso concedido',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: { data: { $ref: '#/components/schemas/JoinResult' } },
+                  },
+                },
+              },
+            },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse(
+              'NOT_IN_VOICE, ROLE_NOT_ALLOWED, BANNED_FROM_ROOM ou FORBIDDEN (Origin)',
+            ),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('ROOM_NOT_OPEN ou ROOM_FULL'),
+            '429': errorResponse('RATE_LIMITED'),
+            '502': errorResponse('LIVEKIT_UNAVAILABLE'),
+          },
+        },
+      },
+      '/rooms/{id}/leave': {
+        post: {
+          tags: ['Rooms'],
+          summary: 'Sai da sala',
+          description: 'Registra a saída e derruba a conexão no LiveKit. Idempotente.',
+          operationId: 'leaveRoom',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '204': { description: 'Saída registrada' },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+      },
+      '/rooms/{id}/end': {
+        post: {
+          tags: ['Rooms'],
+          summary: 'Encerra a sala (MOD ou ADMIN)',
+          description:
+            'Avisa os participantes (`room:ended`), derruba a sala no LiveKit e edita o embed no Discord.',
+          operationId: 'endRoom',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '204': { description: 'Sala encerrada' },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN: precisa ser MOD ou ADMIN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('ROOM_ALREADY_ENDED ou ROOM_NOT_OPEN'),
+          },
+        },
+      },
+      '/livekit/webhook': {
+        post: {
+          tags: ['LiveKit'],
+          summary: 'Webhook do LiveKit (uso interno)',
+          description:
+            'Chamado pelo servidor de mídia, autenticado pelo cabeçalho `Authorization` (JWT assinado com a chave da API do LiveKit, com o SHA-256 do corpo). Não é para frontends nem exige `Origin`. Trata `participant_joined`, `participant_left` e `room_finished`; os demais eventos são aceitos e ignorados.',
+          operationId: 'livekitWebhook',
+          requestBody: {
+            required: true,
+            content: { 'application/webhook+json': { schema: { type: 'object' } } },
+          },
+          responses: {
+            '200': { description: 'Processado' },
+            '401': errorResponse('UNAUTHENTICATED: assinatura inválida'),
+          },
+        },
+      },
     },
     components: {
       securitySchemes: {
         sessionCookie: { type: 'apiKey', in: 'cookie', name: 'screem_sid' },
       },
       schemas: {
+        RoomType: { type: 'string', enum: ['LIVE', 'MEETING'] },
+        RoomStatus: { type: 'string', enum: ['SCHEDULED', 'OPEN', 'ENDED', 'CANCELED'] },
+        AccessReason: {
+          type: 'string',
+          enum: [
+            'ROOM_NOT_OPEN',
+            'BANNED_FROM_ROOM',
+            'ROLE_NOT_ALLOWED',
+            'NOT_IN_VOICE',
+            'ROOM_FULL',
+          ],
+        },
+        Room: {
+          type: 'object',
+          required: ['id', 'type', 'status', 'title', 'url', 'participantCount', 'maxParticipants'],
+          properties: {
+            id: {
+              type: 'string',
+              description: '22 caracteres base64url',
+              example: 'kF3x9QzP2mT7vB1nLw0aYc',
+            },
+            type: { $ref: '#/components/schemas/RoomType' },
+            status: { $ref: '#/components/schemas/RoomStatus' },
+            title: { type: 'string' },
+            description: { type: ['string', 'null'] },
+            voiceChannelId: { type: ['string', 'null'], description: 'Só em lives' },
+            startsAt: { type: ['string', 'null'], format: 'date-time' },
+            openedAt: { type: ['string', 'null'], format: 'date-time' },
+            endedAt: { type: ['string', 'null'], format: 'date-time' },
+            createdBy: { type: 'string' },
+            maxParticipants: { type: 'integer' },
+            lectureMode: { type: 'boolean' },
+            participantCount: { type: 'integer' },
+            url: { type: 'string', format: 'uri' },
+          },
+        },
+        JoinResult: {
+          type: 'object',
+          required: ['livekit', 'participant', 'permissions', 'room'],
+          properties: {
+            livekit: {
+              type: 'object',
+              required: ['url', 'token'],
+              properties: {
+                url: { type: 'string', example: 'wss://live.exemplo.com' },
+                token: {
+                  type: 'string',
+                  description: 'JWT do LiveKit; use em `room.connect(url, token)`',
+                },
+              },
+            },
+            participant: {
+              type: 'object',
+              properties: {
+                identity: { type: 'string' },
+                name: { type: 'string' },
+                role: { type: 'string', enum: ['MEMBER', 'MOD', 'ADMIN'] },
+              },
+            },
+            permissions: {
+              type: 'object',
+              properties: {
+                canPublish: { type: 'boolean' },
+                canPublishSources: {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                    enum: ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
+                  },
+                },
+                canModerate: { type: 'boolean' },
+              },
+            },
+            room: {
+              type: 'object',
+              properties: { id: { type: 'string' }, lectureMode: { type: 'boolean' } },
+            },
+          },
+        },
         User: {
           type: 'object',
           required: ['id', 'username', 'displayName', 'avatarUrl', 'role'],
@@ -204,6 +475,24 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
     },
   };
 }
+
+const roomIdParam = {
+  name: 'id',
+  in: 'path',
+  required: true,
+  description: 'ID da sala (22 caracteres)',
+  schema: { type: 'string', pattern: '^[\\w-]{22}$' },
+};
+
+const roomContent = {
+  'application/json': {
+    schema: {
+      type: 'object',
+      required: ['data'],
+      properties: { data: { $ref: '#/components/schemas/Room' } },
+    },
+  },
+};
 
 function readyContent(status: 'ok' | 'unavailable') {
   return {

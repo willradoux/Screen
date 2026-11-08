@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { buildOpenApi } from '../../src/openapi.js';
-import { buildTestApp } from '../fixtures/fakes.js';
+import { buildRoomsApp } from '../fixtures/rooms-fakes.js';
 
-const { app } = buildTestApp();
+const { app } = buildRoomsApp();
 
 describe('OpenAPI', () => {
   it('openapi.json commitado está atualizado (rode: npm run openapi -w @screem/api)', () => {
@@ -35,8 +35,11 @@ describe('OpenAPI', () => {
         const call = (request(app) as unknown as Record<string, (p: string) => request.Test>)[
           method
         ];
-        const res = await call!(`/api/v1${path}`);
-        expect(res.status, `${method.toUpperCase()} ${path}`).not.toBe(404);
+        const res = await call!(`/api/v1${path.replace('{id}', 'x'.repeat(22))}`);
+        // Rota inexistente responde ROUTE_NOT_FOUND; qualquer outra resposta prova que existe.
+        expect(res.body?.error?.code, `${method.toUpperCase()} ${path}`).not.toBe(
+          'ROUTE_NOT_FOUND',
+        );
       }
     }
   });

@@ -31,6 +31,8 @@ export interface AuthServiceDeps {
   sessions: SessionRepo;
   settings: SettingsRepo;
   /** Permissões do membro no Discord (via bot). Sem ele, só valem os cargos configurados. */
+  /** Chamado quando sessões são encerradas, para derrubar os sockets delas. */
+  onSessionRevoked?: (target: { sessionId?: string; userId?: string }) => void;
   guildPermissions?: { getMemberPermissions(userId: string): Promise<MemberPermissions> };
   now?: () => Date;
 }
@@ -170,12 +172,14 @@ export class AuthService {
   async logout(session: SessionRecord): Promise<void> {
     await this.deps.sessions.delete(session.id);
     this.memberCache.delete(session.userId);
+    this.deps.onSessionRevoked?.({ sessionId: session.id });
   }
 
   /** Revoga todas as sessões de um usuário (ex.: bloqueio). */
   async revokeUser(userId: string): Promise<void> {
     await this.deps.sessions.deleteByUser(userId);
     this.memberCache.delete(userId);
+    this.deps.onSessionRevoked?.({ userId });
   }
 
   // ---------- Identidade e papel ----------
@@ -210,6 +214,7 @@ export class AuthService {
     return {
       user,
       role,
+      roleIds: member.roles,
       displayName: member.nick ?? user.globalName ?? user.username,
       avatarUrl: avatarUrl(user),
     };

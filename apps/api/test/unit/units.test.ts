@@ -92,6 +92,10 @@ describe('loadEnv (auth)', () => {
     COOKIE_SECRET: 'x'.repeat(32),
     TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 3).toString('base64'),
     DISCORD_BOT_TOKEN: 'token-do-bot',
+    LIVEKIT_URL: 'http://livekit:7880',
+    LIVEKIT_PUBLIC_URL: 'wss://live.exemplo.com',
+    LIVEKIT_API_KEY: 'chave',
+    LIVEKIT_API_SECRET: 'segredo',
   };
 
   it('fora de teste, exige as variáveis de login', () => {
@@ -126,6 +130,24 @@ describe('loadEnv (auth)', () => {
     expect(() => loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: 'abc' })).toThrow(
       /MEETING_MENTION_ROLE_ID/,
     );
+  });
+
+  it('LiveKit é obrigatório fora de teste e valida as URLs', () => {
+    const noKey: Record<string, string> = { ...valid };
+    delete noKey.LIVEKIT_API_KEY;
+    expect(() => loadEnv({ NODE_ENV: 'production', ...noKey })).toThrow(/LIVEKIT_API_KEY/);
+    expect(() =>
+      loadEnv({ NODE_ENV: 'production', ...valid, LIVEKIT_PUBLIC_URL: 'nao-e-url' }),
+    ).toThrow(/LIVEKIT_PUBLIC_URL/);
+    const env = loadEnv({ NODE_ENV: 'production', ...valid });
+    expect(env.JOIN_TOKEN_TTL_SECONDS).toBe(600);
+    expect(
+      loadEnv({ NODE_ENV: 'production', ...valid, JOIN_TOKEN_TTL_SECONDS: '120' })
+        .JOIN_TOKEN_TTL_SECONDS,
+    ).toBe(120);
+    expect(() =>
+      loadEnv({ NODE_ENV: 'production', ...valid, JOIN_TOKEN_TTL_SECONDS: '5' }),
+    ).toThrow();
   });
 
   it('rejeita chave de criptografia com tamanho errado', () => {

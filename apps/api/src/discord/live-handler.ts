@@ -1,6 +1,7 @@
 import type { Logger } from '../shared/logger.js';
 import { KeyedQueue, type Scheduler } from '../shared/scheduler.js';
 import type { RoomAnnouncer } from '../modules/rooms/announcer.js';
+import type { PresenceService } from '../modules/rooms/presence.js';
 import type { RoomService } from '../modules/rooms/rooms.service.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
@@ -19,6 +20,8 @@ export interface LiveHandlerDeps {
   guildId: string;
   /** Tempo com o canal vazio antes de encerrar a live. */
   emptyEndSeconds: number;
+  /** Quem saiu da call perde a live após a tolerância (Fase 5). */
+  presence?: Pick<PresenceService, 'userLeftVoice' | 'userReturnedToVoice'>;
 }
 
 export interface VoiceChange {
@@ -47,7 +50,7 @@ export class LiveVoiceHandler {
       await this.queue.run(newChannelId, () => this.onJoin(newChannelId, userId));
     }
     if (oldChannelId) {
-      await this.queue.run(oldChannelId, () => this.onLeave(oldChannelId));
+      await this.queue.run(oldChannelId, () => this.onLeave(oldChannelId, userId));
     }
   }
 
@@ -74,6 +77,9 @@ export class LiveVoiceHandler {
       openedBy: userId,
     });
 
+    // Voltou para a call dentro da tolerância: continua na live.
+    this.deps.presence?.userReturnedToVoice(room.id, userId);
+
     if (created || !room.announceMessageId) {
       // Sala nova (ou antiga sem mensagem, p.ex. canal de lives configurado depois).
       await this.publishSafely(room);
@@ -82,11 +88,13 @@ export class LiveVoiceHandler {
     }
   }
 
-  private async onLeave(channelId: string): Promise<void> {
+  private async onLeave(channelId: string, userId: string): Promise<void> {
     const name = await this.liveChannelName(channelId);
     if (!name) return;
     const room = await this.deps.rooms.findOpenLiveByChannel(channelId);
     if (!room) return;
+
+    await this.deps.presence?.userLeftVoice(room, userId);
 
     if (this.deps.cache.count(channelId) === 0) {
       this.startEmptyTimer(channelId, room.id);

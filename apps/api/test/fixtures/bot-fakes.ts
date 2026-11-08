@@ -145,6 +145,7 @@ export class MemoryRooms implements RoomRepo {
       speakerIds: [],
       reminders: [],
       endReason: null,
+      createdAt: input.now,
     };
     this.rooms.set(room.id, room);
     return { room: structuredClone(room), created: true };
@@ -171,6 +172,7 @@ export class MemoryRooms implements RoomRepo {
       speakerIds: [],
       reminders: input.reminders.map((m) => ({ minutesBefore: m, sentAt: null })),
       endReason: null,
+      createdAt: input.now,
     };
     this.rooms.set(room.id, room);
     return structuredClone(room);
@@ -195,6 +197,32 @@ export class MemoryRooms implements RoomRepo {
       .filter((r) => r.guildId === guildId && r.type === 'MEETING' && statuses.includes(r.status))
       .sort((a, b) => (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0))
       .map((r) => structuredClone(r));
+  }
+  async list(
+    guildId: string,
+    filter: { statuses?: RoomRecord['status'][]; type?: RoomRecord['type'] },
+    page: { limit: number; cursor?: string },
+  ) {
+    const all = [...this.rooms.values()]
+      .filter(
+        (r) =>
+          r.guildId === guildId &&
+          (!filter.statuses || filter.statuses.includes(r.status)) &&
+          (!filter.type || r.type === filter.type),
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : -1));
+    const start = page.cursor
+      ? all.findIndex(
+          (r) => r.id === Buffer.from(page.cursor!, 'base64url').toString().split('|')[1],
+        ) + 1
+      : 0;
+    const items = all.slice(start, start + page.limit).map((r) => structuredClone(r));
+    const last = items.at(-1);
+    const next =
+      start + page.limit < all.length && last
+        ? Buffer.from(`${last.createdAt.getTime()}|${last.id}`).toString('base64url')
+        : null;
+    return { items, next };
   }
   async setAnnouncement(id: string, channelId: string, messageId: string) {
     const r = this.rooms.get(id);

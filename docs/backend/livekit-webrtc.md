@@ -63,6 +63,15 @@ Usa `RoomServiceClient`:
 
 Um participante **não** consegue desmutar pelo cliente se `canPublish` estiver falso. Mute simples (só `mutePublishedTrack`) permite ao usuário desmutar; por isso o `mute` do Screem também retira a permissão até `unmute`.
 
+## O que acontece depois do `join`
+
+1. `POST /rooms/:id/join` cria a sala no LiveKit (idempotente, com `maxParticipants`, `departureTimeout` de 60 s e `emptyTimeout` de 300 s) e emite o token.
+2. O navegador conecta ao LiveKit. O LiveKit chama o webhook `participant_joined`.
+3. O backend **confere de novo**: sala ainda aberta? Se for live e a pessoa for membro comum, ela ainda está no canal de voz? Se não, `removeParticipant` na hora (cobre o token emitido antes de sair da call). Se estiver tudo certo, abre a participação (`participations`) e avisa a sala com `participant:joined`.
+4. Se a pessoa sai do canal de voz do Discord: ela recebe `voice:warning` e tem `graceSeconds` (30 s) para voltar (`voice:restored`). Passado o prazo, é removida do LiveKit e a sala recebe `participant:left` com `reason: "LEFT_VOICE"`.
+5. `MOD` e `ADMIN` não são removidos por sair da call.
+6. Sala encerrada (por moderador, canal vazio ou fim de reunião): `room:ended`, `deleteRoom` no LiveKit e fechamento das participações.
+
 ## Webhooks
 
 Configurados no `livekit.yaml`:
@@ -78,10 +87,10 @@ O backend valida a assinatura com `WebhookReceiver`. Eventos:
 
 | Evento | Ação no backend |
 |---|---|
-| `participant_joined` | Cria/atualiza `participations`; emite `participant:joined` |
-| `participant_left` | Fecha `participations`; emite `participant:left` |
-| `track_published` | Registra fonte; atualiza `presence` |
-| `room_finished` | Fecha todas as participações pendentes |
+| `participant_joined` | Valida de novo (sala aberta, presença na call), abre a `participation` e emite `participant:joined`. Idempotente |
+| `participant_left` | Fecha a participação (`LEFT` se o cliente pediu, senão `DISCONNECTED`) e emite `participant:left`. **Ignora** `DUPLICATE_IDENTITY` (reconexão com a mesma identidade) |
+| `track_published` | Aceito e ignorado por enquanto (estado de câmera/tela virá com a moderação) |
+| `room_finished` | Fecha as participações que sobraram. **Não** encerra a sala do Screem: a live depende do canal de voz, não do LiveKit |
 
 O webhook é **informativo** e idempotente: a decisão de acesso é sempre no `join`.
 

@@ -58,12 +58,13 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 5 - Salas e LiveKit
 
-- [ ] Modelo de sala (live e reunião) e máquina de estados.
-- [ ] `POST /api/rooms/:id/join` com validação de presença.
-- [ ] Emissão de token LiveKit com grants por papel.
-- [ ] Webhooks do LiveKit (participante entrou/saiu, track publicada).
-- [ ] Remoção automática de quem sai da call (grace period).
-- [ ] Encerramento de sala e limpeza.
+- [x] Modelo de sala (live e reunião) e máquina de estados (`SCHEDULED → OPEN → ENDED`, `SCHEDULED → CANCELED`, transições condicionais no banco).
+- [x] `POST /rooms/:id/join` com validação de presença, cargo, banimento e lotação (mais `GET /rooms`, `/rooms/:id`, `/rooms/:id/access`, `/leave` e `/end`).
+- [x] Emissão de token LiveKit com grants por papel, modo palestra e silenciamento.
+- [x] Webhooks do LiveKit com assinatura verificada (entrou, saiu, sala finalizada; track publicada é aceita e ignorada).
+- [x] Remoção automática de quem sai da call (`voice:warning`, tolerância de 30 s, `voice:restored`).
+- [x] Encerramento de sala e limpeza (LiveKit, participações, embed, sockets).
+- [x] Servidor Socket.IO com autenticação, `room:subscribe` e os eventos de sala (adiantado da Fase 6; chat e presença ficam para depois).
 
 **Aceite:** fora da call, `join` retorna `403 NOT_IN_VOICE`; dentro, retorna token funcional.
 

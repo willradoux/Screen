@@ -31,6 +31,15 @@ const schema = z.object({
   // Regras de negócio
   EMPTY_LIVE_END_SECONDS: z.coerce.number().int().min(5).default(60),
 
+  // LiveKit (servidor de mídia)
+  /** URL interna, usada pela API para falar com o LiveKit. */
+  LIVEKIT_URL: z.string().url(),
+  /** URL pública (wss://) que o navegador usa para conectar. */
+  LIVEKIT_PUBLIC_URL: z.string().url(),
+  LIVEKIT_API_KEY: z.string().min(1),
+  LIVEKIT_API_SECRET: z.string().min(1),
+  JOIN_TOKEN_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(600),
+
   // Sessão e criptografia
   COOKIE_SECRET: z.string().min(32, 'use 32 ou mais caracteres'),
   TOKEN_ENCRYPTION_KEY: z.string().min(1),
@@ -51,6 +60,10 @@ const TEST_DEFAULTS: Record<string, string> = {
   DISCORD_CLIENT_SECRET: 'test-client-secret',
   DISCORD_GUILD_ID: '222222222222222222',
   DISCORD_REDIRECT_URI: 'http://localhost:3000/api/v1/auth/discord/callback',
+  LIVEKIT_URL: 'http://localhost:7880',
+  LIVEKIT_PUBLIC_URL: 'ws://localhost:7880',
+  LIVEKIT_API_KEY: 'devkey',
+  LIVEKIT_API_SECRET: 'devsecret-devsecret-devsecret-0123',
   COOKIE_SECRET: 'test-cookie-secret-test-cookie-secret',
   TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
 };

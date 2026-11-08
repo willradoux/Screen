@@ -87,6 +87,8 @@ router.post('/rooms/:id/participants/:userId/mute',
 
 ## Acesso à sala (diferente de papel)
 
+> Implementado em `modules/rooms/access.ts`. Ordem das checagens: sala aberta, banimento, cargo (reuniões), presença na call (lives), lotação.
+
 | Tipo de sala | Regra de acesso |
 |---|---|
 | `LIVE` | Estar **agora** no canal de voz ligado à sala (voice state do Discord) |

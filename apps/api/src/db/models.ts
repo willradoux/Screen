@@ -90,7 +90,38 @@ roomSchema.index(
 // Usado pelo agendador de reuniões (Fase 7).
 roomSchema.index({ startsAt: 1 }, { partialFilterExpression: { status: 'SCHEDULED' } });
 
+const participationSchema = new Schema({
+  roomId: { type: String, required: true },
+  userId: { type: String, required: true },
+  displayName: { type: String, default: null },
+  avatarUrl: { type: String, default: null },
+  roleAtJoin: { type: String, enum: ['MEMBER', 'MOD', 'ADMIN'], required: true },
+  joinedAt: { type: Date, required: true },
+  leftAt: { type: Date, default: null },
+  leaveReason: { type: String, default: null },
+  mutedByModeration: { type: Boolean, default: false },
+});
+// No máximo uma participação aberta por pessoa em cada sala.
+participationSchema.index(
+  { roomId: 1, userId: 1 },
+  { unique: true, partialFilterExpression: { leftAt: null } },
+);
+participationSchema.index({ roomId: 1, leftAt: 1 });
+
+const roomBanSchema = new Schema({
+  roomId: { type: String, required: true },
+  userId: { type: String, required: true },
+  bannedBy: { type: String, required: true },
+  reason: { type: String, default: null },
+  expiresAt: { type: Date, default: null },
+});
+roomBanSchema.index({ roomId: 1, userId: 1 }, { unique: true });
+// Remove banimentos temporários vencidos (os sem prazo têm expiresAt nulo e ficam).
+roomBanSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 export const RoomModel = model('Room', roomSchema, 'rooms');
+export const ParticipationModel = model('Participation', participationSchema, 'participations');
+export const RoomBanModel = model('RoomBan', roomBanSchema, 'room_bans');
 export const UserModel = model('User', userSchema, 'users');
 export const SessionModel = model('Session', sessionSchema, 'sessions');
 export const GuildSettingsModel = model('GuildSettings', guildSettingsSchema, 'guild_settings');

@@ -53,7 +53,7 @@ describe('rotas inexistentes', () => {
   it('retornam o formato de erro padrão', async () => {
     const res = await request(createApp(env, logger)).get('/api/v1/nao-existe');
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe('ROUTE_NOT_FOUND');
     expect(res.body.error.requestId).toBeTruthy();
   });
 });

@@ -52,6 +52,8 @@ export interface SessionRepo {
 export interface Identity {
   user: UserRecord;
   role: Role;
+  /** Cargos do membro na guilda (usados para o acesso a reuniões restritas). */
+  roleIds: string[];
   displayName: string;
   avatarUrl: string | null;
 }

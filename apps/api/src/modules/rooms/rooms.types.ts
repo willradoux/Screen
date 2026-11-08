@@ -26,6 +26,7 @@ export interface RoomRecord {
   speakerIds: string[];
   reminders: Reminder[];
   endReason: string | null;
+  createdAt: Date;
 }
 
 export interface NewMeeting {
@@ -60,6 +61,12 @@ export interface RoomRepo {
   listOpenLive(guildId: string): Promise<RoomRecord[]>;
   /** Reuniões nos estados pedidos, da mais próxima para a mais distante. */
   listMeetings(guildId: string, statuses: RoomStatus[]): Promise<RoomRecord[]>;
+  /** Lista salas, das mais novas para as mais antigas, com paginação por cursor. */
+  list(
+    guildId: string,
+    filter: { statuses?: RoomStatus[]; type?: RoomType },
+    page: { limit: number; cursor?: string },
+  ): Promise<{ items: RoomRecord[]; next: string | null }>;
   setAnnouncement(id: string, channelId: string, messageId: string): Promise<void>;
   /** Muda o estado só se o atual estiver em `from`. `null` se não estava. */
   transition(

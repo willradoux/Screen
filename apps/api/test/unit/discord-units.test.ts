@@ -148,6 +148,7 @@ describe('embeds', () => {
     speakerIds: [],
     reminders: [],
     endReason: null,
+    createdAt: new Date(0),
   };
   const ctx = { webUrl: 'https://app.exemplo.com/', participants: 3 };
 

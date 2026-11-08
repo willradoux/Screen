@@ -1,5 +1,7 @@
 # Eventos Socket.IO
 
+> **Estado da implementação (Fase 5):** conexão autenticada, `room:subscribe`, `room:unsubscribe`, `participant:joined`, `participant:left`, `room:ended`, `voice:warning`, `voice:restored` e `session:revoked`. Ficam para as próximas fases: `chat:send`/`chat:message`, `presence:*`, `moderation:action`, `participant:updated`, `room:updated` e `settings:updated`.
+
 O Socket.IO leva **estado e notificações de controle**. A mídia vai direto pelo LiveKit.
 
 ## Conexão
