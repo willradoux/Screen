@@ -91,7 +91,7 @@ No callback, **todos** os erros viram redirecionamento (302) para `{WEB_URL}/log
 
 `GET /auth/me` (e toda rota protegida) consulta o membro no Discord com o token do próprio usuário e guarda o resultado por 60 s. Se o access token estiver a menos de 1 min de expirar, ele é renovado com o refresh token. Detalhes e a regra de cargos em [permissoes.md](permissoes.md).
 
-> Dono da guilda e permissão `Administrator`/`ManageGuild` do Discord só serão reconhecidos quando o bot entrar (Fase 4). Até lá, o primeiro admin é definido por `BOOTSTRAP_ADMIN_IDS` e depois por `/config cargo-admin`.
+> Dono da guilda e permissões `Administrator`/`ManageGuild` do Discord são reconhecidos quando o bot está ligado (Fase 4). O primeiro admin pode ser definido por `BOOTSTRAP_ADMIN_IDS` e depois por `/config cargo-admin`.
 
 ## Proteção CSRF nas rotas que alteram estado
 

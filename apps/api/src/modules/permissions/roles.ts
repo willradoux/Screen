@@ -1,5 +1,5 @@
 import type { Role } from '@screem/shared';
-import type { RoleConfig } from '../auth/auth.types.js';
+import type { RoleConfig } from '../settings/settings.types.js';
 
 export interface ResolveRoleInput {
   userId: string;
@@ -10,6 +10,8 @@ export interface ResolveRoleInput {
   bootstrapAdminIds: string[];
   /** Dono da guilda ou permissão Administrator/ManageGuild no Discord (via bot, Fase 4). */
   hasDiscordAdminPermission?: boolean;
+  /** Permissão MuteMembers/ModerateMembers no Discord (via bot). */
+  hasDiscordModPermission?: boolean;
 }
 
 /** Ordem: ADMIN > MOD > MEMBER. O papel mais alto vence. Ver docs/backend/permissoes.md */
@@ -23,6 +25,6 @@ export function resolveRole(input: ResolveRoleInput): Role {
   ) {
     return 'ADMIN';
   }
-  if (has(input.config.modRoleIds)) return 'MOD';
+  if (input.hasDiscordModPermission || has(input.config.modRoleIds)) return 'MOD';
   return 'MEMBER';
 }

@@ -47,12 +47,12 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 4 - Bot do Discord
 
-- [ ] Login do bot, intents (`Guilds`, `GuildVoiceStates`, `GuildMembers`).
-- [ ] Cache de voice states e reconciliação ao reiniciar.
-- [ ] Detecção de entrada/saída na categoria de lives.
-- [ ] Embed com botão (link da sala) e atualização do embed.
-- [ ] Slash commands: `/config`, `/reuniao criar|agendar|cancelar|encerrar|listar`.
-- [ ] Reconexão e tolerância a falhas.
+- [x] Login do bot, intents (`Guilds`, `GuildVoiceStates`, `GuildMembers`).
+- [x] Cache de voice states e reconciliação ao iniciar e ao retomar o gateway.
+- [x] Detecção de entrada/saída na categoria de lives (sala por canal, uma só mesmo com eventos simultâneos).
+- [x] Embed com botão (link da sala), atualização com limite de taxa e reenvio se a mensagem for apagada.
+- [x] Slash commands: `/config` e `/reuniao criar|agendar|cancelar|encerrar|listar` (`reagendar` e `/sala` ficam para as Fases 5 a 7).
+- [x] Reconexão e tolerância a falhas (bot reinicia sem duplicar embeds; canal/cargo apagado limpa a configuração).
 
 **Aceite:** entrar no canal de voz gera exatamente um embed; reiniciar o bot não duplica.
 

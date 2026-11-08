@@ -32,12 +32,12 @@ Não pedir `Administrator`. O bot **não** move nem muta pessoas no Discord; a m
 
 ## Cache de voice states
 
-`voice-cache.ts` guarda `Map<userId, { channelId, guildId, since }>`.
+`discord/voice-cache.ts` guarda `userId -> channelId` (bots são ignorados).
 
-- Ao `ready`, faz fetch das guildas e popula o cache.
+- Ao `ready` e a cada `shardResume`, `LiveVoiceHandler.reconcile()` lê o estado real do Discord e substitui o cache.
 - A cada `voiceStateUpdate`, atualiza e dispara o handler.
-- API: `isUserInChannel(userId, channelId)` usado por `rooms/access.ts`.
-- Em reconexão do gateway (`shardResume`), reconcilia comparando com o estado real.
+- API: `isInChannel(userId, channelId)`, `count(channelId)`, `membersIn(channelId)`; é o que a Fase 5 usa para decidir se alguém pode entrar na live.
+- Eventos do mesmo canal são processados **em fila** (`KeyedQueue`), então duas pessoas entrando ao mesmo tempo nunca criam duas salas. Além disso, um índice único parcial no MongoDB (uma sala `OPEN` por `voiceChannelId`) garante isso mesmo com várias instâncias.
 
 ## Eventos tratados
 
@@ -48,15 +48,19 @@ se new.channelId pertence à liveCategoryId e old.channelId != new.channelId:
         sala OPEN não existe? cria; envia embed; grava announceMessageId
         existe? só atualiza embed (contagem)
 se old.channelId pertence à categoria e saiu:
-    notifica realtime (voice:warning) e agenda remoção após graceSeconds
-    se o canal ficou vazio: agenda encerramento da sala (VOICE_EMPTY, 60 s)
+    se o canal ficou vazio: agenda encerramento da sala (VOICE_EMPTY, EMPTY_LIVE_END_SECONDS = 60 s);
+        quem entrar antes disso cancela o encerramento
+    senão: agenda atualização do embed
+    [Fase 5] notifica realtime (voice:warning) e remove do LiveKit após graceSeconds
 ```
+
+Eventos de quem não mudou de canal (mutar, ligar câmera) são ignorados.
 
 ### `interactionCreate`
 Roteia slash commands e botões. Todo comando de admin revalida o papel pelo `resolveRole`.
 
 ### `channelDelete`, `roleDelete`
-Limpam referências em `guild_settings` e avisam o admin.
+Removem a referência em `guild_settings` (canal/categoria vira `null`, cargo sai das listas) e registram um aviso no log.
 
 ## Embed da live
 
@@ -68,13 +72,18 @@ Botão:   [Abrir sala] -> https://app.exemplo.com/r/<roomId>   (estilo Link)
 Rodapé:  Acelera DEV · Screem
 ```
 
-- Uma mensagem por sala; é **editada** (contagem de participantes) no máximo a cada 15 s.
-- Ao encerrar a sala, o embed é editado para "Live encerrada" e o botão é desativado (substituído por texto).
+- Uma mensagem por sala, enviada ao `liveTextChannelId`; depois é **editada** (contagem de participantes) no máximo a cada 15 s por sala.
+- Sem `/config canal-live` a sala é criada normalmente, só sem embed (aviso no log). O embed é publicado na próxima entrada depois da configuração.
+- Se a mensagem for apagada, o próximo update reenvia e grava o novo ID.
+- A menção ao usuário usa `allowed_mentions: { parse: [] }`: aparece o nome, mas ninguém é notificado.
+- Ao encerrar a sala, o embed é editado para "Live encerrada" e o botão **some** (`components: []`).
 - O link é o `roomId` público. Segurança vem da validação de presença, não do segredo do link (veja [seguranca.md](seguranca.md)).
 
 ## Slash commands
 
-Registrados por guilda (instantâneo) no `ready`. Todos respondem em `ephemeral` salvo indicado.
+Registrados por guilda (instantâneo) no `ready`. Todas as respostas são `ephemeral`. O papel de quem executa é recalculado a cada comando (cargos configurados + dono/permissões do Discord), nunca vem de cache.
+
+Implementação: `discord/commands/` (`definitions.ts` descreve, `router.ts` autoriza, `config-handler.ts` e `meeting-handler.ts` executam). Os handlers não importam o discord.js, por isso são testados sem rede.
 
 ### `/config` (ADMIN)
 | Subcomando | Opções | Efeito |
@@ -88,19 +97,30 @@ Registrados por guilda (instantâneo) no `ready`. Todos respondem em `ephemeral`
 | `/config limite-live` | `max` (2 a 100) | `maxParticipantsLive` |
 | `/config ver` | - | mostra a configuração atual |
 
-### `/reuniao` (ADMIN)
+### `/reuniao`
+`criar`, `agendar`, `cancelar` e `listar` são só de **ADMIN**; `encerrar` é de **MOD+**.
 | Subcomando | Opções | Efeito |
 |---|---|---|
 | `/reuniao criar` | `titulo`, `descricao?`, `avisar?` (padrão sim) | cria e abre agora; avisa no canal |
 | `/reuniao agendar` | `titulo`, `data` (`DD/MM/AAAA`), `hora` (`HH:mm`), `descricao?`, `lembretes?` | agenda; avisa no canal |
-| `/reuniao reagendar` | `reuniao` (autocomplete), `data`, `hora` | muda o horário e reavisa |
-| `/reuniao cancelar` | `reuniao` | cancela e avisa |
-| `/reuniao encerrar` | `reuniao?` (padrão: a aberta) | encerra |
+| `/reuniao reagendar` | `reuniao` (autocomplete), `data`, `hora` | muda o horário e reavisa. **[Fase 7]** |
+| `/reuniao cancelar` | `reuniao` (autocomplete) | só reunião `SCHEDULED`; edita o aviso para "cancelada" |
+| `/reuniao encerrar` | `reuniao?` (padrão: a única aberta; se houver várias, escolha) | encerra e edita o aviso |
 | `/reuniao listar` | - | próximas reuniões |
+
+Regras do `criar`/`agendar`:
+- Título de 3 a 100 caracteres; descrição até 1000.
+- `agendar` exige o horário pelo menos 2 minutos no futuro e rejeita datas inexistentes (31/02) e formatos diferentes de `DD/MM/AAAA` e `HH:mm`.
+- `lembretes`: até 5 valores em minutos, separados por vírgula (padrão `1440,60,5`; `0` = nenhum). Lembretes que já passaram (reunião marcada para daqui a 30 min não recebe o de 1 h) são descartados. O **envio** dos lembretes e a abertura automática no horário são da Fase 7.
+- Com `avisar` (padrão sim) é obrigatório ter `/config canal-avisos`; senão o comando recusa e **não cria** a reunião.
+- Se criar a reunião mas o envio do aviso falhar (bot sem permissão), a reunião existe e o admin é avisado na resposta.
+- Quem pode entrar (`allowedRoleIds`) é copiado de `/config cargo-reuniao` no momento da criação.
 
 Fuso: `America/Sao_Paulo` (configurável por `TIMEZONE`). Datas no passado são recusadas. O Discord renderiza horários com `<t:UNIX:F>`, então cada pessoa vê no fuso dela.
 
-### `/sala` (MOD+)
+### `/sala` (MOD+) — [Fase 5/6]
+Ainda não implementado: depende do LiveKit e da moderação.
+
 | Subcomando | Efeito |
 |---|---|
 | `/sala encerrar canal` | encerra a live daquele canal |
@@ -113,7 +133,7 @@ Título:  📅 Reunião: Reunião mensal de dezembro
 Corpo:   <descrição>
 Campos:  Quando: <t:1796511600:F> (<t:1796511600:R>) · Quem pode: todos os membros
 Botão:   [Entrar na reunião] -> https://app.exemplo.com/r/<roomId>
-Menção:  @everyone ou cargo (configurável por `MEETING_MENTION_ROLE_ID`)
+Menção:  @everyone ou cargo (configurável por `MEETING_MENTION_ROLE_ID`); só na mensagem inicial, edições não notificam de novo
 ```
 
 Quando a reunião abre: o mesmo aviso é editado para "🟢 Reunião aberta agora" e o botão fica ativo.
@@ -134,6 +154,7 @@ Botões de **link** não precisam de handler. Se for necessário botão interati
 
 ## Boas práticas
 
-- Nunca confiar em `interaction.member` para papel; use `resolveRole`.
+- Nunca confiar em `interaction.member` para papel; use `resolveRole` (feito em `CommandRouter.roleOf`).
+- O bot só responde a interações da guilda configurada em `DISCORD_GUILD_ID`.
 - Responder em até 3 s (`deferReply` quando houver I/O).
 - Mensagens de erro amigáveis, em português, sem stack trace.

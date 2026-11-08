@@ -40,11 +40,11 @@ Gerar: `openssl rand -base64 32`. `TOKEN_ENCRYPTION_KEY` precisa decodificar par
 |---|:-:|---|
 | `DISCORD_CLIENT_ID` | sim | ID da aplicação |
 | `DISCORD_CLIENT_SECRET` | sim | Segredo OAuth2 |
-| `DISCORD_BOT_TOKEN` | sim | Token do bot |
+| `DISCORD_BOT_TOKEN` | prod | Token do bot. Sem ele (só em desenvolvimento) a API sobe sem o bot; em produção a API não inicia |
 | `DISCORD_GUILD_ID` | sim | ID do servidor Acelera DEV |
 | `DISCORD_REDIRECT_URI` | sim | `https://api.exemplo.com/api/v1/auth/discord/callback` |
 | `BOOTSTRAP_ADMIN_IDS` | não | IDs Discord (vírgula) tratados como ADMIN. Serve para o primeiro acesso, antes de configurar os cargos |
-| `MEETING_MENTION_ROLE_ID` | não | Cargo marcado nos avisos (vazio = `@everyone`) |
+| `MEETING_MENTION_ROLE_ID` | não | Cargo marcado nos avisos de reunião (vazio = `@everyone`) |
 
 ## LiveKit
 
@@ -59,9 +59,8 @@ Gerar: `openssl rand -base64 32`. `TOKEN_ENCRYPTION_KEY` precisa decodificar par
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `DEFAULT_MAX_PARTICIPANTS_LIVE` | `25` | Usado quando não há `guild_settings` |
 | `DEFAULT_GRACE_SECONDS` | `30` | Tolerância após sair da call |
-| `EMPTY_LIVE_END_SECONDS` | `60` | Encerra live sem ninguém no canal |
+| `EMPTY_LIVE_END_SECONDS` | `60` | Encerra live sem ninguém no canal (mínimo 5) |
 | `EMPTY_MEETING_END_MINUTES` | `15` | Encerra reunião vazia |
 | `JOIN_TOKEN_TTL` | `10m` | TTL do token LiveKit |
 

@@ -229,6 +229,41 @@ describe('papéis', () => {
   });
 });
 
+describe('papéis pelas permissões do Discord (bot)', () => {
+  const roleWith = async (perms: { isOwner: boolean; isAdmin: boolean; isMod: boolean }) => {
+    const ctx = buildTestApp({}, { guildPermissions: { getMemberPermissions: async () => perms } });
+    ctx.discord.addMember(USER);
+    const { agent } = await login(ctx);
+    return (await agent.get('/api/v1/auth/me')).body.data.role;
+  };
+
+  it('dono do servidor e Administrator/ManageGuild -> ADMIN', async () => {
+    expect(await roleWith({ isOwner: true, isAdmin: false, isMod: false })).toBe('ADMIN');
+    expect(await roleWith({ isOwner: false, isAdmin: true, isMod: false })).toBe('ADMIN');
+  });
+  it('MuteMembers/ModerateMembers -> MOD', async () => {
+    expect(await roleWith({ isOwner: false, isAdmin: false, isMod: true })).toBe('MOD');
+  });
+  it('sem permissões -> MEMBER', async () => {
+    expect(await roleWith({ isOwner: false, isAdmin: false, isMod: false })).toBe('MEMBER');
+  });
+  it('falha ao consultar o bot não derruba nem eleva: cai para os cargos', async () => {
+    const ctx = buildTestApp(
+      {},
+      {
+        guildPermissions: {
+          getMemberPermissions: async () => {
+            throw new Error('Unknown Member');
+          },
+        },
+      },
+    );
+    ctx.discord.addMember(USER, { roles: [MOD_ROLE] });
+    const { agent } = await login(ctx);
+    expect((await agent.get('/api/v1/auth/me')).body.data.role).toBe('MOD');
+  });
+});
+
 describe('sessão', () => {
   it('sem cookie -> 401 UNAUTHENTICATED', async () => {
     const ctx = buildTestApp();

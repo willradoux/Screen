@@ -1,14 +1,19 @@
 import { createApp } from '../../src/app.js';
 import { loadEnv, type Env } from '../../src/config/env.js';
-import { AuthService } from '../../src/modules/auth/auth.service.js';
+import { AuthService, type AuthServiceDeps } from '../../src/modules/auth/auth.service.js';
 import type {
-  RoleConfig,
   SessionRecord,
   SessionRepo,
-  SettingsRepo,
   UserRecord,
   UserRepo,
 } from '../../src/modules/auth/auth.types.js';
+import type {
+  GuildSettings,
+  RoleConfig,
+  RoleListField,
+  SettingsPatch,
+  SettingsRepo,
+} from '../../src/modules/settings/settings.types.js';
 import {
   DiscordAuthError,
   DiscordUnavailableError,
@@ -151,13 +156,57 @@ export class MemorySessions implements SessionRepo {
 }
 
 export class MemorySettings implements SettingsRepo {
-  config: RoleConfig = { adminRoleIds: [ADMIN_ROLE], modRoleIds: [MOD_ROLE] };
+  settings: GuildSettings = {
+    guildId: GUILD_ID,
+    liveCategoryId: null,
+    liveTextChannelId: null,
+    announceChannelId: null,
+    adminRoleIds: [ADMIN_ROLE],
+    modRoleIds: [MOD_ROLE],
+    meetingAllowedRoleIds: [],
+    maxParticipantsLive: 25,
+    graceSeconds: 30,
+  };
+  /** Compatibilidade com testes antigos que mexiam em `config`. */
+  get config(): RoleConfig {
+    return this.settings;
+  }
   async getRoleConfig() {
-    return this.config;
+    return { adminRoleIds: this.settings.adminRoleIds, modRoleIds: this.settings.modRoleIds };
+  }
+  async get() {
+    return structuredClone(this.settings);
+  }
+  async update(_guildId: string, patch: SettingsPatch) {
+    Object.assign(this.settings, patch);
+    return structuredClone(this.settings);
+  }
+  async modifyList(
+    _guildId: string,
+    field: RoleListField,
+    action: 'add' | 'remove',
+    roleId: string,
+  ) {
+    const list = this.settings[field];
+    if (action === 'add' && !list.includes(roleId)) list.push(roleId);
+    if (action === 'remove') this.settings[field] = list.filter((r) => r !== roleId);
+    return structuredClone(this.settings);
+  }
+  async removeReference(_guildId: string, id: string) {
+    const s = this.settings;
+    for (const f of ['adminRoleIds', 'modRoleIds', 'meetingAllowedRoleIds'] as const) {
+      s[f] = s[f].filter((r) => r !== id);
+    }
+    for (const f of ['liveCategoryId', 'liveTextChannelId', 'announceChannelId'] as const) {
+      if (s[f] === id) s[f] = null;
+    }
   }
 }
 
-export function buildTestApp(envOverrides: Record<string, string> = {}) {
+export function buildTestApp(
+  envOverrides: Record<string, string> = {},
+  extra: { guildPermissions?: AuthServiceDeps['guildPermissions'] } = {},
+) {
   // Os padrões de teste só valem com NODE_ENV=test; para simular outros ambientes,
   // carregamos como test e trocamos NODE_ENV depois.
   const { NODE_ENV, ...rest } = envOverrides;
@@ -168,7 +217,15 @@ export function buildTestApp(envOverrides: Record<string, string> = {}) {
   const users = new MemoryUsers();
   const sessions = new MemorySessions();
   const settings = new MemorySettings();
-  const auth = new AuthService({ env, discord, users, sessions, settings, now: clock.now });
+  const auth = new AuthService({
+    env,
+    discord,
+    users,
+    sessions,
+    settings,
+    now: clock.now,
+    ...(extra.guildPermissions ? { guildPermissions: extra.guildPermissions } : {}),
+  });
   const app = createApp(env, createLogger(env), { auth });
   return { app, env, clock, discord, users, sessions, settings, auth };
 }

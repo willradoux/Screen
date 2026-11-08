@@ -91,6 +91,7 @@ describe('loadEnv (auth)', () => {
     DISCORD_REDIRECT_URI: 'http://localhost:3000/cb',
     COOKIE_SECRET: 'x'.repeat(32),
     TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 3).toString('base64'),
+    DISCORD_BOT_TOKEN: 'token-do-bot',
   };
 
   it('fora de teste, exige as variáveis de login', () => {
@@ -105,6 +106,26 @@ describe('loadEnv (auth)', () => {
     });
     expect(env.encryptionKey).toHaveLength(32);
     expect(env.bootstrapAdminIds).toEqual(['333333333333333333']);
+  });
+
+  it('em produção o token do bot é obrigatório; fora dela, opcional (vazio vale ausente)', () => {
+    const withoutToken: Record<string, string> = { ...valid };
+    delete withoutToken.DISCORD_BOT_TOKEN;
+    expect(() => loadEnv({ NODE_ENV: 'production', ...withoutToken })).toThrow(/DISCORD_BOT_TOKEN/);
+    expect(() =>
+      loadEnv({ NODE_ENV: 'production', ...withoutToken, DISCORD_BOT_TOKEN: '' }),
+    ).toThrow(/DISCORD_BOT_TOKEN/);
+    const dev = loadEnv({ NODE_ENV: 'development', ...withoutToken, DISCORD_BOT_TOKEN: '' });
+    expect(dev.DISCORD_BOT_TOKEN).toBeUndefined();
+  });
+
+  it('MEETING_MENTION_ROLE_ID vazio vale ausente; inválido é recusado', () => {
+    expect(
+      loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: '' }).MEETING_MENTION_ROLE_ID,
+    ).toBeUndefined();
+    expect(() => loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: 'abc' })).toThrow(
+      /MEETING_MENTION_ROLE_ID/,
+    );
   });
 
   it('rejeita chave de criptografia com tamanho errado', () => {

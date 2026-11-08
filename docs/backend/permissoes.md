@@ -14,7 +14,8 @@ As listas de cargos ficam em `GuildSettings` e são editáveis por `/config` ou 
 
 ## Resolução do papel
 
-> Implementado na Fase 3 com cargos (`adminRoleIds`/`modRoleIds`) e `BOOTSTRAP_ADMIN_IDS`. As regras de dono e de permissões do Discord (`Administrator`, `ManageGuild`, `MuteMembers`) dependem do bot e entram na Fase 4.
+> Implementado: cargos (`adminRoleIds`/`modRoleIds`), `BOOTSTRAP_ADMIN_IDS` e, com o bot ligado (Fase 4), dono do servidor, `Administrator`/`ManageGuild` (ADMIN) e `MuteMembers`/`ModerateMembers` (MOD). Se o bot estiver desligado ou a consulta falhar, valem só cargos e `BOOTSTRAP_ADMIN_IDS` — nunca eleva por engano.
+> A permissão `MuteMembers`/`ModerateMembers` como MOD ainda não é configurável.
 
 ```
 resolveRole(guildId, userId):

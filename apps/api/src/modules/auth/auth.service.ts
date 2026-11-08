@@ -1,6 +1,7 @@
 import type { Env } from '../../config/env.js';
 import { decrypt, encrypt, randomToken, sha256, sign, unsign } from '../../shared/crypto.js';
 import { AppError, unauthenticated } from '../../shared/errors.js';
+import type { MemberPermissions } from '../../discord/gateway.js';
 import { resolveRole } from '../permissions/roles.js';
 import {
   DiscordAuthError,
@@ -29,6 +30,8 @@ export interface AuthServiceDeps {
   users: UserRepo;
   sessions: SessionRepo;
   settings: SettingsRepo;
+  /** Permissões do membro no Discord (via bot). Sem ele, só valem os cargos configurados. */
+  guildPermissions?: { getMemberPermissions(userId: string): Promise<MemberPermissions> };
   now?: () => Date;
 }
 
@@ -194,11 +197,14 @@ export class AuthService {
 
     const member = await this.getMember(session);
     const config = await this.deps.settings.getRoleConfig(this.deps.env.DISCORD_GUILD_ID);
+    const perms = await this.deps.guildPermissions?.getMemberPermissions(user.id).catch(() => null);
     const role = resolveRole({
       userId: user.id,
       memberRoleIds: member.roles,
       config,
       bootstrapAdminIds: this.deps.env.bootstrapAdminIds,
+      hasDiscordAdminPermission: Boolean(perms && (perms.isOwner || perms.isAdmin)),
+      hasDiscordModPermission: Boolean(perms?.isMod),
     });
 
     return {

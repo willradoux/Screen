@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { snowflake } from '@screem/shared';
 
 /** Variáveis de ambiente. Ver docs/backend/variaveis-de-ambiente.md */
+/** Variável vazia no .env (`FOO=`) vale como ausente. */
+const optional = <T extends z.ZodTypeAny>(inner: T) =>
+  z.preprocess((v) => (v === '' ? undefined : v), inner.optional());
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -19,6 +23,13 @@ const schema = z.object({
   DISCORD_GUILD_ID: snowflake,
   DISCORD_REDIRECT_URI: z.string().url(),
   BOOTSTRAP_ADMIN_IDS: z.string().optional(),
+  /** Sem o token o bot não inicia (a API sobe normalmente). Obrigatório em produção. */
+  DISCORD_BOT_TOKEN: optional(z.string().min(1)),
+  /** Cargo marcado nos avisos de reunião. Vazio = @everyone. */
+  MEETING_MENTION_ROLE_ID: optional(snowflake),
+
+  // Regras de negócio
+  EMPTY_LIVE_END_SECONDS: z.coerce.number().int().min(5).default(60),
 
   // Sessão e criptografia
   COOKIE_SECRET: z.string().min(32, 'use 32 ou mais caracteres'),
@@ -65,6 +76,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
+
+  if (env.NODE_ENV === 'production' && !env.DISCORD_BOT_TOKEN) {
+    throw new Error('Variáveis de ambiente inválidas:\nDISCORD_BOT_TOKEN: obrigatório em produção');
+  }
 
   const bootstrapAdminIds = list(env.BOOTSTRAP_ADMIN_IDS);
   const badId = bootstrapAdminIds.find((id) => !snowflake.safeParse(id).success);

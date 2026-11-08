@@ -1,12 +1,5 @@
-import { GuildSettingsModel, SessionModel, UserModel } from '../../db/models.js';
-import type {
-  RoleConfig,
-  SessionRecord,
-  SessionRepo,
-  SettingsRepo,
-  UserRecord,
-  UserRepo,
-} from './auth.types.js';
+import { SessionModel, UserModel } from '../../db/models.js';
+import type { SessionRecord, SessionRepo, UserRecord, UserRepo } from './auth.types.js';
 
 /** Implementações em MongoDB dos repositórios de autenticação. */
 
@@ -85,15 +78,6 @@ export function createSessionRepo(): SessionRepo {
     },
     async deleteByUser(userId) {
       await SessionModel.deleteMany({ userId });
-    },
-  };
-}
-
-export function createSettingsRepo(): SettingsRepo {
-  return {
-    async getRoleConfig(guildId): Promise<RoleConfig> {
-      const doc = await GuildSettingsModel.findById(guildId).lean();
-      return { adminRoleIds: doc?.adminRoleIds ?? [], modRoleIds: doc?.modRoleIds ?? [] };
     },
   };
 }

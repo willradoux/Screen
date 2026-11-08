@@ -50,6 +50,47 @@ const guildSettingsSchema = new Schema(
   { timestamps: true },
 );
 
+const roomSchema = new Schema(
+  {
+    _id: { type: String, required: true },
+    guildId: { type: String, required: true },
+    type: { type: String, enum: ['LIVE', 'MEETING'], required: true },
+    status: { type: String, enum: ['SCHEDULED', 'OPEN', 'ENDED', 'CANCELED'], required: true },
+    title: { type: String, required: true },
+    description: { type: String, default: null },
+    voiceChannelId: { type: String, default: null },
+    announceChannelId: { type: String, default: null },
+    announceMessageId: { type: String, default: null },
+    startsAt: { type: Date, default: null },
+    openedAt: { type: Date, default: null },
+    endedAt: { type: Date, default: null },
+    createdBy: { type: String, required: true },
+    maxParticipants: { type: Number, required: true },
+    allowedRoleIds: { type: [String], default: [] },
+    lectureMode: { type: Boolean, default: false },
+    speakerIds: { type: [String], default: [] },
+    reminders: {
+      type: [{ _id: false, minutesBefore: Number, sentAt: { type: Date, default: null } }],
+      default: [],
+    },
+    livekitRoomName: { type: String, required: true },
+    endReason: { type: String, default: null },
+  },
+  { timestamps: true },
+);
+roomSchema.index({ guildId: 1, status: 1, type: 1 });
+// Garante no máximo uma sala aberta por canal de voz, mesmo com eventos concorrentes.
+roomSchema.index(
+  { voiceChannelId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: 'OPEN', voiceChannelId: { $type: 'string' } },
+  },
+);
+// Usado pelo agendador de reuniões (Fase 7).
+roomSchema.index({ startsAt: 1 }, { partialFilterExpression: { status: 'SCHEDULED' } });
+
+export const RoomModel = model('Room', roomSchema, 'rooms');
 export const UserModel = model('User', userSchema, 'users');
 export const SessionModel = model('Session', sessionSchema, 'sessions');
 export const GuildSettingsModel = model('GuildSettings', guildSettingsSchema, 'guild_settings');

@@ -1,4 +1,7 @@
 import type { Role } from '@screem/shared';
+import type { RoleConfig, SettingsRepo } from '../settings/settings.types.js';
+
+export type { RoleConfig, SettingsRepo };
 
 export interface UserRecord {
   id: string;
@@ -43,15 +46,6 @@ export interface SessionRepo {
   ): Promise<void>;
   delete(id: string): Promise<void>;
   deleteByUser(userId: string): Promise<void>;
-}
-
-export interface RoleConfig {
-  adminRoleIds: string[];
-  modRoleIds: string[];
-}
-
-export interface SettingsRepo {
-  getRoleConfig(guildId: string): Promise<RoleConfig>;
 }
 
 /** Quem é o usuário logado, já com papel calculado. */

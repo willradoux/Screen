@@ -6,7 +6,7 @@
 |---|---|
 | Unitário e integração | Vitest |
 | HTTP | Supertest |
-| Banco | `mongodb-memory-server` (ou container) |
+| Banco | `mongodb-memory-server`: um MongoDB **real** em memória, iniciado uma vez por execução (`test/db/global-setup.ts`). Na 1ª vez baixa o binário (~70 MB) e o guarda em cache |
 | Mocks de Discord/LiveKit | Interfaces finas + fakes em `test/fixtures` |
 | Socket.IO | `socket.io-client` contra servidor em porta efêmera |
 | E2E (Fase 9) | Playwright + Docker Compose de teste |
