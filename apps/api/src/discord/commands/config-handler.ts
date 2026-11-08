@@ -1,3 +1,4 @@
+import type { AuditLog } from '../../modules/audit/audit.service.js';
 import type { SettingsRepo } from '../../modules/settings/settings.types.js';
 import type { DiscordGateway } from '../gateway.js';
 import { UserError, type CommandCall, type CommandContext, type CommandReply } from './types.js';
@@ -5,6 +6,7 @@ import { UserError, type CommandCall, type CommandContext, type CommandReply } f
 export interface ConfigHandlerDeps {
   settings: SettingsRepo;
   gateway: DiscordGateway;
+  audit: AuditLog;
   guildId: string;
 }
 
@@ -25,6 +27,19 @@ export class ConfigHandler {
   constructor(private readonly deps: ConfigHandlerDeps) {}
 
   async handle(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
+    const reply = await this.run(ctx, call);
+    // `ver` só lê; todo o resto altera a configuração e fica registrado.
+    if (call.sub !== 'ver') {
+      await this.deps.audit.record({
+        actorId: ctx.userId,
+        action: 'SETTINGS_UPDATED',
+        meta: { via: 'command', sub: call.sub, options: call.options },
+      });
+    }
+    return reply;
+  }
+
+  private async run(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
     const { settings, gateway, guildId } = this.deps;
 
     switch (call.sub) {

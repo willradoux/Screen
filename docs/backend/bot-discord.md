@@ -83,6 +83,8 @@ Rodapé:  Acelera DEV · Screem
 
 Registrados por guilda (instantâneo) no `ready`. Todas as respostas são `ephemeral`. O papel de quem executa é recalculado a cada comando (cargos configurados + dono/permissões do Discord), nunca vem de cache.
 
+Todo comando que altera algo é **auditado** (`SETTINGS_UPDATED`, `MEETING_CREATED`, `MEETING_CANCELED`, `ROOM_ENDED`, com `meta.via = "command"`); comando recusado ou que só lê (`/config ver`, `/reuniao listar`) não gera registro.
+
 Implementação: `discord/commands/` (`definitions.ts` descreve, `router.ts` autoriza, `config-handler.ts` e `meeting-handler.ts` executam). Os handlers não importam o discord.js, por isso são testados sem rede.
 
 ### `/config` (ADMIN)

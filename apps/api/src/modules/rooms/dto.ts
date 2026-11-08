@@ -49,6 +49,7 @@ export function toParticipantDto(p: Participation, room: RoomRecord) {
     joinedAt: p.joinedAt.toISOString(),
     isSpeaker: room.speakerIds.includes(p.userId),
     mutedByModeration: p.mutedByModeration,
+    mutedSources: p.mutedSources,
   };
 }
 

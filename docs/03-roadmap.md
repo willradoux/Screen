@@ -70,12 +70,12 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 6 - Moderação e administração
 
-- [ ] Mutar áudio/vídeo/tela de um participante.
-- [ ] Expulsar e banir da sala (temporário).
-- [ ] Bloquear publicação para todos (modo palestra).
-- [ ] Promover participante a palestrante.
-- [ ] Alterar configurações da guilda pela API.
-- [ ] Auditoria de todas as ações.
+- [x] Mutar áudio, vídeo e tela de um participante (por fonte, acumulativo, persiste se a pessoa sair e voltar).
+- [x] Expulsar e banir da sala (60 min por padrão, até 24 h; sem prazo só ADMIN) e desbanir.
+- [x] Bloquear publicação para todos (modo palestra), aplicado na hora a quem já está conectado.
+- [x] Promover e rebaixar palestrantes.
+- [x] Alterar configurações da guilda pela API (`GET`/`PATCH /settings`, com validação contra o Discord) e editar a sala (`PATCH /rooms/:id`).
+- [x] Auditoria de todas as ações de moderação e administração (API e comandos do bot) e `GET /audit` com filtros e paginação.
 
 **Aceite:** ações exigem papel adequado; cada ação gera registro de auditoria.
 

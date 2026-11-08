@@ -1,12 +1,14 @@
 import express, { Router, type Request } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
-import { ROLE_RANK, roomStatusSchema, roomTypeSchema } from '@screem/shared';
-import { AppError, forbidden } from '../../shared/errors.js';
+import { roomStatusSchema, roomTypeSchema } from '@screem/shared';
+import { AppError } from '../../shared/errors.js';
 import { getValidated, validate } from '../../shared/validate.js';
 import { requireAuth } from '../auth/auth.middleware.js';
 import type { AuthService } from '../auth/auth.service.js';
 import type { Identity } from '../auth/auth.types.js';
+import type { AuditLog } from '../audit/audit.service.js';
+import { requireCapability } from '../permissions/capabilities.js';
 import { InvalidWebhookError } from '../livekit/livekit.gateway.js';
 import type { LiveKitWebhookHandler } from '../livekit/livekit.webhook.js';
 import type { RoomAccess } from './access.js';
@@ -24,6 +26,7 @@ export interface RoomsApi {
   presence: PresenceService;
   roomService: RoomService;
   webhook: LiveKitWebhookHandler;
+  audit: AuditLog;
   guildId: string;
   webUrl: string;
 }
@@ -123,10 +126,8 @@ export function roomsRoutes(api: RoomsApi, auth: AuthService): Router {
     res.status(204).end();
   });
 
-  router.post('/rooms/:id/end', needAuth, async (req, res) => {
+  router.post('/rooms/:id/end', needAuth, requireCapability('room.end'), async (req, res) => {
     const identity = identityOf(req);
-    if (ROLE_RANK[identity.role] < ROLE_RANK.MOD) throw forbidden();
-
     const room = await loadRoom(req);
     const ended = await api.roomService.endRoom(
       room.id,
@@ -138,6 +139,12 @@ export function roomsRoutes(api: RoomsApi, auth: AuthService): Router {
         ? new AppError('ROOM_ALREADY_ENDED', 409, 'A sala já foi encerrada.')
         : new AppError('ROOM_NOT_OPEN', 409, 'Esta sala não está aberta.');
     }
+    await api.audit.record({
+      actorId: identity.user.id,
+      roomId: room.id,
+      action: 'ROOM_ENDED',
+      meta: { via: 'api', role: identity.role },
+    });
     res.status(204).end();
   });
 

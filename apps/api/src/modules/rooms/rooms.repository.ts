@@ -163,6 +163,20 @@ export function createRoomRepo(): RoomRepo {
       return { items, next };
     },
 
+    async update(id, patch) {
+      const doc = await RoomModel.findByIdAndUpdate(id, { $set: patch }, { new: true, lean: true });
+      return doc ? toRecord(doc as Doc) : null;
+    },
+
+    async updateSpeakers(id, action, userId) {
+      const op =
+        action === 'add'
+          ? { $addToSet: { speakerIds: userId } }
+          : { $pull: { speakerIds: userId } };
+      const doc = await RoomModel.findByIdAndUpdate(id, op, { new: true, lean: true });
+      return doc ? toRecord(doc as Doc) : null;
+    },
+
     async setAnnouncement(id, channelId, messageId) {
       await RoomModel.updateOne(
         { _id: id },

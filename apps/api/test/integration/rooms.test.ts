@@ -275,7 +275,12 @@ describe('POST /rooms/:id/join (lives)', () => {
       role: 'MEMBER',
       at: ctx.clock.now(),
     });
-    await ctx.participations.setMutedByModeration(room.id, MEMBER_ID, true);
+    await ctx.participations.setMutedSources(room.id, MEMBER_ID, [
+      'microphone',
+      'camera',
+      'screen_share',
+      'screen_share_audio',
+    ]);
     const agent = await loginAs(ctx, MEMBER_ID);
     const res = await post(agent, ctx, `/rooms/${room.id}/join`);
     expect(res.body.data.permissions.canPublish).toBe(false);

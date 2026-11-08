@@ -4,17 +4,22 @@ import { loadEnv } from './config/env.js';
 import { connectDb, disconnectDb, pingDb } from './db/connection.js';
 import { createDiscordSystem } from './discord/bootstrap.js';
 import { VoiceCache } from './discord/voice-cache.js';
+import { AuditService, createAuditRepo } from './modules/audit/audit.service.js';
 import { createSessionRepo, createUserRepo } from './modules/auth/auth.repositories.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { createDiscordApi } from './modules/discord/discord-api.js';
 import { createLiveKitGateway } from './modules/livekit/livekit.gateway.js';
 import { LiveKitWebhookHandler } from './modules/livekit/livekit.webhook.js';
+import { ModerationService } from './modules/moderation/moderation.service.js';
+import type { ModerationApi } from './modules/moderation/moderation.routes.js';
 import { RoomAccess } from './modules/rooms/access.js';
 import { createBanRepo, createParticipationRepo } from './modules/rooms/participations.js';
 import { PresenceService } from './modules/rooms/presence.js';
 import { createRoomRepo } from './modules/rooms/rooms.repository.js';
 import type { RoomsApi } from './modules/rooms/rooms.routes.js';
 import { createSettingsRepo } from './modules/settings/settings.repository.js';
+import type { AdminApi } from './modules/settings/settings.routes.js';
+import { SettingsService } from './modules/settings/settings.service.js';
 import { LateBoundEmitter } from './realtime/emitter.js';
 import { createSocketServer, type SocketServer } from './realtime/socket.js';
 import { createLogger } from './shared/logger.js';
@@ -36,6 +41,7 @@ const participations = createParticipationRepo();
 const bans = createBanRepo();
 const livekit = createLiveKitGateway(env);
 const voiceCache = new VoiceCache();
+const audit = new AuditService({ repo: createAuditRepo(), logger });
 
 // O servidor Socket.IO só existe depois do http.Server; até lá os avisos vão para este intermediário.
 const realtime = new LateBoundEmitter();
@@ -54,7 +60,7 @@ const presence = new PresenceService({
 
 // O bot é opcional em desenvolvimento: sem token, a API sobe sem ele (e sem salas).
 const discord = env.DISCORD_BOT_TOKEN
-  ? createDiscordSystem(env, logger, { rooms, settings, voiceCache, presence })
+  ? createDiscordSystem(env, logger, { rooms, settings, voiceCache, presence, audit })
   : null;
 if (!discord) logger.warn('DISCORD_BOT_TOKEN ausente: o bot e as salas não serão iniciados');
 
@@ -69,6 +75,8 @@ const auth = new AuthService({
 });
 
 let roomsApi: RoomsApi | undefined;
+let moderationApi: ModerationApi | undefined;
+let adminApi: AdminApi | undefined;
 let access: RoomAccess | undefined;
 if (discord) {
   access = new RoomAccess({
@@ -95,8 +103,38 @@ if (discord) {
       cache: voiceCache,
       logger,
     }),
+    audit,
     guildId: env.DISCORD_GUILD_ID,
     webUrl: env.WEB_URL,
+  };
+
+  moderationApi = {
+    moderation: new ModerationService({
+      rooms,
+      participations,
+      bans,
+      livekit,
+      presence,
+      realtime,
+      audit,
+      roles: discord.roles,
+      onRoomChanged: (room) => discord.announcer.refresh(room),
+      logger,
+    }),
+    access,
+    participations,
+    webUrl: env.WEB_URL,
+  };
+
+  adminApi = {
+    settings: new SettingsService({
+      settings,
+      gateway: discord.gateway,
+      audit,
+      realtime,
+      guildId: env.DISCORD_GUILD_ID,
+    }),
+    audit,
   };
 }
 
@@ -104,6 +142,8 @@ const app = createApp(env, logger, {
   readiness: { mongo: pingDb },
   auth,
   ...(roomsApi ? { rooms: roomsApi } : {}),
+  ...(moderationApi ? { moderation: moderationApi } : {}),
+  ...(adminApi ? { admin: adminApi } : {}),
 });
 const server = createServer(app);
 

@@ -24,6 +24,9 @@ export type SettingsPatch = Partial<
     | 'announceChannelId'
     | 'maxParticipantsLive'
     | 'graceSeconds'
+    | 'adminRoleIds'
+    | 'modRoleIds'
+    | 'meetingAllowedRoleIds'
   >
 >;
 

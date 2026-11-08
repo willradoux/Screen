@@ -135,6 +135,7 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
     io,
     toRoom: (roomId, event, payload) => void io.to(`room:${roomId}`).emit(event, payload),
     toUser: (userId, event, payload) => void io.to(`user:${userId}`).emit(event, payload),
+    toAdmins: (event, payload) => void io.to('admins').emit(event, payload),
     revoke({ sessionId, userId }) {
       for (const socket of io.sockets.sockets.values()) {
         const d = data(socket);

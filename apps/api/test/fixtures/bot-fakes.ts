@@ -11,12 +11,15 @@ import type {
   VoiceStateEntry,
 } from '../../src/discord/gateway.js';
 import { LiveVoiceHandler } from '../../src/discord/live-handler.js';
+import { AuditService } from '../../src/modules/audit/audit.service.js';
+import { RoleResolver } from '../../src/modules/permissions/role-resolver.js';
 import { VoiceCache } from '../../src/discord/voice-cache.js';
 import { RoomAnnouncer } from '../../src/modules/rooms/announcer.js';
 import { RoomService } from '../../src/modules/rooms/rooms.service.js';
 import type { NewMeeting, RoomRecord, RoomRepo } from '../../src/modules/rooms/rooms.types.js';
 import type { Scheduler } from '../../src/shared/scheduler.js';
 import { createLogger } from '../../src/shared/logger.js';
+import { MemoryAuditRepo } from './audit-fake.js';
 import { ADMIN_ROLE, FakeClock, GUILD_ID, MOD_ROLE, MemorySettings } from './fakes.js';
 
 export const CATEGORY = '500000000000000001';
@@ -70,6 +73,7 @@ export class FakeGateway implements DiscordGateway {
   roles = new Set<string>();
   voiceStates: VoiceStateEntry[] = [];
   permissions = new Map<string, MemberPermissions>();
+  memberRoles = new Map<string, string[]>();
   messages = new Map<string, MessagePayload>();
   sent: { channelId: string; messageId: string; payload: MessagePayload }[] = [];
   edits: { channelId: string; messageId: string; payload: MessagePayload }[] = [];
@@ -108,6 +112,9 @@ export class FakeGateway implements DiscordGateway {
   }
   async listVoiceStates() {
     return this.voiceStates;
+  }
+  async getMemberRoleIds(userId: string) {
+    return this.memberRoles.get(userId) ?? [];
   }
   async getMemberPermissions(userId: string) {
     return this.permissions.get(userId) ?? { isOwner: false, isAdmin: false, isMod: false };
@@ -224,6 +231,21 @@ export class MemoryRooms implements RoomRepo {
         : null;
     return { items, next };
   }
+  async update(id: string, patch: import('../../src/modules/rooms/rooms.types.js').RoomPatch) {
+    const r = this.rooms.get(id);
+    if (!r) return null;
+    Object.assign(r, patch);
+    return structuredClone(r);
+  }
+  async updateSpeakers(id: string, action: 'add' | 'remove', userId: string) {
+    const r = this.rooms.get(id);
+    if (!r) return null;
+    r.speakerIds =
+      action === 'add'
+        ? [...new Set([...r.speakerIds, userId])]
+        : r.speakerIds.filter((s) => s !== userId);
+    return structuredClone(r);
+  }
   async setAnnouncement(id: string, channelId: string, messageId: string) {
     const r = this.rooms.get(id);
     if (r) {
@@ -256,6 +278,8 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
   const settings = new MemorySettings();
   const rooms = new MemoryRooms();
   const cache = new VoiceCache();
+  const auditRepo = new MemoryAuditRepo();
+  const audit = new AuditService({ repo: auditRepo, logger, now: clock.now });
 
   gateway.addChannel({ id: CATEGORY, name: 'Lives', kind: 'category', parentId: null });
   gateway.addChannel({ id: LIVE_TEXT, name: 'lives', kind: 'text', parentId: null });
@@ -290,22 +314,21 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
     guildId: GUILD_ID,
     emptyEndSeconds: 60,
   });
+  const roles = new RoleResolver({ gateway, settings, guildId: GUILD_ID, bootstrapAdminIds: [] });
   const router = new CommandRouter({
-    gateway,
-    settings,
-    config: new ConfigHandler({ settings, gateway, guildId: GUILD_ID }),
+    roles,
+    config: new ConfigHandler({ settings, gateway, audit, guildId: GUILD_ID }),
     meetings: new MeetingHandler({
       rooms,
       roomService,
       settings,
+      audit,
       guildId: GUILD_ID,
       webUrl: WEB_URL,
       timezone: opts.timezone ?? 'America/Sao_Paulo',
       now: clock.now,
     }),
     logger,
-    guildId: GUILD_ID,
-    bootstrapAdminIds: [],
   });
 
   /** Configura a categoria e os canais, como o admin faria com /config. */
@@ -326,6 +349,9 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
     roomService,
     live,
     router,
+    audit,
+    auditRepo,
+    roles,
     configureLives,
   };
 }

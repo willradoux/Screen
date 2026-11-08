@@ -49,4 +49,6 @@ export interface DiscordGateway {
   /** Todos os membros (não bots) em canais de voz agora. Usado ao iniciar. */
   listVoiceStates(): Promise<VoiceStateEntry[]>;
   getMemberPermissions(userId: string): Promise<MemberPermissions>;
+  /** Cargos do membro no servidor. Lança se ele não for encontrado. */
+  getMemberRoleIds(userId: string): Promise<string[]>;
 }

@@ -2,6 +2,8 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import type { Env } from '../config/env.js';
 import { RoomAnnouncer } from '../modules/rooms/announcer.js';
 import { RoomService } from '../modules/rooms/rooms.service.js';
+import type { AuditLog } from '../modules/audit/audit.service.js';
+import { RoleResolver } from '../modules/permissions/role-resolver.js';
 import type { PresenceService } from '../modules/rooms/presence.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
@@ -20,6 +22,8 @@ export interface DiscordSystem {
   bot: DiscordBot;
   gateway: DiscordGateway;
   roomService: RoomService;
+  announcer: RoomAnnouncer;
+  roles: RoleResolver;
   voiceCache: VoiceCache;
 }
 
@@ -33,6 +37,7 @@ export function createDiscordSystem(
     /** Compartilhado com a API: é a fonte da verdade de "quem está na call". */
     voiceCache: VoiceCache;
     presence: PresenceService;
+    audit: AuditLog;
   },
 ): DiscordSystem {
   const repos = deps;
@@ -80,21 +85,27 @@ export function createDiscordSystem(
   // Sala encerrada (por qualquer motivo): derruba o LiveKit e avisa os clientes.
   roomService.onEnded((room, reason) => deps.presence.onRoomEnded(room, reason));
 
-  const router = new CommandRouter({
+  // Papel de qualquer pessoa, sempre recalculado (comandos do bot e moderação).
+  const roles = new RoleResolver({
     gateway,
     settings: repos.settings,
-    config: new ConfigHandler({ settings: repos.settings, gateway, guildId }),
+    guildId,
+    bootstrapAdminIds: env.bootstrapAdminIds,
+  });
+
+  const router = new CommandRouter({
+    roles,
+    config: new ConfigHandler({ settings: repos.settings, gateway, audit: deps.audit, guildId }),
     meetings: new MeetingHandler({
       rooms: repos.rooms,
       roomService,
       settings: repos.settings,
+      audit: deps.audit,
       guildId,
       webUrl: env.WEB_URL,
       timezone: env.TIMEZONE,
     }),
     logger,
-    guildId,
-    bootstrapAdminIds: env.bootstrapAdminIds,
   });
 
   const bot = new DiscordBot({
@@ -107,5 +118,5 @@ export function createDiscordSystem(
     logger,
   });
 
-  return { bot, gateway, roomService, voiceCache };
+  return { bot, gateway, roomService, announcer, roles, voiceCache };
 }

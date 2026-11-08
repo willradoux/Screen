@@ -9,7 +9,9 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { sessionLoader } from './modules/auth/auth.middleware.js';
 import type { AuthService } from './modules/auth/auth.service.js';
 import { docsRoutes } from './modules/docs/docs.routes.js';
+import { moderationRoutes, type ModerationApi } from './modules/moderation/moderation.routes.js';
 import { roomsRoutes, WEBHOOK_PATH, type RoomsApi } from './modules/rooms/rooms.routes.js';
+import { adminRoutes, type AdminApi } from './modules/settings/settings.routes.js';
 import { healthRoutes, type ReadinessChecks } from './modules/health/health.routes.js';
 import { errorHandler } from './shared/error-handler.js';
 import { AppError } from './shared/errors.js';
@@ -23,6 +25,10 @@ export interface AppDeps {
   auth?: AuthService;
   /** Salas, entrada e webhook do LiveKit. Exige `auth`. */
   rooms?: RoomsApi;
+  /** Mutar, expulsar, banir, palestrantes e edição de sala. Exige `auth`. */
+  moderation?: ModerationApi;
+  /** Configurações da guilda e auditoria (ADMIN). Exige `auth`. */
+  admin?: AdminApi;
 }
 
 export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
@@ -72,6 +78,8 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   api.use(docsRoutes(env.PUBLIC_API_URL));
   if (deps.auth) api.use(authRoutes(deps.auth, env));
   if (deps.auth && deps.rooms) api.use(roomsRoutes(deps.rooms, deps.auth));
+  if (deps.auth && deps.moderation) api.use(moderationRoutes(deps.moderation, deps.auth));
+  if (deps.auth && deps.admin) api.use(adminRoutes(deps.admin, deps.auth));
   app.use('/api/v1', api);
 
   app.use((_req, _res, next) => next(new AppError('ROUTE_NOT_FOUND', 404, 'Rota não encontrada.')));

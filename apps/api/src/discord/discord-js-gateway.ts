@@ -107,6 +107,13 @@ export class DiscordJsGateway implements DiscordGateway {
     return out;
   }
 
+  async getMemberRoleIds(userId: string): Promise<string[]> {
+    const guild = this.client.guilds.cache.get(this.guildId);
+    if (!guild) throw new Error('Servidor não encontrado');
+    const member = await guild.members.fetch(userId);
+    return [...member.roles.cache.keys()];
+  }
+
   async getMemberPermissions(userId: string): Promise<MemberPermissions> {
     const guild = this.client.guilds.cache.get(this.guildId);
     if (!guild) return { isOwner: false, isAdmin: false, isMod: false };

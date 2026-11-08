@@ -76,7 +76,8 @@ Uma linha por entrada de usuário em sala (histórico e relatório).
 | `joinedAt` | Date | |
 | `leftAt` | Date \| null | |
 | `leaveReason` | string \| null | `LEFT`, `LEFT_VOICE`, `KICKED`, `BANNED`, `DISCONNECTED`, `ROOM_ENDED` |
-| `mutedByModeration` | boolean | |
+| `mutedByModeration` | boolean | Verdadeiro se `mutedSources` não estiver vazio |
+| `mutedSources` | string[] | Fontes silenciadas pela moderação (`microphone`, `camera`, `screen_share`, `screen_share_audio`). Vale a participação mais recente e é herdada por quem volta |
 
 Índices: `{ roomId: 1, userId: 1 }`, `{ roomId: 1, leftAt: 1 }`.
 

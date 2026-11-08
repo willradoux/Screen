@@ -29,6 +29,14 @@ export interface RoomRecord {
   createdAt: Date;
 }
 
+/** Campos editáveis de uma sala. `description: null` apaga a descrição. */
+export interface RoomPatch {
+  title?: string;
+  description?: string | null;
+  maxParticipants?: number;
+  lectureMode?: boolean;
+}
+
 export interface NewMeeting {
   guildId: string;
   title: string;
@@ -68,6 +76,9 @@ export interface RoomRepo {
     page: { limit: number; cursor?: string },
   ): Promise<{ items: RoomRecord[]; next: string | null }>;
   setAnnouncement(id: string, channelId: string, messageId: string): Promise<void>;
+  update(id: string, patch: RoomPatch): Promise<RoomRecord | null>;
+  /** Adiciona ou remove um palestrante (sem duplicar). */
+  updateSpeakers(id: string, action: 'add' | 'remove', userId: string): Promise<RoomRecord | null>;
   /** Muda o estado só se o atual estiver em `from`. `null` se não estava. */
   transition(
     id: string,

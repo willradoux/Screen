@@ -1,5 +1,6 @@
 import type { Role } from '@screem/shared';
 import { ParticipationModel, RoomBanModel } from '../../db/models.js';
+import type { MediaSource } from '../livekit/livekit.gateway.js';
 
 export type LeaveReason =
   'LEFT' | 'LEFT_VOICE' | 'KICKED' | 'BANNED' | 'DISCONNECTED' | 'ROOM_ENDED';
@@ -13,7 +14,9 @@ export interface Participation {
   joinedAt: Date;
   leftAt: Date | null;
   leaveReason: LeaveReason | null;
+  /** Verdadeiro se `mutedSources` não estiver vazio. */
   mutedByModeration: boolean;
+  mutedSources: MediaSource[];
 }
 
 export interface ParticipationRepo {
@@ -37,7 +40,13 @@ export interface ParticipationRepo {
   findOpen(roomId: string, userId: string): Promise<Participation | null>;
   listOpen(roomId: string): Promise<Participation[]>;
   countOpen(roomId: string): Promise<number>;
-  setMutedByModeration(roomId: string, userId: string, muted: boolean): Promise<void>;
+  /**
+   * Fontes silenciadas pela moderação para essa pessoa nesta sala. Vale a participação mais
+   * recente (aberta ou não): sair e voltar não desfaz o silenciamento.
+   */
+  getMutedSources(roomId: string, userId: string): Promise<MediaSource[]>;
+  /** Grava na participação mais recente. `false` se a pessoa nunca esteve na sala. */
+  setMutedSources(roomId: string, userId: string, sources: MediaSource[]): Promise<boolean>;
 }
 
 export interface RoomBan {
@@ -66,6 +75,7 @@ type PDoc = {
   leftAt?: Date | null;
   leaveReason?: LeaveReason | null;
   mutedByModeration?: boolean | null;
+  mutedSources?: MediaSource[] | null;
 };
 
 const toParticipation = (d: PDoc): Participation => ({
@@ -77,11 +87,17 @@ const toParticipation = (d: PDoc): Participation => ({
   joinedAt: d.joinedAt,
   leftAt: d.leftAt ?? null,
   leaveReason: d.leaveReason ?? null,
-  mutedByModeration: d.mutedByModeration ?? false,
+  mutedByModeration: (d.mutedSources ?? []).length > 0,
+  mutedSources: d.mutedSources ?? [],
 });
 
 const isDuplicateKey = (err: unknown) =>
   typeof err === 'object' && err !== null && (err as { code?: number }).code === 11000;
+
+async function getMutedSources(roomId: string, userId: string): Promise<MediaSource[]> {
+  const doc = await ParticipationModel.findOne({ roomId, userId }).sort({ joinedAt: -1 }).lean();
+  return (doc?.mutedSources as MediaSource[] | undefined) ?? [];
+}
 
 export function createParticipationRepo(): ParticipationRepo {
   const findOpen = async (roomId: string, userId: string) => {
@@ -92,9 +108,25 @@ export function createParticipationRepo(): ParticipationRepo {
   return {
     findOpen,
 
+    getMutedSources,
+
+    async setMutedSources(roomId, userId, sources) {
+      const doc = await ParticipationModel.findOne({ roomId, userId })
+        .sort({ joinedAt: -1 })
+        .lean();
+      if (!doc) return false;
+      await ParticipationModel.updateOne(
+        { _id: doc._id },
+        { $set: { mutedSources: sources, mutedByModeration: sources.length > 0 } },
+      );
+      return true;
+    },
+
     async open(input) {
       const existing = await findOpen(input.roomId, input.userId);
       if (existing) return { participation: existing, created: false };
+      // Quem foi silenciado e reconecta continua silenciado.
+      const inherited = await getMutedSources(input.roomId, input.userId);
       try {
         const doc = await ParticipationModel.create({
           roomId: input.roomId,
@@ -103,6 +135,8 @@ export function createParticipationRepo(): ParticipationRepo {
           avatarUrl: input.avatarUrl,
           roleAtJoin: input.role,
           joinedAt: input.at,
+          mutedSources: inherited,
+          mutedByModeration: inherited.length > 0,
         });
         return { participation: toParticipation(doc.toObject() as PDoc), created: true };
       } catch (err) {
@@ -145,13 +179,6 @@ export function createParticipationRepo(): ParticipationRepo {
     },
 
     countOpen: (roomId) => ParticipationModel.countDocuments({ roomId, leftAt: null }),
-
-    async setMutedByModeration(roomId, userId, muted) {
-      await ParticipationModel.updateOne(
-        { roomId, userId, leftAt: null },
-        { $set: { mutedByModeration: muted } },
-      );
-    },
   };
 }
 

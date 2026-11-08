@@ -78,12 +78,46 @@ describe('ParticipationRepo (MongoDB)', () => {
     expect((await ParticipationModel.findOne({ userId: '2' }).lean())?.leaveReason).toBe('LEFT');
   });
 
-  it('setMutedByModeration marca só a participação aberta', async () => {
+  it('silenciamento: grava as fontes, é lido de volta e some ao liberar', async () => {
     await repo.open({ ...base, userId: '1' });
-    await repo.setMutedByModeration(base.roomId, '1', true);
-    expect((await repo.findOpen(base.roomId, '1'))?.mutedByModeration).toBe(true);
-    await repo.setMutedByModeration(base.roomId, '1', false);
+    expect(await repo.getMutedSources(base.roomId, '1')).toEqual([]);
+
+    expect(await repo.setMutedSources(base.roomId, '1', ['microphone', 'camera'])).toBe(true);
+    expect(await repo.getMutedSources(base.roomId, '1')).toEqual(['microphone', 'camera']);
+    const open = await repo.findOpen(base.roomId, '1');
+    expect(open).toMatchObject({ mutedSources: ['microphone', 'camera'], mutedByModeration: true });
+
+    await repo.setMutedSources(base.roomId, '1', []);
     expect((await repo.findOpen(base.roomId, '1'))?.mutedByModeration).toBe(false);
+  });
+
+  it('quem nunca esteve na sala não pode ser silenciado (retorna false)', async () => {
+    expect(await repo.setMutedSources(base.roomId, 'ninguem', ['microphone'])).toBe(false);
+    expect(await repo.getMutedSources(base.roomId, 'ninguem')).toEqual([]);
+  });
+
+  it('o silenciamento sobrevive a sair e voltar (não dá para fugir reconectando)', async () => {
+    await repo.open({ ...base, userId: '1' });
+    await repo.setMutedSources(base.roomId, '1', ['microphone']);
+    await repo.close(base.roomId, '1', 'LEFT', new Date(NOW.getTime() + 1000));
+
+    // ainda vale mesmo sem participação aberta (é o que o join consulta)
+    expect(await repo.getMutedSources(base.roomId, '1')).toEqual(['microphone']);
+    const again = await repo.open({ ...base, userId: '1', at: new Date(NOW.getTime() + 2000) });
+    expect(again.created).toBe(true);
+    expect(again.participation.mutedSources).toEqual(['microphone']);
+
+    // liberar vale para a participação mais recente e para as próximas
+    await repo.setMutedSources(base.roomId, '1', []);
+    await repo.close(base.roomId, '1', 'LEFT', new Date(NOW.getTime() + 3000));
+    const third = await repo.open({ ...base, userId: '1', at: new Date(NOW.getTime() + 4000) });
+    expect(third.participation.mutedSources).toEqual([]);
+  });
+
+  it('o silenciamento é por sala', async () => {
+    await repo.open({ ...base, userId: '1' });
+    await repo.setMutedSources(base.roomId, '1', ['camera']);
+    expect(await repo.getMutedSources('outra'.padEnd(22, 'x'), '1')).toEqual([]);
   });
 });
 

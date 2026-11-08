@@ -7,6 +7,8 @@ export interface RealtimeEmitter {
   toRoom(roomId: string, event: string, payload: unknown): void;
   /** Para todos os sockets de um usuário. */
   toUser(userId: string, event: string, payload: unknown): void;
+  /** Para os administradores conectados. */
+  toAdmins(event: string, payload: unknown): void;
 }
 
 /**
@@ -26,5 +28,9 @@ export class LateBoundEmitter implements RealtimeEmitter {
 
   toUser(userId: string, event: string, payload: unknown): void {
     this.target?.toUser(userId, event, payload);
+  }
+
+  toAdmins(event: string, payload: unknown): void {
+    this.target?.toAdmins(event, payload);
   }
 }

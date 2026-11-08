@@ -1,5 +1,6 @@
 import { roomUrl } from '../embeds.js';
 import { discordTime, parseDateTime } from '../../shared/time.js';
+import type { AuditLog } from '../../modules/audit/audit.service.js';
 import type { RoomService } from '../../modules/rooms/rooms.service.js';
 import {
   DEFAULT_MEETING_CAPACITY,
@@ -20,6 +21,7 @@ export interface MeetingHandlerDeps {
   rooms: RoomRepo;
   roomService: RoomService;
   settings: SettingsRepo;
+  audit: AuditLog;
   guildId: string;
   webUrl: string;
   timezone: string;
@@ -79,7 +81,7 @@ export class MeetingHandler {
       case 'agendar':
         return this.create(ctx, call, true);
       case 'cancelar':
-        return this.cancel(call);
+        return this.cancel(ctx, call);
       case 'encerrar':
         return this.end(ctx, call);
       case 'listar':
@@ -148,6 +150,13 @@ export class MeetingHandler {
       announce,
     );
 
+    await this.deps.audit.record({
+      actorId: ctx.userId,
+      roomId: room.id,
+      action: 'MEETING_CREATED',
+      meta: { title: room.title, startsAt: startsAt?.toISOString() ?? null, announced },
+    });
+
     const lines = [
       startsAt
         ? `✅ Reunião **${room.title}** agendada para ${discordTime(startsAt, 'F')} (${discordTime(startsAt, 'R')}).`
@@ -163,7 +172,7 @@ export class MeetingHandler {
     return { content: lines.join('\n') };
   }
 
-  private async cancel(call: CommandCall): Promise<CommandReply> {
+  private async cancel(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
     const id = text(call, 'reuniao', 1, 100);
     const room = await this.deps.rooms.findById(id);
     if (!room || room.type !== 'MEETING') throw new UserError('Não encontrei essa reunião.');
@@ -173,11 +182,11 @@ export class MeetingHandler {
     const canceled = await this.deps.roomService.cancelMeeting(id);
     if (!canceled)
       throw new UserError(`Essa reunião não pode ser cancelada (estado: ${room.status}).`);
+    await this.deps.audit.record({ actorId: ctx.userId, roomId: id, action: 'MEETING_CANCELED' });
     return { content: `✅ Reunião **${canceled.title}** cancelada.` };
   }
 
   private async end(ctx: CommandContext, call: CommandCall): Promise<CommandReply> {
-    void ctx;
     const given = typeof call.options.reuniao === 'string' ? call.options.reuniao.trim() : '';
     let room: RoomRecord | null;
 
@@ -200,6 +209,12 @@ export class MeetingHandler {
     }
     const ended = await this.deps.roomService.endRoom(room.id, 'ENDED_BY_ADMIN');
     if (!ended) throw new UserError('Essa reunião já foi encerrada.');
+    await this.deps.audit.record({
+      actorId: ctx.userId,
+      roomId: ended.id,
+      action: 'ROOM_ENDED',
+      meta: { via: 'command' },
+    });
     return { content: `✅ Reunião **${ended.title}** encerrada.` };
   }
 

@@ -52,6 +52,17 @@ export interface LiveKitGateway {
   /** Cria a sala no LiveKit (idempotente) com o limite de participantes. */
   ensureRoom(roomName: string, maxParticipants: number): Promise<void>;
   removeParticipant(roomName: string, identity: string): Promise<void>;
+  /**
+   * Troca o que a pessoa pode publicar, com a conexão já aberta. Revogar uma fonte
+   * derruba o que estava no ar dela.
+   */
+  setPermissions(
+    roomName: string,
+    identity: string,
+    permissions: { canPublish: boolean; canPublishSources: MediaSource[] },
+  ): Promise<void>;
+  /** Silencia as faixas já publicadas nessas fontes. Ignora quem já saiu. */
+  muteSources(roomName: string, identity: string, sources: MediaSource[]): Promise<void>;
   deleteRoom(roomName: string): Promise<void>;
   /** Valida a assinatura e devolve o evento. Lança `InvalidWebhookError`. */
   verifyWebhook(rawBody: string, authHeader: string | undefined): Promise<LiveKitEvent>;
@@ -122,6 +133,39 @@ export function createLiveKitGateway(env: LiveKitEnv): LiveKitGateway {
           await rooms.removeParticipant(roomName, identity);
         } catch (err) {
           // Já saiu ou a sala já não existe: o resultado é o mesmo que queríamos.
+          if (isNotFound(err)) return;
+          throw err;
+        }
+      }),
+
+    setPermissions: (roomName, identity, permissions) =>
+      call('alterar permissões', async () => {
+        try {
+          await rooms.updateParticipant(roomName, identity, undefined, {
+            canPublish: permissions.canPublish,
+            canSubscribe: true,
+            canPublishData: false,
+            canPublishSources: permissions.canPublish
+              ? permissions.canPublishSources.map((s) => SOURCE_TO_ENUM[s])
+              : [],
+          });
+        } catch (err) {
+          if (isNotFound(err)) return; // já saiu
+          throw err;
+        }
+      }),
+
+    muteSources: (roomName, identity, sources) =>
+      call('silenciar faixas', async () => {
+        try {
+          const info = await rooms.getParticipant(roomName, identity);
+          const wanted = new Set(sources.map((s) => SOURCE_TO_ENUM[s]));
+          for (const track of info.tracks) {
+            if (wanted.has(track.source) && !track.muted) {
+              await rooms.mutePublishedTrack(roomName, identity, track.sid, true);
+            }
+          }
+        } catch (err) {
           if (isNotFound(err)) return;
           throw err;
         }

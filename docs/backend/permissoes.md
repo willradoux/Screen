@@ -31,6 +31,8 @@ O papel **não** é gravado de forma permanente na sessão. É recalculado, ent�
 
 ## Capacidades
 
+> Implementado em `modules/permissions/capabilities.ts` (papel mínimo de cada capacidade) e testado contra esta tabela em `test/unit/capabilities.test.ts`. Detalhe: **título, descrição e capacidade da sala** (`room.edit`) são só de ADMIN; o **modo palestra** (`room.lecture`) é de MOD ou ADMIN.
+
 | Capacidade | MEMBER | MOD | ADMIN |
 |---|:-:|:-:|:-:|
 | Entrar em sala de live (estando na call) | sim | sim | sim |

@@ -8,6 +8,7 @@ import {
   InvalidWebhookError,
   LiveKitUnavailableError,
   type LiveKitEvent,
+  type MediaSource,
   type LiveKitGateway,
   type TokenRequest,
 } from '../../src/modules/livekit/livekit.gateway.js';
@@ -20,6 +21,8 @@ import type {
   ParticipationRepo,
   RoomBan,
 } from '../../src/modules/rooms/participations.js';
+import { ModerationService } from '../../src/modules/moderation/moderation.service.js';
+import { SettingsService } from '../../src/modules/settings/settings.service.js';
 import { PresenceService } from '../../src/modules/rooms/presence.js';
 import type { RoomsApi } from '../../src/modules/rooms/rooms.routes.js';
 import type { RealtimeEmitter } from '../../src/realtime/emitter.js';
@@ -41,6 +44,10 @@ export class RecordingEmitter implements RealtimeEmitter {
     this.events.push({ target: 'user', id, event, payload });
     this.forward?.toUser(id, event, payload);
   }
+  toAdmins(event: string, payload: unknown) {
+    this.events.push({ target: 'room', id: 'admins', event, payload });
+    this.forward?.toAdmins(event, payload);
+  }
   of(event: string) {
     return this.events.filter((e) => e.event === event);
   }
@@ -51,6 +58,13 @@ export class FakeLiveKit implements LiveKitGateway {
   ensured: { roomName: string; max: number }[] = [];
   removed: { roomName: string; identity: string }[] = [];
   deleted: string[] = [];
+  permissions: {
+    roomName: string;
+    identity: string;
+    canPublish: boolean;
+    sources: MediaSource[];
+  }[] = [];
+  muted: { roomName: string; identity: string; sources: MediaSource[] }[] = [];
   down = false;
   /** Fila de eventos que `verifyWebhook` devolve, indexada pelo corpo enviado. */
   events = new Map<string, LiveKitEvent>();
@@ -72,6 +86,23 @@ export class FakeLiveKit implements LiveKitGateway {
   }
   async deleteRoom(roomName: string) {
     this.deleted.push(roomName);
+  }
+  async setPermissions(
+    roomName: string,
+    identity: string,
+    p: { canPublish: boolean; canPublishSources: MediaSource[] },
+  ) {
+    this.check();
+    this.permissions.push({
+      roomName,
+      identity,
+      canPublish: p.canPublish,
+      sources: p.canPublishSources,
+    });
+  }
+  async muteSources(roomName: string, identity: string, sources: MediaSource[]) {
+    this.check();
+    this.muted.push({ roomName, identity, sources });
   }
   async verifyWebhook(rawBody: string, authHeader: string | undefined): Promise<LiveKitEvent> {
     if (authHeader !== 'assinado') throw new InvalidWebhookError('assinatura');
@@ -104,7 +135,12 @@ export class MemoryParticipations implements ParticipationRepo {
       leftAt: null,
       leaveReason: null,
       mutedByModeration: false,
+      mutedSources: [],
     };
+    // Quem foi silenciado e reconecta continua silenciado.
+    const inherited = await this.getMutedSources(input.roomId, input.userId);
+    row.mutedSources = inherited;
+    row.mutedByModeration = inherited.length > 0;
     this.rows.push(row);
     return { participation: { ...row }, created: true };
   }
@@ -133,9 +169,20 @@ export class MemoryParticipations implements ParticipationRepo {
   async countOpen(roomId: string) {
     return this.rows.filter((r) => r.roomId === roomId && !r.leftAt).length;
   }
-  async setMutedByModeration(roomId: string, userId: string, muted: boolean) {
-    const row = this.rows.find((r) => r.roomId === roomId && r.userId === userId && !r.leftAt);
-    if (row) row.mutedByModeration = muted;
+  private latest(roomId: string, userId: string) {
+    return this.rows
+      .filter((r) => r.roomId === roomId && r.userId === userId)
+      .sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime())[0];
+  }
+  async getMutedSources(roomId: string, userId: string) {
+    return [...(this.latest(roomId, userId)?.mutedSources ?? [])];
+  }
+  async setMutedSources(roomId: string, userId: string, sources: MediaSource[]) {
+    const row = this.latest(roomId, userId);
+    if (!row) return false;
+    row.mutedSources = sources;
+    row.mutedByModeration = sources.length > 0;
+    return true;
   }
 }
 
@@ -236,11 +283,44 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     presence,
     roomService: bot.roomService,
     webhook,
+    audit: bot.audit,
     guildId: env.DISCORD_GUILD_ID,
     webUrl: WEB_URL,
   };
 
-  const app = createApp(env, logger, { auth, rooms: roomsApi });
+  // A moderação consulta os cargos do alvo no Discord: usamos os membros do login falso.
+  bot.gateway.getMemberRoleIds = async (id: string) => discord.members.get(id)?.roles ?? [];
+
+  const roomChanges: string[] = [];
+  const moderation = new ModerationService({
+    rooms: bot.rooms,
+    participations,
+    bans,
+    livekit,
+    presence,
+    realtime: emitter,
+    audit: bot.audit,
+    roles: bot.roles,
+    onRoomChanged: async (room) => {
+      roomChanges.push(room.id);
+    },
+    logger,
+    now: bot.clock.now,
+  });
+  const settingsService = new SettingsService({
+    settings: bot.settings,
+    gateway: bot.gateway,
+    audit: bot.audit,
+    realtime: emitter,
+    guildId: env.DISCORD_GUILD_ID,
+  });
+
+  const app = createApp(env, logger, {
+    auth,
+    rooms: roomsApi,
+    moderation: { moderation, access, participations, webUrl: WEB_URL },
+    admin: { settings: settingsService, audit: bot.audit },
+  });
 
   /** Sobe um servidor HTTP + Socket.IO de verdade numa porta livre. */
   const listen = async () => {
@@ -292,6 +372,9 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     access,
     webhook,
     roomsApi,
+    moderation,
+    settingsService,
+    roomChanges,
     listen,
     sendWebhook,
     origin: ORIGIN,

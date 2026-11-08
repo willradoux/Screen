@@ -100,6 +100,8 @@ const participationSchema = new Schema({
   leftAt: { type: Date, default: null },
   leaveReason: { type: String, default: null },
   mutedByModeration: { type: Boolean, default: false },
+  // Fontes silenciadas pela moderação (a pessoa não pode publicá-las).
+  mutedSources: { type: [String], default: [] },
 });
 // No máximo uma participação aberta por pessoa em cada sala.
 participationSchema.index(
@@ -119,6 +121,20 @@ roomBanSchema.index({ roomId: 1, userId: 1 }, { unique: true });
 // Remove banimentos temporários vencidos (os sem prazo têm expiresAt nulo e ficam).
 roomBanSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
+const auditLogSchema = new Schema({
+  at: { type: Date, required: true },
+  actorId: { type: String, required: true },
+  targetId: { type: String, default: null },
+  roomId: { type: String, default: null },
+  action: { type: String, required: true },
+  reason: { type: String, default: null },
+  meta: { type: Schema.Types.Mixed, default: {} },
+});
+auditLogSchema.index({ at: -1 });
+auditLogSchema.index({ actorId: 1, at: -1 });
+auditLogSchema.index({ roomId: 1, at: -1 });
+
+export const AuditLogModel = model('AuditLog', auditLogSchema, 'audit_logs');
 export const RoomModel = model('Room', roomSchema, 'rooms');
 export const ParticipationModel = model('Participation', participationSchema, 'participations');
 export const RoomBanModel = model('RoomBan', roomBanSchema, 'room_bans');

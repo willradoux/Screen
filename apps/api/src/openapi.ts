@@ -1,14 +1,16 @@
+import { AUDIT_ACTIONS } from './modules/audit/audit.service.js';
+
 /**
  * Especificação OpenAPI 3.1 do backend. É a fonte do arquivo `apps/api/openapi.json`
  * (gerar com `npm run openapi -w @screem/api`). Toda rota nova entra aqui no mesmo PR.
  * Contrato descrito em docs/backend/api-rest.md.
  */
-export function buildOpenApi(serverUrl = 'http://localhost:3000') {
-  const errorResponse = (description: string) => ({
-    description,
-    content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorBody' } } },
-  });
+const errorResponse = (description: string) => ({
+  description,
+  content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorBody' } } },
+});
 
+export function buildOpenApi(serverUrl = 'http://localhost:3000') {
   return {
     openapi: '3.1.0',
     info: {
@@ -24,6 +26,8 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
       { name: 'Auth', description: 'Login com Discord e sessão' },
       { name: 'Rooms', description: 'Salas de live e reuniões' },
       { name: 'LiveKit', description: 'Webhook do servidor de mídia' },
+      { name: 'Moderation', description: 'Mutar, expulsar, banir e palestrantes (MOD ou ADMIN)' },
+      { name: 'Admin', description: 'Configurações da guilda e auditoria (ADMIN)' },
     ],
     paths: {
       '/health': {
@@ -206,6 +210,41 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
         },
       },
       '/rooms/{id}': {
+        patch: {
+          tags: ['Moderation'],
+          summary: 'Edita a sala',
+          description:
+            '`lectureMode` (modo palestra) é de MOD ou ADMIN. `title`, `description` e `maxParticipants` são só de ADMIN. Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e nada é aplicado. Só salas abertas ou agendadas.',
+          operationId: 'updateRoom',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  minProperties: 1,
+                  additionalProperties: false,
+                  properties: {
+                    title: { type: 'string', minLength: 3, maxLength: 100 },
+                    description: { type: ['string', 'null'], maxLength: 1000 },
+                    maxParticipants: { type: 'integer', minimum: 2, maximum: 300 },
+                    lectureMode: { type: 'boolean' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': { description: 'Sala atualizada', content: roomContent },
+            '400': errorResponse('VALIDATION_ERROR'),
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+            '409': errorResponse('ROOM_NOT_OPEN'),
+          },
+        },
         get: {
           tags: ['Rooms'],
           summary: 'Detalhes de uma sala',
@@ -349,12 +388,274 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
           },
         },
       },
+
+      '/rooms/{id}/participants': {
+        get: {
+          tags: ['Moderation'],
+          summary: 'Lista quem está conectado na sala',
+          description: 'Visível para moderação e para quem tem acesso à sala (ou já está nela).',
+          operationId: 'listParticipants',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': {
+              description: 'Participantes',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: {
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Participant' } },
+                    },
+                  },
+                },
+              },
+            },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+      },
+      '/rooms/{id}/participants/{userId}/mute': moderationAction(
+        'muteParticipant',
+        'Silencia um participante',
+        'Revoga as fontes indicadas (padrão: todas), silencia o que já estava no ar e avisa a pessoa. Vale também se ela sair e voltar. Silenciamentos se acumulam; para desfazer use `unmute`.',
+        {
+          sources: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'string',
+              enum: ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
+            },
+          },
+          reason: { type: ['string', 'null'], maxLength: 200 },
+        },
+      ),
+      '/rooms/{id}/participants/{userId}/unmute': moderationAction(
+        'unmuteParticipant',
+        'Libera um participante silenciado',
+        'Devolve a permissão de publicar, respeitando o modo palestra.',
+        { reason: { type: ['string', 'null'], maxLength: 200 } },
+      ),
+      '/rooms/{id}/participants/{userId}/kick': moderationAction(
+        'kickParticipant',
+        'Expulsa um participante da sala',
+        'Remove da sala e do LiveKit. A pessoa pode voltar (para banir use `ban`).',
+        { reason: { type: ['string', 'null'], maxLength: 200 } },
+      ),
+      '/rooms/{id}/participants/{userId}/ban': moderationAction(
+        'banParticipant',
+        'Bane um participante da sala',
+        'Remove e impede a volta por `durationMinutes` (padrão 60, máximo 1440). `0` vale até o fim da sala e só ADMIN pode usar.',
+        {
+          durationMinutes: { type: 'integer', minimum: 0, maximum: 1440, default: 60 },
+          reason: { type: ['string', 'null'], maxLength: 200 },
+        },
+      ),
+      '/rooms/{id}/participants/{userId}/promote': moderationAction(
+        'promoteParticipant',
+        'Torna palestrante',
+        'No modo palestra, palestrantes são os únicos membros que podem publicar.',
+        null,
+      ),
+      '/rooms/{id}/participants/{userId}/demote': moderationAction(
+        'demoteParticipant',
+        'Remove de palestrante',
+        'No modo palestra, a pessoa perde a permissão de publicar na hora.',
+        null,
+      ),
+      '/rooms/{id}/bans/{userId}': {
+        delete: {
+          tags: ['Moderation'],
+          summary: 'Remove um banimento',
+          description: 'Idempotente: remover um banimento que não existe também responde 204.',
+          operationId: 'removeBan',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam, userIdParam],
+          responses: {
+            '204': { description: 'Banimento removido' },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+            '404': errorResponse('ROOM_NOT_FOUND'),
+          },
+        },
+      },
+      '/settings': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Configuração da guilda (ADMIN)',
+          operationId: 'getSettings',
+          security: [{ sessionCookie: [] }],
+          responses: {
+            '200': {
+              description: 'Configuração atual',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: { data: { $ref: '#/components/schemas/Settings' } },
+                  },
+                },
+              },
+            },
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+          },
+        },
+        patch: {
+          tags: ['Admin'],
+          summary: 'Altera a configuração da guilda (ADMIN)',
+          description:
+            'Qualquer subconjunto dos campos. Canais e cargos precisam existir no Discord. Listas de cargos são substituídas por inteiro; `null` limpa um canal. Gera auditoria e o evento `settings:updated` para admins conectados.',
+          operationId: 'updateSettings',
+          security: [{ sessionCookie: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/SettingsPatch' } },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Configuração atualizada',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data'],
+                    properties: { data: { $ref: '#/components/schemas/Settings' } },
+                  },
+                },
+              },
+            },
+            '400': errorResponse('VALIDATION_ERROR ou INVALID_DISCORD_REFERENCE'),
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+          },
+        },
+      },
+      '/audit': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Auditoria de ações (ADMIN)',
+          description:
+            'Registro somente de inserção das ações de moderação e administração, do mais novo para o mais antigo.',
+          operationId: 'listAudit',
+          security: [{ sessionCookie: [] }],
+          parameters: [
+            { name: 'actorId', in: 'query', schema: { type: 'string' } },
+            { name: 'targetId', in: 'query', schema: { type: 'string' } },
+            { name: 'roomId', in: 'query', schema: { type: 'string' } },
+            { name: 'action', in: 'query', schema: { $ref: '#/components/schemas/AuditAction' } },
+            { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
+            {
+              name: 'limit',
+              in: 'query',
+              schema: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
+            },
+            { name: 'cursor', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'Entradas',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['data', 'page'],
+                    properties: {
+                      data: { type: 'array', items: { $ref: '#/components/schemas/AuditEntry' } },
+                      page: {
+                        type: 'object',
+                        properties: {
+                          next: { type: ['string', 'null'] },
+                          limit: { type: 'integer' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '400': errorResponse('VALIDATION_ERROR'),
+            '401': errorResponse('UNAUTHENTICATED'),
+            '403': errorResponse('FORBIDDEN'),
+          },
+        },
+      },
     },
     components: {
       securitySchemes: {
         sessionCookie: { type: 'apiKey', in: 'cookie', name: 'screem_sid' },
       },
       schemas: {
+        Participant: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string' },
+            displayName: { type: 'string' },
+            avatarUrl: { type: ['string', 'null'] },
+            role: { type: 'string', enum: ['MEMBER', 'MOD', 'ADMIN'] },
+            joinedAt: { type: 'string', format: 'date-time' },
+            isSpeaker: { type: 'boolean' },
+            mutedByModeration: { type: 'boolean' },
+            mutedSources: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
+              },
+            },
+          },
+        },
+        Settings: {
+          type: 'object',
+          properties: {
+            guildId: { type: 'string' },
+            liveCategoryId: { type: ['string', 'null'] },
+            liveTextChannelId: { type: ['string', 'null'] },
+            announceChannelId: { type: ['string', 'null'] },
+            adminRoleIds: { type: 'array', items: { type: 'string' } },
+            modRoleIds: { type: 'array', items: { type: 'string' } },
+            meetingAllowedRoleIds: { type: 'array', items: { type: 'string' } },
+            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 100 },
+            graceSeconds: { type: 'integer', minimum: 5, maximum: 300 },
+          },
+        },
+        SettingsPatch: {
+          type: 'object',
+          minProperties: 1,
+          additionalProperties: false,
+          properties: {
+            liveCategoryId: { type: ['string', 'null'], description: 'Categoria de canais' },
+            liveTextChannelId: { type: ['string', 'null'], description: 'Canal de texto' },
+            announceChannelId: { type: ['string', 'null'], description: 'Canal de texto' },
+            adminRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
+            modRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
+            meetingAllowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
+            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 100 },
+            graceSeconds: { type: 'integer', minimum: 5, maximum: 300 },
+          },
+        },
+        AuditAction: { type: 'string', enum: AUDIT_ACTIONS },
+        AuditEntry: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            at: { type: 'string', format: 'date-time' },
+            actorId: { type: 'string' },
+            targetId: { type: ['string', 'null'] },
+            roomId: { type: ['string', 'null'] },
+            action: { $ref: '#/components/schemas/AuditAction' },
+            reason: { type: ['string', 'null'] },
+            meta: { type: 'object', additionalProperties: true },
+          },
+        },
         RoomType: { type: 'string', enum: ['LIVE', 'MEETING'] },
         RoomStatus: { type: 'string', enum: ['SCHEDULED', 'OPEN', 'ENDED', 'CANCELED'] },
         AccessReason: {
@@ -493,6 +794,59 @@ const roomContent = {
     },
   },
 };
+
+const userIdParam = {
+  name: 'userId',
+  in: 'path',
+  required: true,
+  description: 'ID do Discord de quem sofre a ação',
+  schema: { type: 'string' },
+};
+
+/** Ações de moderação seguem todas o mesmo molde (204 ou erro). */
+function moderationAction(
+  operationId: string,
+  summary: string,
+  description: string,
+  bodyProperties: Record<string, unknown> | null,
+) {
+  return {
+    post: {
+      tags: ['Moderation'],
+      summary,
+      description: `${description} Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.`,
+      operationId,
+      security: [{ sessionCookie: [] }],
+      parameters: [roomIdParam, userIdParam],
+      ...(bodyProperties
+        ? {
+            requestBody: {
+              required: false,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: bodyProperties,
+                  },
+                },
+              },
+            },
+          }
+        : {}),
+      responses: {
+        '204': { description: 'Feito' },
+        '400': errorResponse('VALIDATION_ERROR ou CANNOT_TARGET_SELF'),
+        '401': errorResponse('UNAUTHENTICATED'),
+        '403': errorResponse('FORBIDDEN ou HIERARCHY_VIOLATION'),
+        '404': errorResponse('ROOM_NOT_FOUND ou PARTICIPANT_NOT_IN_ROOM'),
+        '409': errorResponse('ROOM_NOT_OPEN'),
+        '429': errorResponse('RATE_LIMITED'),
+        '502': errorResponse('LIVEKIT_UNAVAILABLE'),
+      },
+    },
+  };
+}
 
 function readyContent(status: 'ok' | 'unavailable') {
   return {

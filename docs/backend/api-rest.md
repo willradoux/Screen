@@ -144,40 +144,55 @@ Registra a saída e derruba a conexão no LiveKit. `204`, idempotente.
 Capacidade `room.end` (MOD+). Encerra a sala: avisa `room:ended`, apaga a sala no LiveKit, fecha as participações e edita o embed no Discord. `204`.
 Erros: `403 FORBIDDEN`, `409 ROOM_ALREADY_ENDED`, `409 ROOM_NOT_OPEN` (agendada ou cancelada).
 
-### `PATCH /rooms/:id` — [Fase 6]
-Título, descrição, `maxParticipants` e `lectureMode`. Ainda não implementado.
+### `PATCH /rooms/:id`
+Edita a sala. Corpo (ao menos um campo, sem campos extras):
+```json
+{ "title": "Novo título", "description": "Pauta", "maxParticipants": 50, "lectureMode": true }
+```
+- `lectureMode` (modo palestra): **MOD ou ADMIN**. Ao mudar, a permissão de publicar de todos os membros conectados é recalculada na hora (só palestrantes publicam); moderação nunca é afetada.
+- `title` (3 a 100), `description` (até 1000; `null` apaga) e `maxParticipants` (2 a 300): **só ADMIN**. O embed no Discord é atualizado.
+- Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e **nada** é aplicado.
+- Só salas `OPEN` ou `SCHEDULED` (`409 ROOM_NOT_OPEN` nas demais).
+Resposta `200` com a `Room`. Emite `room:updated` e audita (`ROOM_UPDATED`).
 
 ## Moderação
 
-Todas exigem papel superior ao alvo ([permissoes.md](permissoes.md#regras-de-hierarquia)) e geram auditoria. Body opcional `{ "reason": "texto" }`.
+**Implementado** (Fase 6). Todas exigem login e `Origin`, papel mínimo **MOD**, e **papel superior ao do alvo** ([permissoes.md](permissoes.md#regras-de-hierarquia)). O alvo precisa estar conectado à sala. Todas geram auditoria. Limite: 60 ações por minuto por usuário.
+
+Corpo opcional, sem campos extras: `{ "reason": "texto até 200 caracteres" }`.
+
+Erros comuns: `400 CANNOT_TARGET_SELF`, `400 VALIDATION_ERROR`, `403 FORBIDDEN`, `403 HIERARCHY_VIOLATION`, `404 ROOM_NOT_FOUND`, `404 PARTICIPANT_NOT_IN_ROOM`, `409 ROOM_NOT_OPEN`, `502 LIVEKIT_UNAVAILABLE`.
+
+O papel do alvo é o **mais alto** entre o de quando entrou e o atual no Discord (quem foi promovido a MOD depois de entrar não pode ser moderado por outro MOD). O dono do servidor conta como ADMIN.
 
 ### `POST /rooms/:id/participants/:userId/mute`
-Body: `{ "sources": ["microphone","camera","screen_share"], "reason": "..." }`
-Silencia as fontes indicadas (default: todas) **e** remove permissão de publicar até `unmute`. `204`.
+Corpo: `{ "sources": ["microphone","camera","screen_share","screen_share_audio"], "reason": "..." }` (`sources` opcional; padrão: todas).
+Revoga essas fontes no LiveKit, silencia o que já estava no ar e avisa a pessoa (`moderation:action` com `MUTED`). `screen_share` inclui `screen_share_audio`. Silenciamentos **se acumulam** e **valem mesmo se a pessoa sair e voltar** (o próximo `join` já traz o token sem permissão). `204`.
 
 ### `POST /rooms/:id/participants/:userId/unmute`
-Restaura a permissão de publicar. `204`.
+Limpa o silenciamento e devolve a permissão de publicar, respeitando o modo palestra. `204`.
 
 ### `POST /rooms/:id/participants/:userId/kick`
-Remove da sala. Pode voltar. `204`.
+Remove da sala e do LiveKit (`participant:left` com `KICKED`). A pessoa pode voltar; para impedir, use `ban`. `204`.
 
 ### `POST /rooms/:id/participants/:userId/ban`
-Body: `{ "durationMinutes": 60, "reason": "..." }` (padrão 60, máximo 1440; ADMIN pode usar `0` = até o fim da sala). `204`.
+Corpo: `{ "durationMinutes": 60, "reason": "..." }`. Padrão 60, máximo 1440; `0` (até o fim da sala) só para ADMIN (`403` para MOD). O banimento é gravado **antes** de remover a pessoa, então ela não consegue voltar na hora. `204`.
 
 ### `DELETE /rooms/:id/bans/:userId`
-Remove o banimento. `204`.
+Remove o banimento. Idempotente. `204`.
 
 ### `POST /rooms/:id/participants/:userId/promote`
-Marca como palestrante (pode publicar em modo palestra). `204`.
+Marca como palestrante. No modo palestra, liga a permissão de publicar na hora. `204`.
 
 ### `POST /rooms/:id/participants/:userId/demote`
-Remove de palestrante. `204`.
+Remove de palestrante. No modo palestra, desliga a permissão na hora. `204`.
 
 ### `GET /rooms/:id/participants`
-Lista participantes conectados.
+Lista os conectados. Visível para moderação e para quem tem acesso à sala (ou já está nela).
 ```json
 { "data": [ { "userId": "1234", "displayName": "Fulano", "avatarUrl": null, "role": "MEMBER",
-              "joinedAt": "2026-11-08T20:00:00.000Z", "isSpeaker": false, "mutedByModeration": false } ] }
+              "joinedAt": "2026-11-08T20:00:00.000Z", "isSpeaker": false,
+              "mutedByModeration": true, "mutedSources": ["microphone"] } ] }
 ```
 
 ---
@@ -226,28 +241,42 @@ Lista de presença e duração (ADMIN). Disponível após `ENDED`.
 
 ## Configurações da guilda
 
-ADMIN apenas.
+**Implementado** (Fase 6). Só **ADMIN**. É a mesma configuração que os comandos `/config` do bot alteram.
 
 ### `GET /settings`
 ```json
-{ "data": { "guildId": "9988", "liveCategoryId": "5566", "announceChannelId": "7788",
-            "liveTextChannelId": "7799", "adminRoleIds": ["1"], "modRoleIds": ["2"],
+{ "data": { "guildId": "9988", "liveCategoryId": "5566", "liveTextChannelId": "7799",
+            "announceChannelId": "7788", "adminRoleIds": ["1"], "modRoleIds": ["2"],
             "meetingAllowedRoleIds": [], "maxParticipantsLive": 25, "graceSeconds": 30 } }
 ```
 
 ### `PATCH /settings`
-Atualiza qualquer subconjunto dos campos. Valida que canais/cargos existem na guilda. `200`.
+Qualquer subconjunto (ao menos um campo, sem campos extras):
+
+| Campo | Regra |
+|---|---|
+| `liveCategoryId` | ID de uma **categoria** existente; `null` limpa |
+| `liveTextChannelId`, `announceChannelId` | ID de um **canal de texto** existente; `null` limpa |
+| `adminRoleIds`, `modRoleIds`, `meetingAllowedRoleIds` | até 25 cargos existentes; a lista é **substituída por inteiro** |
+| `maxParticipantsLive` | inteiro de 2 a 100 (vale para as próximas lives) |
+| `graceSeconds` | inteiro de 5 a 300 |
+
+Canal ou cargo que não existe no Discord, ou do tipo errado: `400 INVALID_DISCORD_REFERENCE` com `details: { field, id }` e **nada** é gravado. Sucesso: `200` com a configuração nova, auditoria `SETTINGS_UPDATED` (com `from`/`to` de cada campo) e o evento `settings:updated` para os admins conectados. Mudanças de cargos valem para o login em até 60 s.
 
 ---
 
 ## Auditoria
 
 ### `GET /audit`
-ADMIN. Query: `actorId`, `targetId`, `action`, `roomId`, `from`, `to`, `limit`, `cursor`.
+**Implementado.** Só ADMIN. Registro **somente de inserção** das ações de moderação e administração, do mais novo para o mais antigo.
+Query: `actorId`, `targetId`, `roomId`, `action`, `from`, `to` (ISO 8601), `limit` (1 a 100, padrão 50), `cursor`.
 ```json
-{ "data": [ { "id": "...", "at": "2026-11-08T20:10:00.000Z", "actorId": "1", "targetId": "2",
-              "roomId": "kF3x...", "action": "PARTICIPANT_MUTED", "reason": "ruído", "meta": { "sources": ["microphone"] } } ] }
+{ "data": [ { "id": "6720a1f0c3d4e5f607182930", "at": "2026-11-08T20:10:00.000Z", "actorId": "1", "targetId": "2",
+              "roomId": "kF3x9QzP2mT7vB1nLw0aYc", "action": "PARTICIPANT_MUTED", "reason": "ruído",
+              "meta": { "sources": ["microphone"] } } ],
+  "page": { "next": null, "limit": 50 } }
 ```
+Ações registradas: `PARTICIPANT_MUTED`, `PARTICIPANT_UNMUTED`, `PARTICIPANT_KICKED`, `PARTICIPANT_BANNED`, `BAN_REMOVED`, `SPEAKER_PROMOTED`, `SPEAKER_DEMOTED`, `ROOM_ENDED`, `ROOM_UPDATED`, `MEETING_CREATED`, `MEETING_CANCELED`, `SETTINGS_UPDATED` (pela API **e** pelos comandos do bot; `meta.via` diz de onde veio). Se a gravação da auditoria falhar, a ação já feita não é desfeita e o erro vai para o log.
 
 ---
 

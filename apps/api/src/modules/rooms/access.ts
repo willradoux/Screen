@@ -31,6 +31,29 @@ export interface RoomPermissions {
   canModerate: boolean;
 }
 
+/**
+ * O que a pessoa pode publicar. Regra única usada no `join` e na moderação:
+ * moderadores sempre publicam tudo; membros perdem as fontes silenciadas e, no modo
+ * palestra, tudo, a menos que sejam palestrantes.
+ */
+export function computePermissions(input: {
+  role: Role;
+  userId: string;
+  mutedSources: MediaSource[];
+  lectureMode: boolean;
+  speakerIds: string[];
+}): RoomPermissions {
+  if (ROLE_RANK[input.role] >= ROLE_RANK.MOD) {
+    return { canPublish: true, canPublishSources: ALL_SOURCES, canModerate: true };
+  }
+  const allowed = ALL_SOURCES.filter((s) => !input.mutedSources.includes(s));
+  const lectureBlocked = input.lectureMode && !input.speakerIds.includes(input.userId);
+  if (lectureBlocked || allowed.length === 0) {
+    return { canPublish: false, canPublishSources: [], canModerate: false };
+  }
+  return { canPublish: true, canPublishSources: allowed, canModerate: false };
+}
+
 export interface JoinResult {
   livekit: { url: string; token: string };
   participant: { identity: string; name: string; role: Role };
@@ -125,16 +148,13 @@ export class RoomAccess {
 
   /** O que a pessoa pode publicar nesta sala agora. */
   async permissionsFor(room: RoomRecord, identity: Identity): Promise<RoomPermissions> {
-    const staff = ROLE_RANK[identity.role] >= ROLE_RANK.MOD;
-    if (staff) return { canPublish: true, canPublishSources: ALL_SOURCES, canModerate: true };
-
-    const participation = await this.deps.participations.findOpen(room.id, identity.user.id);
-    const silenced = participation?.mutedByModeration ?? false;
-    const lectureBlocked = room.lectureMode && !room.speakerIds.includes(identity.user.id);
-    if (silenced || lectureBlocked) {
-      return { canPublish: false, canPublishSources: [], canModerate: false };
-    }
-    return { canPublish: true, canPublishSources: ALL_SOURCES, canModerate: false };
+    return computePermissions({
+      role: identity.role,
+      userId: identity.user.id,
+      mutedSources: await this.deps.participations.getMutedSources(room.id, identity.user.id),
+      lectureMode: room.lectureMode,
+      speakerIds: room.speakerIds,
+    });
   }
 
   /** Valida o acesso e emite o token do LiveKit. Lança `AppError` se recusado. */
