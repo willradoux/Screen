@@ -8,6 +8,8 @@ export interface RoleResolverDeps {
   settings: SettingsRepo;
   guildId: string;
   bootstrapAdminIds: string[];
+  /** ADMIN_ROLE_IDS: cargos que são ADMIN sempre. */
+  fixedAdminRoleIds?: string[];
 }
 
 /**
@@ -31,6 +33,7 @@ export class RoleResolver {
       memberRoleIds,
       config,
       bootstrapAdminIds: this.deps.bootstrapAdminIds,
+      fixedAdminRoleIds: this.deps.fixedAdminRoleIds ?? [],
       hasDiscordAdminPermission: perms.isOwner || perms.isAdmin,
       hasDiscordModPermission: perms.isMod,
     });

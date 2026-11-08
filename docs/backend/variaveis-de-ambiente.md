@@ -44,6 +44,7 @@ Gerar: `openssl rand -base64 32`. `TOKEN_ENCRYPTION_KEY` precisa decodificar par
 | `DISCORD_BOT_TOKEN` | prod | Token do bot. Sem ele (só em desenvolvimento) a API sobe sem o bot; em produção a API não inicia |
 | `DISCORD_GUILD_ID` | sim | ID do servidor Acelera DEV |
 | `DISCORD_REDIRECT_URI` | sim | `https://api.exemplo.com/api/v1/auth/discord/callback` |
+| `ADMIN_ROLE_IDS` | não | IDs de **cargos** do Discord (vírgula) que sempre são ADMIN, somados aos definidos com `/config cargo-admin`. Qualquer pessoa com um desses cargos administra o servidor e as reuniões |
 | `BOOTSTRAP_ADMIN_IDS` | não | IDs Discord (vírgula) tratados como ADMIN. Serve para o primeiro acesso, antes de configurar os cargos |
 | `MEETING_MENTION_ROLE_ID` | não | Cargo marcado nos avisos de reunião (vazio = `@everyone`) |
 

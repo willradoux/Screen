@@ -26,6 +26,8 @@ const schema = z.object({
   DISCORD_GUILD_ID: snowflake,
   DISCORD_REDIRECT_URI: z.string().url(),
   BOOTSTRAP_ADMIN_IDS: z.string().optional(),
+  /** IDs de cargos (separados por vírgula) que sempre são ADMIN, além dos de /config cargo-admin. */
+  ADMIN_ROLE_IDS: z.string().optional(),
   /** Sem o token o bot não inicia (a API sobe normalmente). Obrigatório em produção. */
   DISCORD_BOT_TOKEN: optional(z.string().min(1)),
   /** Cargo marcado nos avisos de reunião. Vazio = @everyone. */
@@ -59,6 +61,7 @@ export type Env = z.infer<typeof schema> & {
   /** Chave AES-256 já decodificada (32 bytes). */
   encryptionKey: Buffer;
   bootstrapAdminIds: string[];
+  adminRoleIds: string[];
 };
 
 /** Valores fixos e inofensivos aplicados somente quando NODE_ENV=test. */
@@ -109,10 +112,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     );
   }
 
+  const adminRoleIds = list(env.ADMIN_ROLE_IDS);
+  const badRole = adminRoleIds.find((id) => !snowflake.safeParse(id).success);
+  if (badRole) {
+    throw new Error(`Variáveis de ambiente inválidas:
+ADMIN_ROLE_IDS: ID inválido "${badRole}"`);
+  }
+
   return {
     ...env,
     corsOrigins: list(env.CORS_ORIGINS ?? env.WEB_URL),
     encryptionKey,
     bootstrapAdminIds,
+    adminRoleIds,
   };
 }

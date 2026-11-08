@@ -14,7 +14,7 @@ As listas de cargos ficam em `GuildSettings` e são editáveis por `/config` ou 
 
 ## Resolução do papel
 
-> Implementado: cargos (`adminRoleIds`/`modRoleIds`), `BOOTSTRAP_ADMIN_IDS` e, com o bot ligado (Fase 4), dono do servidor, `Administrator`/`ManageGuild` (ADMIN) e `MuteMembers`/`ModerateMembers` (MOD). Se o bot estiver desligado ou a consulta falhar, valem só cargos e `BOOTSTRAP_ADMIN_IDS` — nunca eleva por engano.
+> Implementado: cargos (`adminRoleIds`/`modRoleIds`), `BOOTSTRAP_ADMIN_IDS`, `ADMIN_ROLE_IDS` (cargos fixos de admin por variável de ambiente) e, com o bot ligado (Fase 4), dono do servidor, `Administrator`/`ManageGuild` (ADMIN) e `MuteMembers`/`ModerateMembers` (MOD). Se o bot estiver desligado ou a consulta falhar, valem só cargos e `BOOTSTRAP_ADMIN_IDS` — nunca eleva por engano.
 > A permissão `MuteMembers`/`ModerateMembers` como MOD ainda não é configurável.
 
 ```

@@ -8,6 +8,8 @@ export interface ResolveRoleInput {
   config: RoleConfig;
   /** IDs de admins fixos (BOOTSTRAP_ADMIN_IDS), úteis antes de configurar os cargos. */
   bootstrapAdminIds: string[];
+  /** Cargos que são ADMIN sempre (ADMIN_ROLE_IDS), somados aos configurados com /config cargo-admin. */
+  fixedAdminRoleIds?: string[];
   /** Dono da guilda ou permissão Administrator/ManageGuild no Discord (via bot, Fase 4). */
   hasDiscordAdminPermission?: boolean;
   /** Permissão MuteMembers/ModerateMembers no Discord (via bot). */
@@ -21,7 +23,8 @@ export function resolveRole(input: ResolveRoleInput): Role {
   if (
     input.hasDiscordAdminPermission ||
     input.bootstrapAdminIds.includes(input.userId) ||
-    has(input.config.adminRoleIds)
+    has(input.config.adminRoleIds) ||
+    has(input.fixedAdminRoleIds ?? [])
   ) {
     return 'ADMIN';
   }

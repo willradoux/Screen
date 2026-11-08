@@ -127,6 +127,7 @@ export function createDiscordSystem(
     settings: repos.settings,
     guildId,
     bootstrapAdminIds: env.bootstrapAdminIds,
+    fixedAdminRoleIds: env.adminRoleIds,
   });
 
   const router = new CommandRouter({

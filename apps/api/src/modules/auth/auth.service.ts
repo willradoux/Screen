@@ -207,6 +207,7 @@ export class AuthService {
       memberRoleIds: member.roles,
       config,
       bootstrapAdminIds: this.deps.env.bootstrapAdminIds,
+      fixedAdminRoleIds: this.deps.env.adminRoleIds,
       hasDiscordAdminPermission: Boolean(perms && (perms.isOwner || perms.isAdmin)),
       hasDiscordModPermission: Boolean(perms?.isMod),
     });

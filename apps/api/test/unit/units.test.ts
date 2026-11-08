@@ -165,3 +165,32 @@ describe('loadEnv (auth)', () => {
     );
   });
 });
+
+describe('ADMIN_ROLE_IDS (cargos fixos de admin)', () => {
+  const base = {
+    userId: '9',
+    memberRoleIds: ['r2'],
+    config: { adminRoleIds: [] as string[], modRoleIds: [] as string[] },
+    bootstrapAdminIds: [] as string[],
+  };
+  it('quem tem qualquer um dos cargos fixos é ADMIN', () => {
+    expect(resolveRole({ ...base, fixedAdminRoleIds: ['r1', 'r2', 'r3'] })).toBe('ADMIN');
+  });
+  it('quem não tem nenhum continua MEMBER', () => {
+    expect(resolveRole({ ...base, fixedAdminRoleIds: ['r1', 'r3'] })).toBe('MEMBER');
+    expect(resolveRole(base)).toBe('MEMBER');
+  });
+  it('soma com os cargos configurados em /config', () => {
+    const config = { adminRoleIds: ['r2'], modRoleIds: [] };
+    expect(resolveRole({ ...base, config })).toBe('ADMIN');
+  });
+  it('a variável é lida e valida cada ID', () => {
+    const env = loadEnv({
+      NODE_ENV: 'test',
+      ADMIN_ROLE_IDS: '111111111111111111, 222222222222222222',
+    });
+    expect(env.adminRoleIds).toEqual(['111111111111111111', '222222222222222222']);
+    expect(() => loadEnv({ NODE_ENV: 'test', ADMIN_ROLE_IDS: 'abc' })).toThrow(/ADMIN_ROLE_IDS/);
+    expect(loadEnv({ NODE_ENV: 'test' }).adminRoleIds).toEqual([]);
+  });
+});
