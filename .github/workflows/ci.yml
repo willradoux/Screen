@@ -16,7 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       # O MongoDB de teste (mongodb-memory-server) é baixado uma vez e reaproveitado.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: node_modules/.cache/mongodb-memory-server
           key: mongodb-memory-server-${{ runner.os }}-7.0
