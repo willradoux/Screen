@@ -107,10 +107,11 @@ Portas expostas na VPS:
 | 443 | TCP | HTTPS, WSS (via proxy) e TURN/TLS |
 | 7880 | TCP | LiveKit HTTP/WS (atrás do proxy) |
 | 7881 | TCP | WebRTC sobre TCP (fallback) |
-| 50000-60000 | UDP | Mídia WebRTC |
+| 7882 | UDP | Mídia WebRTC (porta única, `rtc.udp_port`) |
 | 3478 | UDP/TCP | STUN/TURN (Coturn) |
-| 5349 | TCP | TURN/TLS |
 | 49152-49252 | UDP | Relay do Coturn (faixa restrita) |
+
+TURN/TLS (5349 ou 443) é opcional e não vem ligado por padrão; exige certificado para `turn.exemplo.com`.
 
 `livekit.yaml` (resumo):
 
@@ -118,16 +119,15 @@ Portas expostas na VPS:
 port: 7880
 rtc:
   tcp_port: 7881
-  port_range_start: 50000
-  port_range_end: 60000
+  udp_port: 7882          # porta única: evita mapear 10 mil portas no Docker
   use_external_ip: true
-turn:
-  enabled: false        # usamos Coturn externo
+  turn_servers:           # Coturn externo
+    - { host: turn.exemplo.com, port: 3478, protocol: udp, username: livekit, credential: <TURN_PASSWORD> }
 keys:
   <API_KEY>: <API_SECRET>
 ```
 
-O frontend recebe os servidores ICE pelo próprio LiveKit. Para usar o Coturn, o LiveKit é configurado com `rtc.turn_servers` apontando para `turn.exemplo.com` com credenciais estáticas ou efêmeras (`use-auth-secret` do Coturn). Veja [../infra/README.md](../infra/README.md).
+O frontend recebe os servidores ICE pelo próprio LiveKit. Para usar o Coturn, o LiveKit é configurado com `rtc.turn_servers` apontando para `turn.exemplo.com` com a credencial estática do usuário `livekit` (`--lt-cred-mech`). Credenciais efêmeras (`use-auth-secret`) ficam como melhoria futura. A configuração real está inline em `infra/docker-compose.yml`. Veja [../infra/README.md](../infra/README.md).
 
 ## Diagnóstico
 

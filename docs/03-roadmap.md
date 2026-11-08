@@ -16,11 +16,11 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 1 - Infra local e de produção
 
-- [ ] `docker-compose.yml` com MongoDB, LiveKit, Coturn e API.
-- [ ] Config do LiveKit (`livekit.yaml`) e Coturn (`turnserver.conf`).
-- [ ] Reverse proxy (Caddy ou Nginx) com TLS para `api.` e `live.`.
-- [ ] Firewall: portas 80/443, 7881/tcp, 50000-60000/udp, 3478 e 5349 (TURN).
-- [ ] Documento de deploy testado em VPS limpa.
+- [x] `infra/docker-compose.yml` com MongoDB, LiveKit, Coturn, API e Caddy.
+- [x] Config do LiveKit e do Coturn (inline no compose, com segredos via `.env`).
+- [x] Reverse proxy Caddy com TLS automático para `api.` e `live.`.
+- [x] Firewall: `infra/scripts/ufw.sh` (80/443, 7881/tcp, 7882/udp, 3478, relay 49152-49252).
+- [ ] Documento de deploy testado em VPS limpa (escrito, falta testar na VPS).
 
 **Aceite:** `docker compose up` sobe tudo e o endpoint `GET /health` responde 200.
 

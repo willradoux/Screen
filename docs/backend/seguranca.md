@@ -82,7 +82,7 @@ Dados guardados: ID, username, avatar, entradas/saídas de salas, ações de mod
 - [ ] HTTPS em API, LiveKit e TURN
 - [ ] CORS restrito, cookie com `Domain` correto
 - [ ] Mongo sem exposição pública, com autenticação
-- [ ] Coturn com `denied-peer-ip` e segredo forte
+- [ ] Coturn com `denied-peer-ip` e senha forte
 - [ ] Webhook do LiveKit com assinatura validada (teste negativo feito)
 - [ ] Rate limits ativos
 - [ ] Backup do Mongo testado com restauração

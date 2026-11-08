@@ -1,0 +1,34 @@
+# Desenvolvimento local: só MongoDB e LiveKit em modo dev.
+#   docker compose -f infra/docker-compose.dev.yml up -d
+# A API e o web rodam fora do Docker (npm run dev:api / dev:web).
+# LiveKit dev: chaves devkey / secret, URL ws://localhost:7880.
+
+name: screem-dev
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_dev:/data/db
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    command: --dev --bind 0.0.0.0 --node-ip 127.0.0.1
+    ports:
+      - '7880:7880'
+      - '7881:7881/tcp'
+      - '7882:7882/udp'
+    environment:
+      LIVEKIT_CONFIG: |
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+        webhook:
+          api_key: devkey
+          urls:
+            - http://host.docker.internal:3000/api/v1/livekit/webhook
+
+volumes:
+  mongo_dev: {}

@@ -1,0 +1,13 @@
+{
+	# E-mail para avisos do Let's Encrypt (opcional)
+	# email admin@exemplo.com
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:3000
+}
+
+{$LIVE_DOMAIN} {
+	reverse_proxy livekit:7880
+}
