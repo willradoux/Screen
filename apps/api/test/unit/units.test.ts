@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { loadEnv } from '../../src/config/env.js';
 import { sanitizeRedirect } from '../../src/modules/auth/redirect.js';
 import { resolveRole } from '../../src/modules/permissions/roles.js';
@@ -127,9 +127,13 @@ describe('loadEnv (auth)', () => {
     expect(
       loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: '' }).MEETING_MENTION_ROLE_ID,
     ).toBeUndefined();
-    expect(() => loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: 'abc' })).toThrow(
-      /MEETING_MENTION_ROLE_ID/,
-    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    // inválido não derruba a API: é ignorado (ninguém é marcado) e avisa nos logs
+    expect(
+      loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: 'abc' }).MEETING_MENTION_ROLE_ID,
+    ).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('MEETING_MENTION_ROLE_ID ignorado'));
+    warn.mockRestore();
   });
 
   it('LiveKit é obrigatório fora de teste e valida as URLs', () => {
@@ -213,9 +217,15 @@ describe('loadEnv tolera espaços e aspas vindos de painéis (Coolify)', () => {
         .adminRoleIds,
     ).toHaveLength(2);
   });
-  it('valor realmente inválido continua sendo recusado', () => {
-    expect(() => loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: '@everyone' })).toThrow(
-      /MEETING_MENTION_ROLE_ID/,
+  it('valor inválido é ignorado com aviso (não derruba a API), mas só nesta variável', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(
+      loadEnv({ NODE_ENV: 'test', MEETING_MENTION_ROLE_ID: '@everyone' }).MEETING_MENTION_ROLE_ID,
+    ).toBeUndefined();
+    expect(warn.mock.calls[0]![0]).toContain('"@everyone"');
+    warn.mockRestore();
+    expect(() => loadEnv({ NODE_ENV: 'test', DISCORD_GUILD_ID: 'abc' })).toThrow(
+      /DISCORD_GUILD_ID/,
     );
   });
 });

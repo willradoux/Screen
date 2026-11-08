@@ -99,6 +99,16 @@ function clean(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
   const source = clean(rawSource);
+
+  // Detalhe cosmético (quem é marcado nos avisos): valor inválido não pode derrubar a API.
+  // Ignora, avisa nos logs com o valor recebido (é um ID de cargo, não um segredo) e segue sem marcar ninguém.
+  const mention = source.MEETING_MENTION_ROLE_ID;
+  if (mention && !snowflake.safeParse(mention).success) {
+    console.warn(
+      `[env] MEETING_MENTION_ROLE_ID ignorado: recebi ${JSON.stringify(mention.slice(0, 40))}, mas precisa ser só o ID numérico do cargo (17 a 20 dígitos). Os avisos não vão marcar ninguém.`,
+    );
+    delete source.MEETING_MENTION_ROLE_ID;
+  }
   const input = source.NODE_ENV === 'test' ? { ...TEST_DEFAULTS, ...source } : source;
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
