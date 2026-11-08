@@ -14,6 +14,8 @@ As listas de cargos ficam em `GuildSettings` e são editáveis por `/config` ou 
 
 ## Resolução do papel
 
+> Implementado na Fase 3 com cargos (`adminRoleIds`/`modRoleIds`) e `BOOTSTRAP_ADMIN_IDS`. As regras de dono e de permissões do Discord (`Administrator`, `ManageGuild`, `MuteMembers`) dependem do bot e entram na Fase 4.
+
 ```
 resolveRole(guildId, userId):
   membro = discord.fetchMember(userId)   // cache curto de 60 s

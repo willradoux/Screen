@@ -1,0 +1,28 @@
+import type { Role } from '@screem/shared';
+import type { RoleConfig } from '../auth/auth.types.js';
+
+export interface ResolveRoleInput {
+  userId: string;
+  /** Cargos do membro na guilda. */
+  memberRoleIds: string[];
+  config: RoleConfig;
+  /** IDs de admins fixos (BOOTSTRAP_ADMIN_IDS), úteis antes de configurar os cargos. */
+  bootstrapAdminIds: string[];
+  /** Dono da guilda ou permissão Administrator/ManageGuild no Discord (via bot, Fase 4). */
+  hasDiscordAdminPermission?: boolean;
+}
+
+/** Ordem: ADMIN > MOD > MEMBER. O papel mais alto vence. Ver docs/backend/permissoes.md */
+export function resolveRole(input: ResolveRoleInput): Role {
+  const has = (ids: string[]) => ids.some((id) => input.memberRoleIds.includes(id));
+
+  if (
+    input.hasDiscordAdminPermission ||
+    input.bootstrapAdminIds.includes(input.userId) ||
+    has(input.config.adminRoleIds)
+  ) {
+    return 'ADMIN';
+  }
+  if (has(input.config.modRoleIds)) return 'MOD';
+  return 'MEMBER';
+}

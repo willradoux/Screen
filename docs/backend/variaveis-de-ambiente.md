@@ -32,7 +32,7 @@ Arquivo de exemplo: `apps/api/.env.example`. Nunca commitar `.env`.
 | `COOKIE_SECRET` | sim | 32+ bytes aleatórios | Assina cookie de `state` |
 | `TOKEN_ENCRYPTION_KEY` | sim | 32 bytes em base64 | AES-256-GCM dos tokens do Discord |
 
-Gerar: `openssl rand -base64 32`.
+Gerar: `openssl rand -base64 32`. `TOKEN_ENCRYPTION_KEY` precisa decodificar para **exatamente 32 bytes**. Só em `NODE_ENV=test` as variáveis de login têm valores de teste; nos outros ambientes a API não sobe se faltarem.
 
 ## Discord
 
@@ -43,6 +43,7 @@ Gerar: `openssl rand -base64 32`.
 | `DISCORD_BOT_TOKEN` | sim | Token do bot |
 | `DISCORD_GUILD_ID` | sim | ID do servidor Acelera DEV |
 | `DISCORD_REDIRECT_URI` | sim | `https://api.exemplo.com/api/v1/auth/discord/callback` |
+| `BOOTSTRAP_ADMIN_IDS` | não | IDs Discord (vírgula) tratados como ADMIN. Serve para o primeiro acesso, antes de configurar os cargos |
 | `MEETING_MENTION_ROLE_ID` | não | Cargo marcado nos avisos (vazio = `@everyone`) |
 
 ## LiveKit

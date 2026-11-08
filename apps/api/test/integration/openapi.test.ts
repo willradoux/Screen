@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../src/app.js';
-import { loadEnv } from '../../src/config/env.js';
 import { buildOpenApi } from '../../src/openapi.js';
-import { createLogger } from '../../src/shared/logger.js';
+import { buildTestApp } from '../fixtures/fakes.js';
 
-const env = loadEnv({ NODE_ENV: 'test' });
-const app = createApp(env, createLogger(env));
+const { app } = buildTestApp();
 
 describe('OpenAPI', () => {
   it('openapi.json commitado está atualizado (rode: npm run openapi -w @screem/api)', () => {
@@ -31,10 +28,16 @@ describe('OpenAPI', () => {
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
   });
 
-  it('todas as rotas da spec existem no app', async () => {
-    for (const path of Object.keys(buildOpenApi().paths)) {
-      const res = await request(app).get(`/api/v1${path}`);
-      expect(res.status, path).not.toBe(404);
+  it('todas as rotas e métodos da spec existem no app', async () => {
+    const paths = buildOpenApi().paths as Record<string, Record<string, unknown>>;
+    for (const [path, methods] of Object.entries(paths)) {
+      for (const method of Object.keys(methods)) {
+        const call = (request(app) as unknown as Record<string, (p: string) => request.Test>)[
+          method
+        ];
+        const res = await call!(`/api/v1${path}`);
+        expect(res.status, `${method.toUpperCase()} ${path}`).not.toBe(404);
+      }
     }
   });
 });

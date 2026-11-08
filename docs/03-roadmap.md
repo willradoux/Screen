@@ -37,11 +37,11 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 ## Fase 3 - Autenticação
 
-- [ ] Fluxo Discord OAuth2 com `state` e PKCE quando aplicável.
-- [ ] Sessão por cookie, expiração e renovação.
-- [ ] `GET /api/auth/me`, `POST /api/auth/logout`.
-- [ ] Verificação de participação na guilda.
-- [ ] Cálculo de papel a partir dos cargos.
+- [x] Fluxo Discord OAuth2 com `state` de uso único (PKCE dispensado: fluxo confidencial).
+- [x] Sessão por cookie, expiração deslizante (7 dias) e limite absoluto (30 dias).
+- [x] `GET /auth/me`, `POST /auth/logout`.
+- [x] Verificação de participação na guilda (no login e a cada revalidação).
+- [x] Cálculo de papel a partir dos cargos (dono/permissões do Discord entram com o bot, Fase 4).
 
 **Aceite:** usuário fora da guilda recebe `403 NOT_IN_GUILD`; usuário da guilda recebe sessão e papel correto.
 

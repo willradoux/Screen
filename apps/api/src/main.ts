@@ -2,6 +2,13 @@ import { createServer } from 'node:http';
 import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
 import { connectDb, disconnectDb, pingDb } from './db/connection.js';
+import {
+  createSessionRepo,
+  createSettingsRepo,
+  createUserRepo,
+} from './modules/auth/auth.repositories.js';
+import { AuthService } from './modules/auth/auth.service.js';
+import { createDiscordApi } from './modules/discord/discord-api.js';
 import { createLogger } from './shared/logger.js';
 
 const env = loadEnv();
@@ -14,7 +21,15 @@ try {
   process.exit(1);
 }
 
-const app = createApp(env, logger, { readiness: { mongo: pingDb } });
+const auth = new AuthService({
+  env,
+  discord: createDiscordApi(env),
+  users: createUserRepo(),
+  sessions: createSessionRepo(),
+  settings: createSettingsRepo(),
+});
+
+const app = createApp(env, logger, { readiness: { mongo: pingDb }, auth });
 const server = createServer(app);
 
 server.listen(env.PORT, () => logger.info(`API ouvindo na porta ${env.PORT}`));

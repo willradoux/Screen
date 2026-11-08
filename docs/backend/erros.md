@@ -54,11 +54,14 @@ Nos acks do Socket.IO: `{ ok: false, error: { code, message } }`.
 | `SERVICE_UNAVAILABLE` | 503 | Dependência fora do ar |
 
 ### Autenticação
+(No callback do login esses códigos chegam em `?error=` na URL do frontend; veja [autenticacao.md](autenticacao.md).)
+
 | Código | HTTP | Descrição |
 |---|---|---|
 | `NOT_IN_GUILD` | 403 | Usuário não está no servidor Acelera DEV |
 | `ACCOUNT_BLOCKED` | 403 | Conta bloqueada na plataforma |
-| `DISCORD_OAUTH_FAILED` | 502 | Falha ao falar com o Discord |
+| `ACCESS_DENIED` | - | O usuário recusou a autorização (só no `?error=` do login) |
+| `DISCORD_OAUTH_FAILED` | - | O Discord recusou o `code` (só no `?error=` do login) |
 
 ### Salas
 | Código | HTTP | Descrição |

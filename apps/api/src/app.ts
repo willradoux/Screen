@@ -5,15 +5,21 @@ import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { Env } from './config/env.js';
+import { authRoutes } from './modules/auth/auth.routes.js';
+import { sessionLoader } from './modules/auth/auth.middleware.js';
+import type { AuthService } from './modules/auth/auth.service.js';
 import { docsRoutes } from './modules/docs/docs.routes.js';
 import { healthRoutes, type ReadinessChecks } from './modules/health/health.routes.js';
 import { errorHandler } from './shared/error-handler.js';
 import { AppError } from './shared/errors.js';
+import { originCheck } from './shared/origin-check.js';
 import type { Logger } from './shared/logger.js';
 
 export interface AppDeps {
   /** Verificações usadas por GET /ready (ex.: { mongo: pingDb }). */
   readiness?: ReadinessChecks;
+  /** Serviço de autenticação. Sem ele, as rotas /auth/* não são montadas. */
+  auth?: AuthService;
 }
 
 export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
@@ -49,8 +55,11 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   );
 
   const api = express.Router();
+  api.use(originCheck(env.corsOrigins));
+  if (deps.auth) api.use(sessionLoader(deps.auth, env));
   api.use(healthRoutes(deps.readiness ?? {}));
   api.use(docsRoutes(env.PUBLIC_API_URL));
+  if (deps.auth) api.use(authRoutes(deps.auth, env));
   app.use('/api/v1', api);
 
   app.use((_req, _res, next) => next(new AppError('NOT_FOUND', 404, 'Rota não encontrada.')));
