@@ -1,0 +1,142 @@
+# Deploy no Coolify (VPS própria). Guia: docs/infra/deploy-coolify.md
+#
+# No Coolify: New Resource > Public/Private Repository > Build Pack "Docker Compose"
+#   Base Directory ........ /
+#   Docker Compose Location  /infra/coolify/docker-compose.yml
+#
+# Diferenças em relação a infra/docker-compose.yml:
+#   - Sem Caddy: quem faz HTTPS e roteia é o Traefik do Coolify (domínios configurados na interface).
+#   - Sem env_file: todas as variáveis vêm da aba "Environment Variables" do Coolify.
+#   - Variáveis marcadas com :? fazem o deploy falhar com mensagem clara se estiverem vazias.
+
+name: screem
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-screem}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?defina MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    # Domínio desta API (ex.: https://api.exemplo.com:3000) é definido na interface do Coolify.
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TIMEZONE: ${TIMEZONE:-America/Sao_Paulo}
+      # Atrás do Traefik do Coolify há 1 proxy. Se colocar a Cloudflare na frente, use 2.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:?ex. https://api.exemplo.com}
+      WEB_URL: ${WEB_URL:?ex. https://app.exemplo.com}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:?ex. .exemplo.com}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      COOKIE_SECRET: ${COOKIE_SECRET:?defina COOKIE_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?defina TOKEN_ENCRYPTION_KEY}
+      MONGODB_URI: mongodb://${MONGO_USER:-screem}:${MONGO_PASSWORD}@mongo:27017/screem?authSource=admin
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: wss://${LIVE_DOMAIN:?ex. live.exemplo.com}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET}
+      JOIN_TOKEN_TTL_SECONDS: ${JOIN_TOKEN_TTL_SECONDS:-600}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?defina DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:?defina DISCORD_CLIENT_SECRET}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?defina DISCORD_GUILD_ID}
+      DISCORD_REDIRECT_URI: ${PUBLIC_API_URL}/api/v1/auth/discord/callback
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?defina DISCORD_BOT_TOKEN}
+      BOOTSTRAP_ADMIN_IDS: ${BOOTSTRAP_ADMIN_IDS:-}
+      MEETING_MENTION_ROLE_ID: ${MEETING_MENTION_ROLE_ID:-}
+      EMPTY_LIVE_END_SECONDS: ${EMPTY_LIVE_END_SECONDS:-60}
+      EMPTY_MEETING_END_MINUTES: ${EMPTY_MEETING_END_MINUTES:-15}
+      SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-15}
+      # Métricas só na rede interna (nenhum domínio deve apontar para esta porta).
+      METRICS_PORT: '9100'
+    depends_on:
+      mongo: { condition: service_healthy }
+      livekit: { condition: service_started }
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    restart: unless-stopped
+    # Domínio do LiveKit (ex.: https://live.exemplo.com:7880) é definido na interface do Coolify.
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        log_level: info
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: true
+          turn_servers:
+            - host: ${TURN_DOMAIN:?ex. turn.exemplo.com}
+              port: 3478
+              protocol: udp
+              username: livekit
+              credential: ${TURN_PASSWORD:?defina TURN_PASSWORD}
+            - host: ${TURN_DOMAIN}
+              port: 3478
+              protocol: tcp
+              username: livekit
+              credential: ${TURN_PASSWORD}
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        webhook:
+          api_key: ${LIVEKIT_API_KEY}
+          urls:
+            - http://api:3000/api/v1/livekit/webhook
+    # Mídia não passa pelo Traefik: estas portas precisam estar abertas no firewall da VPS.
+    ports:
+      - '7881:7881/tcp'
+      - '7882:7882/udp'
+
+  coturn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    # host network: o relay UDP precisa de uma faixa de portas sem NAT do Docker.
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --listening-port=3478
+      - --realm=${TURN_DOMAIN}
+      - --server-name=${TURN_DOMAIN}
+      - --external-ip=${TURN_EXTERNAL_IP:?IP público da VPS}
+      - --min-port=49152
+      - --max-port=49252
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=livekit:${TURN_PASSWORD}
+      - --no-multicast-peers
+      - --no-cli
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+
+volumes:
+  mongo_data: {}
