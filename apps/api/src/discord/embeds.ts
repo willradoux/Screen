@@ -61,11 +61,12 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
       {
         title: `Live aberta: ${room.title.replace(/^Live - /, '')}`,
         description:
-          `<@${room.createdBy}> iniciou uma sala. Entre no canal de voz e abra o Screem ` +
-          'para transmitir câmera e tela.',
+          `<@${room.createdBy}> abriu esta live. Entre em ${channel} e use o botão abaixo ` +
+          'para assistir ou compartilhar microfone, câmera e tela. ' +
+          'O acesso de membros é verificado pelo Discord.',
         color: COLORS.live,
         fields: [
-          { name: 'Participantes', value: String(ctx.participants), inline: true },
+          { name: 'Na voz', value: String(ctx.participants), inline: true },
           { name: 'Canal', value: channel, inline: true },
           {
             name: 'Sessão',
@@ -91,9 +92,14 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
     ? `${discordTime(room.startsAt, 'F')} (${discordTime(room.startsAt, 'R')})`
     : 'agora';
 
-  const base = (title: string, color: number, fields: Record<string, unknown>[]) => ({
+  const base = (
+    title: string,
+    color: number,
+    fields: Record<string, unknown>[],
+    detail = description,
+  ) => ({
     title,
-    ...(description ? { description } : {}),
+    ...(detail ? { description: detail } : {}),
     color,
     fields,
     footer: FOOTER,
@@ -122,6 +128,14 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
       { name: 'Quando', value: when, inline: false },
       { name: 'Quem pode entrar', value: who, inline: false },
     ],
+    [
+      description,
+      open
+        ? 'Entre pelo Screem com sua conta do Discord. Não precisa entrar em um canal de voz.'
+        : 'A sala abre no horário indicado. Entre pelo Screem com sua conta do Discord.',
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
   );
 
   // A menção só vale na mensagem inicial; edições não notificam de novo.

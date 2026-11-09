@@ -6,6 +6,7 @@ Biblioteca: **discord.js v14**. O bot roda no mesmo processo da API (ADR-5), mas
 
 1. [Discord Developer Portal](https://discord.com/developers/applications) -> New Application.
 2. **Bot**: gere o token (`DISCORD_BOT_TOKEN`).
+   - Para a imagem do bot, envie `apps/web/public/bot-avatar.png` no **Developer Portal → aplicação → Bot → Icon**. A imagem é enviada uma vez no portal; deploy do código não altera automaticamente o avatar da aplicação.
 3. **Privileged Gateway Intents**: ative `Server Members Intent`. `Message Content` **não** é necessário.
 4. **OAuth2**: cadastre o redirect `https://api.exemplo.com/api/v1/auth/discord/callback` (e o de dev `http://localhost:3000/api/v1/auth/discord/callback`). Guarde `CLIENT_ID` e `CLIENT_SECRET`.
 5. Convide o bot com escopos `bot applications.commands` e as permissões abaixo.
@@ -65,10 +66,11 @@ Removem a referência em `guild_settings` (canal/categoria vira `null`, cargo sa
 ## Embed da live
 
 ```
-Título:  🔴 Live aberta: <nome do canal>
-Corpo:   <usuário> iniciou uma sala. Entre no canal de voz e abra o Screem para transmitir câmera e tela.
-Campos:  Participantes: 3 · Canal: #live-1
-Botão:   [Abrir sala] -> https://app.exemplo.com/r/<roomId>   (estilo Link)
+Título:  Live aberta: <nome do canal>
+Corpo:   <usuário> abriu esta live. Entre no canal de voz e use o botão
+         para assistir ou compartilhar microfone, câmera e tela.
+Campos:  Na voz: 3 · Canal: #live-1 · Sessão: Em uso / Em espera
+Botão:   [Abrir sala] -> https://app.exemplo.com/r/<roomId> (link)
 Rodapé:  Acelera DEV · Screem
 ```
 
@@ -131,14 +133,14 @@ Ainda não implementado: depende do LiveKit e da moderação.
 ## Embed de reunião (aviso)
 
 ```
-Título:  📅 Reunião: Reunião mensal de dezembro
-Corpo:   <descrição>
-Campos:  Quando: <t:1796511600:F> (<t:1796511600:R>) · Quem pode: todos os membros
-Botão:   [Entrar na reunião] -> https://app.exemplo.com/r/<roomId>
+Título:  Reunião: Reunião mensal de dezembro
+Corpo:   <descrição> + instrução de login pelo Discord; a sala abre no horário
+Campos:  Quando: <t:1796511600:F> (<t:1796511600:R>) · Quem pode entrar: todos os membros
+Botão:   [Ver sala] -> https://app.exemplo.com/r/<roomId>
 Menção:  um cargo (`MEETING_MENTION_ROLE_ID`); se vazio, não marca ninguém (nem @everyone); só na mensagem inicial, edições não notificam de novo
 ```
 
-Quando a reunião abre: o mesmo aviso é editado para "🟢 Reunião aberta agora" e o botão fica ativo.
+Quando a reunião abre, o mesmo aviso é editado para "Reunião aberta agora", explica que não é necessário entrar na voz do Discord e mostra o botão "Entrar na reunião". Embeds encerrados ou cancelados removem o botão. O azul identifica avisos; verde identifica reunião aberta e cinza, evento encerrado.
 
 ## Botões
 

@@ -162,6 +162,8 @@ describe('embeds', () => {
     const m = buildRoomMessage(live, ctx);
     expect(m.embeds[0]!.title).toBe('Live aberta: Live 1');
     expect(JSON.stringify(m.embeds[0]!.fields)).toContain('<#123>');
+    expect(m.embeds[0]!.fields).toContainEqual({ name: 'Na voz', value: '3', inline: true });
+    expect(m.embeds[0]!.description).toContain('O acesso de membros é verificado pelo Discord.');
     expect(JSON.stringify(m.components)).toContain('https://app.exemplo.com/r/abc');
     expect(m.content).toBeUndefined();
   });
@@ -182,8 +184,14 @@ describe('embeds', () => {
       startsAt: new Date('2026-12-05T23:00:00Z'),
     };
     expect(buildRoomMessage(meeting, ctx).embeds[0]!.title).toBe('Reunião: Mensal');
+    expect(buildRoomMessage(meeting, ctx).embeds[0]!.description).toContain(
+      'A sala abre no horário indicado.',
+    );
     expect(buildRoomMessage({ ...meeting, status: 'OPEN' }, ctx).embeds[0]!.title).toBe(
       'Reunião aberta agora: Mensal',
+    );
+    expect(buildRoomMessage({ ...meeting, status: 'OPEN' }, ctx).embeds[0]!.description).toContain(
+      'Não precisa entrar em um canal de voz.',
     );
     const canceled = buildRoomMessage({ ...meeting, status: 'CANCELED' }, ctx);
     expect(canceled.embeds[0]!.title).toBe('Reunião cancelada: Mensal');
