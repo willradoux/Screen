@@ -1,4 +1,4 @@
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { Alert, Card } from '../components/ui';
 import { api } from '../lib/api';
@@ -50,6 +50,9 @@ export function LoginPage() {
         <p className="text-xs text-zinc-500">
           Só entra quem está no servidor. Nas lives, você também precisa estar no canal de voz.
         </p>
+        <Link to="/features" className="text-sm font-medium text-brand-300 underline">
+          Ver o que o Screem faz e como usar
+        </Link>
       </Card>
     </div>
   );

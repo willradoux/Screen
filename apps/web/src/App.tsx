@@ -3,6 +3,7 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff } from './components/guards';
 import { HomePage } from './pages/HomePage';
+import { FeaturesPage } from './pages/FeaturesPage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
 
@@ -51,6 +52,8 @@ export function App() {
     <Suspense fallback={<FullPageSpinner />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* Pública: apresenta o Screem e ensina a usar, sem exigir login. */}
+        <Route path="/features" element={<FeaturesPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />

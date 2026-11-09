@@ -67,6 +67,7 @@ export function Layout() {
     { to: '/', label: 'Salas', icon: 'videocam', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
   ];
+  const guide: NavItem = { to: '/features', label: 'Guia', icon: 'info' };
   if (user && isStaff(user.role)) {
     items.push({ to: '/admin', label: 'Painel', icon: 'dashboard', end: true });
   }
@@ -105,6 +106,10 @@ export function Layout() {
                 {i.label}
               </NavLink>
             ))}
+            <NavLink to={guide.to} className={desktopLink}>
+              <Icon name={guide.icon} size="1.15rem" />
+              {guide.label}
+            </NavLink>
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
