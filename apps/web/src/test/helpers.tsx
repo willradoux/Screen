@@ -30,6 +30,7 @@ export const makeRoom = (over: Partial<Room> = {}): Room => ({
   createdBy: '111111111111111111',
   maxParticipants: 25,
   lectureMode: false,
+  mediaState: 'ACTIVE',
   participantCount: 2,
   url: `https://app.exemplo.com/r/${ROOM_ID}`,
   ...over,
@@ -43,6 +44,7 @@ export const makeMeeting = (over: Partial<Meeting> = {}): Meeting => ({
     startsAt: '2030-12-05T23:00:00.000Z',
     voiceChannelId: null,
   }),
+  announced: true,
   allowedRoleIds: [],
   reminders: [
     { minutesBefore: 1440, sent: false },

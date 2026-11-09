@@ -66,7 +66,8 @@ export function ParticipantsPanel({ room, me, version, lectureMode, onInfo, onEr
     }
   }
 
-  const staff = isStaff(me.role);
+  // Moderação só existe em reuniões; nas lives todo mundo é igual.
+  const staff = isStaff(me.role) && room.type === 'MEETING';
   const options = banOptions(me.role);
 
   async function toggleLecture() {
@@ -81,6 +82,30 @@ export function ParticipantsPanel({ room, me, version, lectureMode, onInfo, onEr
 
   async function endRoom() {
     await run('end', () => api.rooms.end(room.id), 'Sala encerrada.');
+  }
+
+  async function muteAll() {
+    await run(
+      'mute-all',
+      async () => {
+        const { affected } = await api.moderation.muteAll(room.id);
+        onInfo(`Microfone desligado para ${affected} ${affected === 1 ? 'pessoa' : 'pessoas'}.`);
+      },
+      'Pronto.',
+    );
+  }
+
+  async function camerasOff() {
+    await run(
+      'cameras-off',
+      async () => {
+        const { affected } = await api.moderation.camerasOff(room.id);
+        onInfo(
+          `Câmera e tela desligadas para ${affected} ${affected === 1 ? 'pessoa' : 'pessoas'}.`,
+        );
+      },
+      'Pronto.',
+    );
   }
 
   return (
@@ -107,6 +132,22 @@ export function ParticipantsPanel({ room, me, version, lectureMode, onInfo, onEr
             onClick={() => void toggleLecture()}
           >
             Modo palestra: {lectureMode ? 'ligado' : 'desligado'}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={busy === 'mute-all'}
+            onClick={() => void muteAll()}
+          >
+            Silenciar todos
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={busy === 'cameras-off'}
+            onClick={() => void camerasOff()}
+          >
+            Desligar câmeras
           </Button>
           <Button
             size="sm"

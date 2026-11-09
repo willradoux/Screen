@@ -1,7 +1,7 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { messageFor } from '../lib/errors';
-import { isAdmin } from '../lib/moderation-rules';
+import { isAdmin, isStaff } from '../lib/moderation-rules';
 import { Alert, Button, Spinner } from './ui';
 
 export function FullPageSpinner({ label = 'Carregando…' }: { label?: string }) {
@@ -42,16 +42,37 @@ export function RequireAuth() {
   }
 }
 
-/** Páginas de administração. Quem não é admin vê um aviso (o backend também recusa). */
+function Restricted({ text }: { text: string }) {
+  return (
+    <div className="mx-auto max-w-md space-y-4 py-16">
+      <Alert tone="warning" title="Acesso restrito">
+        {text}
+      </Alert>
+      <Link
+        to="/"
+        className="inline-block rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-400"
+      >
+        Voltar para a página principal
+      </Link>
+    </div>
+  );
+}
+
+/** Páginas só de administradores. Quem não é admin vê o motivo e volta para o início (o backend também recusa). */
 export function RequireAdmin() {
   const { user } = useAuth();
   if (!user || !isAdmin(user.role)) {
+    return <Restricted text="Esta página é só para administradores do servidor." />;
+  }
+  return <Outlet />;
+}
+
+/** Painel: administradores e moderadores. Quem não tem o cargo não entra e é mandado de volta ao início. */
+export function RequireStaff() {
+  const { user } = useAuth();
+  if (!user || !isStaff(user.role)) {
     return (
-      <div className="mx-auto max-w-md py-16">
-        <Alert tone="warning" title="Acesso restrito">
-          Esta página é só para administradores do servidor.
-        </Alert>
-      </div>
+      <Restricted text="O painel é só para quem tem cargo de administrador ou moderador no servidor." />
     );
   }
   return <Outlet />;

@@ -12,6 +12,7 @@ import {
   CheckingScreen,
   EndedScreen,
   ErrorScreen,
+  IdleScreen,
   JoiningScreen,
   ReadyScreen,
   RemovedScreen,
@@ -154,7 +155,10 @@ function RoomPageInner({
       );
       break;
     case 'joining':
-      body = <JoiningScreen />;
+      body = <JoiningScreen activating={room?.type === 'LIVE' && room.mediaState === 'IDLE'} />;
+      break;
+    case 'idle':
+      body = <IdleScreen reason={phase.reason} onActivate={() => void session.join()} />;
       break;
     case 'connected':
     case 'disconnected':

@@ -36,7 +36,7 @@ export const emptyForm: MeetingFormValues = {
   title: '',
   description: '',
   when: '',
-  announce: true,
+  announce: false,
   reminders: [1440, 60, 5],
 };
 
@@ -175,8 +175,12 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
             checked={values.announce}
             onChange={(e) => setValues({ ...values, announce: e.target.checked })}
           />
-          Avisar no canal de avisos do Discord
+          Divulgar no Discord já ao criar
         </label>
+        <p className="-mt-2 text-xs text-zinc-500">
+          Se deixar desmarcado, a reunião fica só aqui no site, com data e hora, e você divulga
+          quando quiser com o botão “Enviar aviso”.
+        </p>
 
         {error && <Alert tone="error">{error}</Alert>}
 
@@ -264,6 +268,19 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
         </span>
       </div>
 
+      {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
+        <p className="mt-1 text-xs">
+          {meeting.announced ? (
+            <Badge tone="open">Divulgada no Discord</Badge>
+          ) : (
+            <Badge tone="warn">Ainda não divulgada</Badge>
+          )}
+          {!meeting.announced && meeting.reminders.length > 0 && (
+            <span className="ml-2 text-zinc-500">Os lembretes só começam depois de divulgar.</span>
+          )}
+        </p>
+      )}
+
       {meeting.reminders.length > 0 && meeting.status === 'SCHEDULED' && (
         <p className="mt-1 text-xs text-zinc-500">
           Lembretes:{' '}
@@ -283,6 +300,19 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
         >
           Abrir página da sala
         </Link>
+
+        {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
+          <Button
+            size="sm"
+            variant={meeting.announced ? 'secondary' : 'primary'}
+            loading={busy === 'announce'}
+            onClick={() =>
+              void run('announce', () => api.meetings.announce(meeting.id, meeting.announced))
+            }
+          >
+            {meeting.announced ? 'Enviar de novo' : 'Enviar aviso'}
+          </Button>
+        )}
 
         {meeting.status === 'SCHEDULED' && (
           <>

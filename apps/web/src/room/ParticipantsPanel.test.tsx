@@ -39,7 +39,7 @@ function setup(role: Role, list = Object.values(people), over: { lectureMode?: b
   const onError = vi.fn();
   render(
     <ParticipantsPanel
-      room={makeRoom()}
+      room={makeRoom({ type: 'MEETING' })}
       me={{ id: ME, role }}
       version={0}
       lectureMode={over.lectureMode ?? false}
@@ -222,14 +222,14 @@ describe('ParticipantsPanel: ações', () => {
   });
 
   it('modo palestra: liga e desliga pela API de edição da sala', async () => {
-    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom());
+    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member]);
     await userEvent.click(await screen.findByRole('button', { name: /modo palestra: desligado/i }));
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: true });
   });
 
   it('modo palestra já ligado oferece desligar', async () => {
-    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom());
+    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member], { lectureMode: true });
     await userEvent.click(await screen.findByRole('button', { name: /modo palestra: ligado/i }));
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: false });
@@ -246,7 +246,7 @@ describe('ParticipantsPanel: ações', () => {
     vi.spyOn(api.rooms, 'participants').mockRejectedValue(apiError(403, 'FORBIDDEN'));
     render(
       <ParticipantsPanel
-        room={makeRoom()}
+        room={makeRoom({ type: 'MEETING' })}
         me={{ id: ME, role: 'MEMBER' }}
         version={0}
         lectureMode={false}
@@ -260,7 +260,7 @@ describe('ParticipantsPanel: ações', () => {
   it('muda a versão (alguém entrou/saiu): recarrega', async () => {
     const spy = vi.spyOn(api.rooms, 'participants').mockResolvedValue([]);
     const props = {
-      room: makeRoom(),
+      room: makeRoom({ type: 'MEETING' }),
       me: { id: ME, role: 'MEMBER' as Role },
       lectureMode: false,
       onInfo: vi.fn(),

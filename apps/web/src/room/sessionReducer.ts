@@ -17,6 +17,8 @@ export type Phase =
   | { kind: 'connected' }
   /** Perdeu a conexão de mídia (o LiveKit já tentou reconectar sozinho). */
   | { kind: 'disconnected' }
+  /** A sessão de vídeo ficou em espera (ninguém usando). Entrar de novo ativa. */
+  | { kind: 'idle'; reason: 'NOBODY_CONNECTED' | 'NOBODY_STREAMING' | null }
   | { kind: 'ended'; reason: EndReason }
   | {
       kind: 'removed';
@@ -51,6 +53,7 @@ export type SessionAction =
   | { type: 'JOIN_STARTED' }
   | { type: 'CONNECTED'; lectureMode: boolean }
   | { type: 'DISCONNECTED' }
+  | { type: 'SESSION_IDLE'; reason: 'NOBODY_CONNECTED' | 'NOBODY_STREAMING' | null }
   | { type: 'ENDED'; reason: EndReason }
   | {
       type: 'REMOVED';
@@ -90,6 +93,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         phase.kind === 'ready' ||
         phase.kind === 'blocked' ||
         phase.kind === 'error' ||
+        phase.kind === 'idle' ||
         phase.kind === 'disconnected'
       ) {
         return { ...state, phase: { kind: 'joining' } };
@@ -102,6 +106,11 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'DISCONNECTED':
       return phase.kind === 'connected' ? { ...state, phase: { kind: 'disconnected' } } : state;
+
+    case 'SESSION_IDLE':
+      // Só faz sentido para quem está (ou estava entrando) na sala.
+      if (!isLive(phase)) return state;
+      return { ...state, voiceWarning: null, phase: { kind: 'idle', reason: action.reason } };
 
     case 'ENDED':
       // Quem foi removido continua vendo o motivo da remoção.

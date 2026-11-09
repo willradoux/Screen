@@ -25,6 +25,8 @@ export interface Room {
   createdBy: string;
   maxParticipants: number;
   lectureMode: boolean;
+  /** Só lives: em uso (ACTIVE) ou em espera (IDLE; ativa quando alguém entra pelo link). */
+  mediaState: 'ACTIVE' | 'IDLE';
   participantCount: number;
   url: string;
 }
@@ -35,6 +37,8 @@ export interface Reminder {
 }
 
 export interface Meeting extends Room {
+  /** Já foi divulgada no canal de avisos? */
+  announced: boolean;
   allowedRoleIds: string[];
   reminders: Reminder[];
 }
@@ -59,7 +63,9 @@ export interface JoinResult {
   livekit: { url: string; token: string };
   participant: { identity: string; name: string; role: Role };
   permissions: { canPublish: boolean; canPublishSources: MediaSource[]; canModerate: boolean };
-  room: { id: string; lectureMode: boolean };
+  room: { id: string; lectureMode: boolean; mediaState: 'ACTIVE' | 'IDLE' };
+  /** Este join tirou a live do modo de espera (mostrar "ativando sessão"). */
+  sessionActivated: boolean;
 }
 
 export interface Participant {
@@ -95,6 +101,38 @@ export interface Settings {
   meetingAllowedRoleIds: string[];
   maxParticipantsLive: number;
   graceSeconds: number;
+  liveChannelIds: string[];
+  logChannelId: string | null;
+  mentionRoleId: string | null;
+  emptyLiveEndSeconds: number | null;
+  idleSessionMinutes: number;
+  activationGraceMinutes: number;
+}
+
+export interface GuildChannel {
+  id: string;
+  name: string;
+  kind: 'voice' | 'text' | 'category';
+  parentId: string | null;
+}
+
+export interface GuildRole {
+  id: string;
+  name: string;
+  color: number;
+  position: number;
+}
+
+export interface PanelUser {
+  userId: string;
+  role: 'ADMIN' | 'MOD';
+  note: string | null;
+  addedBy: string;
+  addedAt: string;
+  displayName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  inServer: boolean;
 }
 
 export type SettingsPatch = Partial<Omit<Settings, 'guildId'>>;
@@ -120,7 +158,7 @@ export type EndReason =
   'ENDED_BY_MOD' | 'ENDED_BY_ADMIN' | 'VOICE_EMPTY' | 'MEETING_FINISHED' | 'CANCELED';
 
 export type LeaveReason =
-  'LEFT' | 'LEFT_VOICE' | 'KICKED' | 'BANNED' | 'DISCONNECTED' | 'ROOM_ENDED';
+  'LEFT' | 'LEFT_VOICE' | 'KICKED' | 'BANNED' | 'DISCONNECTED' | 'ROOM_ENDED' | 'SESSION_IDLE';
 
 export interface ModerationAction {
   roomId: string;

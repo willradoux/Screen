@@ -99,7 +99,8 @@ const joinResult = (
     canModerate: false,
     ...over,
   },
-  room: { id: ROOM_ID, lectureMode },
+  room: { id: ROOM_ID, lectureMode, mediaState: 'ACTIVE' },
+  sessionActivated: false,
 });
 
 const allowed: AccessResult = { canJoin: true, reason: null, hint: null };

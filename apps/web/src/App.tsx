@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { FullPageSpinner, RequireAdmin, RequireAuth } from './components/guards';
+import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff } from './components/guards';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
@@ -14,6 +14,12 @@ const AdminMeetingsPage = lazy(() =>
 );
 const SettingsPage = lazy(() =>
   import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
+const AdminHomePage = lazy(() =>
+  import('./pages/admin/AdminHomePage').then((m) => ({ default: m.AdminHomePage })),
+);
+const PeoplePage = lazy(() =>
+  import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })),
 );
 const AuditPage = lazy(() =>
   import('./pages/admin/AuditPage').then((m) => ({ default: m.AuditPage })),
@@ -44,8 +50,12 @@ export function App() {
             <Route index element={<HomePage />} />
             <Route path="reunioes" element={<MeetingsPage />} />
             <Route path="r/:roomId" element={<RoomPage />} />
+            <Route element={<RequireStaff />}>
+              <Route path="admin" element={<AdminHomePage />} />
+            </Route>
             <Route element={<RequireAdmin />}>
               <Route path="admin/reunioes" element={<AdminMeetingsPage />} />
+              <Route path="admin/pessoas" element={<PeoplePage />} />
               <Route path="admin/config" element={<SettingsPage />} />
               <Route path="admin/auditoria" element={<AuditPage />} />
             </Route>

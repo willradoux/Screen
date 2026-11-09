@@ -159,21 +159,39 @@ export function useRoomSession(
           teardown();
         }
       });
+      // A sessão de vídeo ficou em espera: derruba a conexão e mostra a tela de reativar.
+      socket.on('session:idle', (p: { reason?: 'NOBODY_CONNECTED' | 'NOBODY_STREAMING' }) => {
+        joinedRef.current = false;
+        dispatch({ type: 'SESSION_IDLE', reason: p?.reason ?? null });
+        teardown();
+        setRoom((r) => (r ? { ...r, mediaState: 'IDLE' } : r));
+      });
       socket.on('voice:warning', (p: { secondsLeft: number }) =>
         dispatch({ type: 'VOICE_WARNING', secondsLeft: p.secondsLeft, at: Date.now() }),
       );
       socket.on('voice:restored', () => dispatch({ type: 'VOICE_RESTORED' }));
-      socket.on('room:updated', (p: { changes?: { lectureMode?: boolean } }) => {
-        dispatch({
-          type: 'ROOM_UPDATED',
-          ...(p.changes?.lectureMode !== undefined ? { lectureMode: p.changes.lectureMode } : {}),
-        });
-        setRoom((r) =>
-          r && p.changes?.lectureMode !== undefined
-            ? { ...r, lectureMode: p.changes.lectureMode }
-            : r,
-        );
-      });
+      socket.on(
+        'room:updated',
+        (p: { changes?: { lectureMode?: boolean; mediaState?: 'ACTIVE' | 'IDLE' } }) => {
+          dispatch({
+            type: 'ROOM_UPDATED',
+            ...(p.changes?.lectureMode !== undefined ? { lectureMode: p.changes.lectureMode } : {}),
+          });
+          setRoom((r) =>
+            r
+              ? {
+                  ...r,
+                  ...(p.changes?.lectureMode !== undefined
+                    ? { lectureMode: p.changes.lectureMode }
+                    : {}),
+                  ...(p.changes?.mediaState !== undefined
+                    ? { mediaState: p.changes.mediaState }
+                    : {}),
+                }
+              : r,
+          );
+        },
+      );
       socket.on(
         'participant:updated',
         (p: { userId: string; isSpeaker: boolean; mutedByModeration: boolean }) => {

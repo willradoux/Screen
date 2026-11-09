@@ -32,6 +32,13 @@ export function RoomCard({ room }: { room: Room }) {
         <StatusBadge room={room} />
       </div>
       {room.description && <p className="line-clamp-2 text-sm text-zinc-400">{room.description}</p>}
+      {room.type === 'LIVE' && room.status === 'OPEN' && (
+        <p className="text-xs text-zinc-500">
+          {room.mediaState === 'ACTIVE'
+            ? 'Sessão em uso.'
+            : 'Sessão em espera: ao entrar você a ativa.'}
+        </p>
+      )}
       <p className="text-sm text-zinc-500">
         {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {room.participantCount}/{room.maxParticipants}{' '}
         {room.participantCount === 1 ? 'pessoa' : 'pessoas'}

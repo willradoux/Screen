@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { api } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
 import { isoToLocalInput } from '../../lib/format';
 import type { AuditEntry, Settings } from '../../lib/types';
 import { apiError, makeMeeting } from '../../test/helpers';
@@ -13,7 +13,7 @@ import {
   type MeetingFormValues,
 } from './AdminMeetingsPage';
 import { AuditPage, actionLabel, actorLabel } from './AuditPage';
-import { SettingsPage, buildSettingsPatch, parseIds, toForm } from './SettingsPage';
+import { SettingsPage, buildSettingsPatch, toForm } from './SettingsPage';
 
 const NOW = Date.parse('2026-11-08T15:00:00Z');
 
@@ -23,7 +23,7 @@ describe('buildMeetingInput', () => {
   it('sem data: abre agora, sem lembretes', () => {
     const r = buildMeetingInput(base, NOW);
     expect(r).toEqual({
-      input: { title: 'Reunião mensal', description: null, startsAt: null, announce: true },
+      input: { title: 'Reunião mensal', description: null, startsAt: null, announce: false },
     });
   });
 
@@ -34,7 +34,7 @@ describe('buildMeetingInput', () => {
         title: 'Reunião mensal',
         description: null,
         startsAt: new Date(2026, 11, 5, 20, 0).toISOString(),
-        announce: true,
+        announce: false,
         reminders: [1440, 5],
       },
     });
@@ -125,7 +125,7 @@ describe('AdminMeetingsPage', () => {
         title: 'Reunião mensal',
         description: null,
         startsAt: null,
-        announce: true,
+        announce: false,
       }),
     );
     expect(screen.getByLabelText('Título')).toHaveValue(''); // formulário limpo
@@ -270,17 +270,59 @@ describe('AdminMeetingsPage', () => {
   });
 });
 
+const CH = {
+  category: '500000000000000001',
+  voice1: '500000000000000011',
+  voice2: '500000000000000012',
+  voice3: '500000000000000013',
+  announce: '500000000000000003',
+  logs: '500000000000000004',
+};
+const ROLE = {
+  admin: '600000000000000001',
+  mod: '600000000000000002',
+  mention: '600000000000000003',
+};
+
+const channels = [
+  { id: CH.category, name: 'Lives', kind: 'category' as const, parentId: null },
+  { id: CH.voice1, name: 'Sala 1', kind: 'voice' as const, parentId: CH.category },
+  { id: CH.voice2, name: 'Sala 2', kind: 'voice' as const, parentId: CH.category },
+  { id: CH.voice3, name: 'Papo', kind: 'voice' as const, parentId: null },
+  { id: CH.announce, name: 'avisos', kind: 'text' as const, parentId: null },
+  { id: CH.logs, name: 'logs', kind: 'text' as const, parentId: null },
+];
+const roles = [
+  { id: ROLE.admin, name: 'Diretoria', color: 0, position: 3 },
+  { id: ROLE.mod, name: 'Moderação', color: 0, position: 2 },
+  { id: ROLE.mention, name: 'Membros', color: 0, position: 1 },
+];
+
+const baseSettings: Settings = {
+  guildId: '1',
+  liveCategoryId: null,
+  liveTextChannelId: null,
+  announceChannelId: null,
+  adminRoleIds: [],
+  modRoleIds: [],
+  meetingAllowedRoleIds: [],
+  maxParticipantsLive: 25,
+  graceSeconds: 30,
+  liveChannelIds: [],
+  logChannelId: null,
+  mentionRoleId: null,
+  emptyLiveEndSeconds: null,
+  idleSessionMinutes: 10,
+  activationGraceMinutes: 3,
+};
+
 describe('Configurações: buildSettingsPatch', () => {
   const original: Settings = {
-    guildId: '1',
-    liveCategoryId: '500000000000000001',
-    liveTextChannelId: null,
-    announceChannelId: '500000000000000003',
-    adminRoleIds: ['600000000000000001'],
-    modRoleIds: [],
-    meetingAllowedRoleIds: [],
-    maxParticipantsLive: 25,
-    graceSeconds: 30,
+    ...baseSettings,
+    liveCategoryId: CH.category,
+    announceChannelId: CH.announce,
+    adminRoleIds: [ROLE.admin],
+    liveChannelIds: [CH.voice1],
   };
 
   it('sem mudanças, o patch é vazio', () => {
@@ -288,44 +330,69 @@ describe('Configurações: buildSettingsPatch', () => {
   });
 
   it('manda só o que mudou', () => {
-    const form = {
-      ...toForm(original),
-      graceSeconds: '45',
-      modRoleIds: '600000000000000002, 600000000000000003',
-    };
+    const form = { ...toForm(original), graceSeconds: '45', modRoleIds: [ROLE.mod] };
     expect(buildSettingsPatch(original, form)).toEqual({
-      patch: { graceSeconds: 45, modRoleIds: ['600000000000000002', '600000000000000003'] },
+      patch: { graceSeconds: 45, modRoleIds: [ROLE.mod] },
     });
   });
 
-  it('esvaziar um canal manda null; esvaziar uma lista manda []', () => {
-    const form = { ...toForm(original), announceChannelId: '', adminRoleIds: '' };
+  it('esvaziar um seletor manda null; esvaziar uma lista manda []', () => {
+    const form = { ...toForm(original), announceChannelId: '', adminRoleIds: [] };
     expect(buildSettingsPatch(original, form)).toEqual({
       patch: { announceChannelId: null, adminRoleIds: [] },
     });
   });
 
-  it('canal que já era vazio e continua vazio não vira alteração', () => {
-    expect(buildSettingsPatch(original, { ...toForm(original), liveTextChannelId: '' })).toEqual({
+  it('a ordem dos itens marcados não conta como mudança', () => {
+    const o = { ...original, liveChannelIds: [CH.voice1, CH.voice2] };
+    const form = { ...toForm(o), liveChannelIds: [CH.voice2, CH.voice1] };
+    expect(buildSettingsPatch(o, form)).toEqual({ patch: {} });
+  });
+
+  it('seletor que já era vazio e continua vazio não vira alteração', () => {
+    expect(buildSettingsPatch(original, { ...toForm(original), logChannelId: '' })).toEqual({
       patch: {},
     });
   });
 
-  it('lista repetida e com separadores variados', () => {
-    expect(parseIds('1, 2;3  2\n4')).toEqual(['1', '2', '3', '4']);
-    expect(parseIds('')).toEqual([]);
+  it('call a mais marcada vai na lista; cargo de menção e tempos novos entram', () => {
+    const form = {
+      ...toForm(original),
+      liveChannelIds: [CH.voice1, CH.voice3],
+      mentionRoleId: ROLE.mention,
+      idleSessionMinutes: '15',
+      activationGraceMinutes: '5',
+      emptyLiveEndSeconds: '120',
+    };
+    expect(buildSettingsPatch(original, form)).toEqual({
+      patch: {
+        liveChannelIds: [CH.voice1, CH.voice3],
+        mentionRoleId: ROLE.mention,
+        idleSessionMinutes: 15,
+        activationGraceMinutes: 5,
+        emptyLiveEndSeconds: 120,
+      },
+    });
+  });
+
+  it('tempo com a call vazia: vazio volta ao padrão (null)', () => {
+    const o = { ...original, emptyLiveEndSeconds: 120 };
+    expect(buildSettingsPatch(o, { ...toForm(o), emptyLiveEndSeconds: '' })).toEqual({
+      patch: { emptyLiveEndSeconds: null },
+    });
   });
 
   it('junta todos os erros de preenchimento', () => {
     const form = {
       ...toForm(original),
-      liveCategoryId: 'abc',
-      modRoleIds: '123, nada',
       maxParticipantsLive: '1',
       graceSeconds: '4',
+      idleSessionMinutes: '0',
+      activationGraceMinutes: '99',
+      emptyLiveEndSeconds: '3',
     };
     const r = buildSettingsPatch(original, form);
-    expect('errors' in r && r.errors).toHaveLength(4);
+    expect('errors' in r && r.errors).toHaveLength(5);
   });
 
   it.each([
@@ -340,65 +407,109 @@ describe('Configurações: buildSettingsPatch', () => {
     const r = buildSettingsPatch(original, { ...toForm(original), maxParticipantsLive: value });
     expect('patch' in r).toBe(valid);
   });
-
-  it('máximo de 25 cargos por lista', () => {
-    const ids = Array.from({ length: 26 }, (_, i) => `6000000000000${String(10000 + i)}`).join(',');
-    const r = buildSettingsPatch(original, { ...toForm(original), adminRoleIds: ids });
-    expect('errors' in r && r.errors[0]).toMatch(/no máximo 25/);
-  });
 });
 
 describe('SettingsPage', () => {
-  const settings: Settings = {
-    guildId: '1',
-    liveCategoryId: null,
-    liveTextChannelId: null,
-    announceChannelId: null,
-    adminRoleIds: [],
-    modRoleIds: [],
-    meetingAllowedRoleIds: [],
-    maxParticipantsLive: 25,
-    graceSeconds: 30,
-  };
-
-  it('carrega, edita e salva só o que mudou', async () => {
+  function mockLoad(settings: Settings = baseSettings) {
     vi.spyOn(api.settings, 'get').mockResolvedValue(settings);
+    vi.spyOn(api.guild, 'catalog').mockResolvedValue({ channels, roles });
+  }
+
+  it('mostra as calls agrupadas por categoria e salva só as escolhidas', async () => {
+    mockLoad();
     const update = vi
       .spyOn(api.settings, 'update')
-      .mockResolvedValue({ ...settings, announceChannelId: '500000000000000003' });
+      .mockResolvedValue({ ...baseSettings, liveChannelIds: [CH.voice1, CH.voice3] });
     render(<SettingsPage />);
 
-    const field = await screen.findByLabelText('Canal de avisos');
-    await userEvent.type(field, '500000000000000003');
+    await screen.findByText('Calls de voz');
+    expect(screen.getByText('Lives', { selector: 'p' })).toBeInTheDocument(); // grupo da categoria
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Sala 1' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Papo' }));
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     await waitFor(() =>
-      expect(update).toHaveBeenCalledWith({ announceChannelId: '500000000000000003' }),
+      expect(update).toHaveBeenCalledWith({ liveChannelIds: [CH.voice1, CH.voice3] }),
     );
     expect(await screen.findByText('Configurações salvas.')).toBeInTheDocument();
   });
 
-  it('ID inválido não chama a API', async () => {
-    vi.spyOn(api.settings, 'get').mockResolvedValue(settings);
+  it('"Marcar todas" da categoria escolhe todas as calls dela', async () => {
+    mockLoad();
+    const update = vi.spyOn(api.settings, 'update').mockResolvedValue(baseSettings);
+    render(<SettingsPage />);
+    await userEvent.click((await screen.findAllByRole('button', { name: 'Marcar todas' }))[0]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    expect(update.mock.calls[0]![0].liveChannelIds).toEqual(
+      expect.arrayContaining([CH.voice1, CH.voice2]),
+    );
+    expect(update.mock.calls[0]![0].liveChannelIds).not.toContain(CH.voice3);
+  });
+
+  it('escolhe canal de avisos, de logs e o cargo marcado nos seletores', async () => {
+    mockLoad();
+    const update = vi.spyOn(api.settings, 'update').mockResolvedValue(baseSettings);
+    render(<SettingsPage />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Canal de avisos'), '#avisos');
+    await userEvent.selectOptions(screen.getByLabelText('Canal de logs'), '#logs');
+    await userEvent.selectOptions(screen.getByLabelText('Cargo marcado nos avisos'), 'Membros');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({
+        announceChannelId: CH.announce,
+        logChannelId: CH.logs,
+        mentionRoleId: ROLE.mention,
+      }),
+    );
+  });
+
+  it('cargo de menção vazio mostra "Ninguém"', async () => {
+    mockLoad();
+    render(<SettingsPage />);
+    const select = (await screen.findByLabelText('Cargo marcado nos avisos')) as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(within(select).getByRole('option', { name: 'Ninguém' })).toBeInTheDocument();
+  });
+
+  it('item salvo que sumiu do servidor aparece marcado para ser removido', async () => {
+    mockLoad({ ...baseSettings, liveChannelIds: ['500000000000000077'] });
+    render(<SettingsPage />);
+    expect(
+      await screen.findByText(/Item removido do servidor \(500000000000000077\)/),
+    ).toBeInTheDocument();
+  });
+
+  it('número inválido não chama a API e explica', async () => {
+    mockLoad();
     const update = vi.spyOn(api.settings, 'update');
     render(<SettingsPage />);
-    await userEvent.type(await screen.findByLabelText('Canal de avisos'), 'meu-canal');
+    const field = await screen.findByLabelText('Limite de pessoas por live');
+    await userEvent.clear(field);
+    await userEvent.type(field, '1');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
-    expect(await screen.findByText(/use o ID numérico/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Limite de pessoas por live: um número inteiro de 2 a 100/),
+    ).toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
   });
 
-  it('canal que não existe no Discord: mostra a explicação da API', async () => {
-    vi.spyOn(api.settings, 'get').mockResolvedValue(settings);
-    vi.spyOn(api.settings, 'update').mockRejectedValue(apiError(400, 'INVALID_DISCORD_REFERENCE'));
+  it('canal apagado no Discord: mostra a explicação e o que fazer', async () => {
+    mockLoad();
+    vi.spyOn(api.settings, 'update').mockRejectedValue(
+      new ApiError(400, 'INVALID_DISCORD_REFERENCE', 'x', {}, 'r', 'Escolha o item na lista.'),
+    );
     render(<SettingsPage />);
-    await userEvent.type(await screen.findByLabelText('Canal de avisos'), '500000000000000099');
+    await userEvent.selectOptions(await screen.findByLabelText('Canal de avisos'), '#avisos');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
     expect(await screen.findByText(/não existe no servidor/i)).toBeInTheDocument();
+    expect(screen.getByText(/Escolha o item na lista\./)).toBeInTheDocument();
   });
 
   it('salvar sem mexer em nada não chama a API', async () => {
-    vi.spyOn(api.settings, 'get').mockResolvedValue(settings);
+    mockLoad();
     const update = vi.spyOn(api.settings, 'update');
     render(<SettingsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
@@ -408,6 +519,7 @@ describe('SettingsPage', () => {
 
   it('erro ao carregar', async () => {
     vi.spyOn(api.settings, 'get').mockRejectedValue(apiError(403, 'FORBIDDEN'));
+    vi.spyOn(api.guild, 'catalog').mockResolvedValue({ channels, roles });
     render(<SettingsPage />);
     expect(await screen.findByText('Você não tem permissão para isso.')).toBeInTheDocument();
   });

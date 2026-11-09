@@ -144,6 +144,12 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
           {room.participantCount} {room.participantCount === 1 ? 'pessoa' : 'pessoas'} na sala.
           Câmera e microfone começam desligados.
         </p>
+        {room.type === 'LIVE' && room.mediaState === 'IDLE' && (
+          <p className="text-sm text-amber-300">
+            A sessão está em espera. Ao entrar você a ativa; comece a transmitir em alguns minutos
+            para ela não voltar para a espera.
+          </p>
+        )}
         <Button variant="primary" className="w-full py-3 text-lg" onClick={onJoin}>
           Entrar na sala
         </Button>
@@ -153,10 +159,47 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
   );
 }
 
-export function JoiningScreen() {
+/** Conectando. Se a live estava em espera, o próprio clique ativa a sessão: avisa isso. */
+export function JoiningScreen({ activating = false }: { activating?: boolean }) {
   return (
     <Center>
-      <Spinner label="Conectando à sala…" />
+      <Spinner label={activating ? 'Ativando sessão…' : 'Conectando à sala…'} />
+      {activating && (
+        <p className="text-center text-sm text-zinc-500">
+          A sessão estava em espera porque ninguém estava usando. Em instantes você entra.
+        </p>
+      )}
+    </Center>
+  );
+}
+
+/** A sessão ficou em espera: o link continua valendo, é só ativar de novo. */
+export function IdleScreen({
+  reason,
+  onActivate,
+}: {
+  reason: 'NOBODY_CONNECTED' | 'NOBODY_STREAMING' | null;
+  onActivate: () => void;
+}) {
+  return (
+    <Center>
+      <Card className="space-y-4 text-center">
+        <h2 className="text-xl font-semibold text-white">Sessão em espera</h2>
+        <p className="text-zinc-300">
+          {reason === 'NOBODY_CONNECTED'
+            ? 'Ninguém estava conectado, então a sessão de vídeo foi pausada.'
+            : 'Ninguém estava transmitindo câmera ou tela, então a sessão de vídeo foi pausada.'}{' '}
+          A live continua aberta no Discord.
+        </p>
+        <p className="text-sm text-zinc-500">
+          Ao ativar de novo, alguém precisa começar a transmitir em alguns minutos, senão ela volta
+          para a espera.
+        </p>
+        <Button variant="primary" className="w-full py-3 text-lg" onClick={onActivate}>
+          Ativar sessão
+        </Button>
+      </Card>
+      <BackHome />
     </Center>
   );
 }

@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { ROLE_LABEL, isAdmin } from '../lib/moderation-rules';
+import { ROLE_LABEL, isAdmin, isStaff } from '../lib/moderation-rules';
 import { Avatar, Badge, Button } from './ui';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -28,6 +28,11 @@ export function Layout() {
             <NavLink to="/reunioes" className={linkClass}>
               Reuniões
             </NavLink>
+            {user && isStaff(user.role) && (
+              <NavLink to="/admin" end className={linkClass}>
+                Painel
+              </NavLink>
+            )}
             {user && isAdmin(user.role) && (
               <>
                 <NavLink to="/admin/reunioes" className={linkClass}>
@@ -35,6 +40,9 @@ export function Layout() {
                 </NavLink>
                 <NavLink to="/admin/config" className={linkClass}>
                   Configurações
+                </NavLink>
+                <NavLink to="/admin/pessoas" className={linkClass}>
+                  Pessoas
                 </NavLink>
                 <NavLink to="/admin/auditoria" className={linkClass}>
                   Auditoria

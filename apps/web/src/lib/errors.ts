@@ -35,6 +35,10 @@ const MESSAGES: Record<string, string> = {
   INVALID_DISCORD_REFERENCE: 'Esse canal ou cargo não existe no servidor (ou é do tipo errado).',
   VALIDATION_ERROR: 'Confira os campos e tente de novo.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um instante.',
+  MODERATION_ONLY_IN_MEETINGS:
+    'Moderação só existe em reuniões. Nas lives cada pessoa controla a própria transmissão.',
+  ALREADY_ANNOUNCED: 'Esta reunião já foi divulgada.',
+  DISCORD_SEND_FAILED: 'Não consegui enviar a mensagem no Discord.',
   // rede
   NETWORK_ERROR: 'Sem conexão com o servidor. Verifique sua internet.',
   INTERNAL_ERROR: 'Erro interno. Tente novamente.',
@@ -47,9 +51,17 @@ export function messageFor(code: string | null | undefined, fallback?: string): 
 
 /** Texto para qualquer erro capturado (`ApiError` ou não). */
 export function describeError(err: unknown): string {
-  if (err instanceof ApiError) return messageFor(err.code, err.message);
+  if (err instanceof ApiError) {
+    const base = messageFor(err.code, err.message);
+    // A API diz também o que fazer a respeito; sem isso a pessoa fica sem saber o próximo passo.
+    return err.hint && !base.includes(err.hint) ? `${base} ${err.hint}` : base;
+  }
   return 'Algo deu errado. Tente novamente.';
 }
+
+/** Código do erro para a pessoa passar ao suporte (aparece nos logs do servidor). */
+export const supportCode = (err: unknown): string | null =>
+  err instanceof ApiError ? (err.requestId ?? null) : null;
 
 export const errorCode = (err: unknown): string | null =>
   err instanceof ApiError ? err.code : null;

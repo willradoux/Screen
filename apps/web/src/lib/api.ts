@@ -4,9 +4,12 @@ import type {
   AuditEntry,
   JoinResult,
   MediaSource,
+  GuildChannel,
+  GuildRole,
   Meeting,
   MeetingReport,
   Page,
+  PanelUser,
   Participant,
   Room,
   Settings,
@@ -22,6 +25,8 @@ export class ApiError extends Error {
     message: string,
     readonly details: Record<string, unknown> = {},
     readonly requestId?: string,
+    /** O que fazer a respeito (vem da API). */
+    readonly hint?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -73,7 +78,15 @@ async function call<T>(method: string, path: string, opts: Options = {}): Promis
 
   if (!res.ok) {
     const e = (
-      json as { error?: { code?: string; message?: string; details?: unknown; requestId?: string } }
+      json as {
+        error?: {
+          code?: string;
+          message?: string;
+          hint?: string;
+          details?: unknown;
+          requestId?: string;
+        };
+      }
     )?.error;
     throw new ApiError(
       res.status,
@@ -81,6 +94,7 @@ async function call<T>(method: string, path: string, opts: Options = {}): Promis
       e?.message ?? 'Algo deu errado.',
       (e?.details as Record<string, unknown> | undefined) ?? {},
       e?.requestId,
+      e?.hint,
     );
   }
   return json as T;
@@ -152,6 +166,12 @@ export const api = {
       call<void>('POST', `/rooms/${enc(roomId)}/participants/${enc(userId)}/promote`),
     demote: (roomId: string, userId: string) =>
       call<void>('POST', `/rooms/${enc(roomId)}/participants/${enc(userId)}/demote`),
+    /** Desliga o microfone de todos (reunião). Cada pessoa pode ligar de novo. */
+    muteAll: (roomId: string) =>
+      data<{ affected: number }>('POST', `/rooms/${enc(roomId)}/mute-all`),
+    /** Desliga câmera e tela de todos (reunião). */
+    camerasOff: (roomId: string) =>
+      data<{ affected: number }>('POST', `/rooms/${enc(roomId)}/cameras-off`),
   },
 
   meetings: {
@@ -162,6 +182,9 @@ export const api = {
     update: (id: string, patch: Partial<MeetingInput>) =>
       data<Meeting>('PATCH', `/meetings/${enc(id)}`, { body: patch }),
     open: (id: string) => data<Meeting>('POST', `/meetings/${enc(id)}/open`),
+    /** Divulga no canal de avisos quando o admin quiser. `resend` manda outra mensagem. */
+    announce: (id: string, resend = false) =>
+      data<Meeting>('POST', `/meetings/${enc(id)}/announce`, { body: { resend } }),
     cancel: (id: string) => call<void>('POST', `/meetings/${enc(id)}/cancel`),
     report: (id: string) => data<MeetingReport>('GET', `/meetings/${enc(id)}/report`),
   },
@@ -169,6 +192,18 @@ export const api = {
   settings: {
     get: () => data<Settings>('GET', '/settings'),
     update: (patch: SettingsPatch) => data<Settings>('PATCH', '/settings', { body: patch }),
+  },
+
+  guild: {
+    /** Canais e cargos do servidor, para os seletores do painel. */
+    catalog: () => data<{ channels: GuildChannel[]; roles: GuildRole[] }>('GET', '/guild'),
+  },
+
+  panelUsers: {
+    list: () => data<PanelUser[]>('GET', '/panel-users'),
+    add: (body: { userId: string; role: 'ADMIN' | 'MOD'; note?: string | null }) =>
+      data<{ userId: string; role: string }>('POST', '/panel-users', { body }),
+    remove: (userId: string) => call<void>('DELETE', `/panel-users/${enc(userId)}`),
   },
 
   audit: {
