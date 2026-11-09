@@ -7,7 +7,7 @@ import type { PresenceService } from '../rooms/presence.js';
 import type { RoomRepo } from '../rooms/rooms.types.js';
 import { opsLog } from '../../shared/ops-log.js';
 import { metrics } from '../../observability/metrics.js';
-import type { LiveKitEvent, LiveKitGateway } from './livekit.gateway.js';
+import type { EgressUpdate, LiveKitEvent, LiveKitGateway } from './livekit.gateway.js';
 
 export interface WebhookDeps {
   livekit: LiveKitGateway;
@@ -17,6 +17,8 @@ export interface WebhookDeps {
   realtime: RealtimeEmitter;
   cache: VoiceCache;
   logger: Logger;
+  /** Andamento das gravações (eventos `egress_*`). */
+  recordings?: { onEgress(info: EgressUpdate): Promise<void> };
   now?: () => Date;
 }
 
@@ -57,6 +59,11 @@ export class LiveKitWebhookHandler {
         return this.onLeft(event);
       case 'room_finished':
         return this.onRoomFinished(event);
+      case 'egress_started':
+      case 'egress_updated':
+      case 'egress_ended':
+        if (event.egress) await this.deps.recordings?.onEgress(event.egress);
+        return;
       default:
         this.deps.logger.debug({ event: event.event }, 'evento do LiveKit ignorado');
     }

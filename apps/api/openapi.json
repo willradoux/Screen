@@ -2860,6 +2860,373 @@
         }
       }
     },
+    "/rooms/{id}/recordings": {
+      "post": {
+        "tags": ["Recordings"],
+        "summary": "Começa a gravar a reunião (ADMIN)",
+        "description": "Só reuniões abertas, uma gravação por vez. `mode`: GRID (todos), SPEAKER (quem fala ou a tela em destaque), AUDIO (só áudio, .ogg), PARTICIPANT (câmera e microfone de uma pessoa) ou SCREEN (a tela de uma pessoa); os dois últimos pedem `userId`. Todos na sala recebem `recording:state` e veem o aviso de gravação.",
+        "operationId": "startRecording",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mode"],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": ["GRID", "SPEAKER", "AUDIO", "PARTICIPANT", "SCREEN"]
+                  },
+                  "userId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Gravação iniciada"
+          },
+          "409": {
+            "description": "RECORDING_ONLY_MEETINGS, RECORDING_ALREADY_RUNNING, ROOM_NOT_OPEN ou PARTICIPANT_NOT_IN_ROOM",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "RECORDING_FAILED (serviço de gravação fora do ar)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings": {
+      "get": {
+        "tags": ["Recordings"],
+        "summary": "Lista as gravações (ADMIN)",
+        "description": "Status: STARTING, RECORDING, PROCESSING, READY, FAILED ou EXPIRED. `daysLeft` diz quantos dias faltam para o arquivo ser apagado.",
+        "operationId": "listRecordings",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{id}/stop": {
+      "post": {
+        "tags": ["Recordings"],
+        "summary": "Para a gravação (ADMIN)",
+        "operationId": "stopRecording",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parada; passa a PROCESSING até o arquivo ficar pronto"
+          }
+        }
+      }
+    },
+    "/recordings/{id}/download": {
+      "get": {
+        "tags": ["Recordings"],
+        "summary": "Baixa o arquivo (ADMIN)",
+        "description": "Passa pela API com o cookie de sessão. Dá 410 depois do prazo (padrão 10 dias), quando o arquivo é apagado.",
+        "operationId": "downloadRecording",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "O arquivo (mp4 ou ogg)"
+          },
+          "409": {
+            "description": "RECORDING_NOT_READY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RECORDING_EXPIRED ou RECORDING_FILE_MISSING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{id}": {
+      "delete": {
+        "tags": ["Recordings"],
+        "summary": "Apaga a gravação e o arquivo antes do prazo (ADMIN)",
+        "operationId": "deleteRecording",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Apagada"
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Estatísticas do servidor (ADMIN)",
+        "description": "Lives, reuniões, pessoas, minutos conectados, ranking e série por dia no período (`days`, 1 a 365).",
+        "operationId": "getStats",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Números do período"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calls": {
+      "get": {
+        "tags": ["Rooms"],
+        "summary": "Status das calls com live (qualquer membro)",
+        "description": "Quem está em cada call habilitada agora e a sala/sessão associada.",
+        "operationId": "listCalls",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de calls"
+          }
+        }
+      }
+    },
+    "/rooms/{id}/hand": {
+      "post": {
+        "tags": ["Moderation"],
+        "summary": "Levanta a mão (pede a palavra) na reunião",
+        "operationId": "raiseHand",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Na fila"
+          },
+          "409": {
+            "description": "PARTICIPANT_NOT_IN_ROOM ou MODERATION_ONLY_IN_MEETINGS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Moderation"],
+        "summary": "Abaixa a mão",
+        "operationId": "lowerHand",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Fora da fila"
+          }
+        }
+      }
+    },
+    "/rooms/{id}/hands": {
+      "get": {
+        "tags": ["Moderation"],
+        "summary": "Fila de quem pediu a palavra",
+        "description": "Moderação vê a fila inteira; os demais, só a própria mão.",
+        "operationId": "listHands",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fila por ordem de chegada"
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "O que falta configurar (qualquer membro)",
+        "description": "Só sim ou não: `botInGuild`, `livesConfigured`, `announceConfigured`. Nenhum ID.",
+        "operationId": "getStatus",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado da configuração"
+          }
+        }
+      }
+    },
     "/meetings/{id}/cancel": {
       "post": {
         "tags": ["Meetings"],
@@ -3393,6 +3760,11 @@
           "MEETING_CANCELED",
           "MEETING_OPENED",
           "SETTINGS_UPDATED",
+          "RECORDING_STARTED",
+          "RECORDING_STOPPED",
+          "RECORDING_DOWNLOADED",
+          "RECORDING_DELETED",
+          "RECORDING_EXPIRED",
           "PANEL_USER_ADDED",
           "PANEL_USER_REMOVED",
           "SESSION_IDLE",

@@ -24,6 +24,7 @@ import { createSettingsRepo } from './modules/settings/settings.repository.js';
 import type { AdminApi } from './modules/settings/settings.routes.js';
 import { SettingsService } from './modules/settings/settings.service.js';
 import { refreshGauges, startMetricsServer } from './observability/metrics.js';
+import { createRecordingRepo, RecordingService } from './modules/recordings/recordings.js';
 import { CallsService } from './modules/rooms/calls.service.js';
 import { createStatsRepo, StatsService } from './modules/stats/stats.js';
 import { LateBoundEmitter } from './realtime/emitter.js';
@@ -106,6 +107,21 @@ const auth = new AuthService({
   ...(discord ? { guildPermissions: discord.gateway } : {}),
 });
 
+const recordingService =
+  discord &&
+  new RecordingService({
+    repo: createRecordingRepo(),
+    rooms,
+    participations,
+    livekit,
+    realtime,
+    audit,
+    logger,
+    dir: env.RECORDINGS_DIR,
+    egressDir: env.RECORDINGS_EGRESS_DIR,
+    retentionDays: env.RECORDING_RETENTION_DAYS,
+  });
+
 let roomsApi: RoomsApi | undefined;
 let moderationApi: ModerationApi | undefined;
 let adminApi: AdminApi | undefined;
@@ -136,6 +152,7 @@ if (discord) {
       realtime,
       cache: voiceCache,
       logger,
+      ...(recordingService ? { recordings: recordingService } : {}),
     }),
     audit,
     guildId: env.DISCORD_GUILD_ID,
@@ -190,6 +207,7 @@ if (discord) {
 }
 
 const app = createApp(env, logger, {
+  ...(recordingService ? { recordings: { recordings: recordingService } } : {}),
   readiness: { mongo: pingDb },
   auth,
   ...(roomsApi ? { rooms: roomsApi } : {}),
@@ -210,6 +228,11 @@ if (access) {
     logger,
   });
   realtime.attach(sockets);
+}
+
+recordingService?.startJanitor(realScheduler);
+if (recordingService && discord) {
+  discord.roomService.onEnded((room) => recordingService.onRoomEnded(room.id));
 }
 
 server.listen(env.PORT, () => logger.info(`API ouvindo na porta ${env.PORT}`));
@@ -243,6 +266,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     void (async () => {
       discord?.meetingScheduler.stop();
       mediaSessions.stop();
+      recordingService?.stopJanitor();
       metricsServer?.close();
       await sockets?.close();
       await discord?.bot.stop();

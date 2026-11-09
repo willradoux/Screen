@@ -831,6 +831,159 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
           },
         },
       },
+      '/rooms/{id}/recordings': {
+        post: {
+          tags: ['Recordings'],
+          summary: 'Começa a gravar a reunião (ADMIN)',
+          description:
+            'Só reuniões abertas, uma gravação por vez. `mode`: GRID (todos), SPEAKER (quem fala ou a tela em destaque), AUDIO (só áudio, .ogg), PARTICIPANT (câmera e microfone de uma pessoa) ou SCREEN (a tela de uma pessoa); os dois últimos pedem `userId`. Todos na sala recebem `recording:state` e veem o aviso de gravação.',
+          operationId: 'startRecording',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['mode'],
+                  additionalProperties: false,
+                  properties: {
+                    mode: {
+                      type: 'string',
+                      enum: ['GRID', 'SPEAKER', 'AUDIO', 'PARTICIPANT', 'SCREEN'],
+                    },
+                    userId: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '201': { description: 'Gravação iniciada' },
+            '409': errorResponse(
+              'RECORDING_ONLY_MEETINGS, RECORDING_ALREADY_RUNNING, ROOM_NOT_OPEN ou PARTICIPANT_NOT_IN_ROOM',
+            ),
+            '502': errorResponse('RECORDING_FAILED (serviço de gravação fora do ar)'),
+          },
+        },
+      },
+      '/recordings': {
+        get: {
+          tags: ['Recordings'],
+          summary: 'Lista as gravações (ADMIN)',
+          description:
+            'Status: STARTING, RECORDING, PROCESSING, READY, FAILED ou EXPIRED. `daysLeft` diz quantos dias faltam para o arquivo ser apagado.',
+          operationId: 'listRecordings',
+          security: [{ sessionCookie: [] }],
+          responses: { '200': { description: 'Lista' }, '403': errorResponse('FORBIDDEN') },
+        },
+      },
+      '/recordings/{id}/stop': {
+        post: {
+          tags: ['Recordings'],
+          summary: 'Para a gravação (ADMIN)',
+          operationId: 'stopRecording',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': { description: 'Parada; passa a PROCESSING até o arquivo ficar pronto' },
+          },
+        },
+      },
+      '/recordings/{id}/download': {
+        get: {
+          tags: ['Recordings'],
+          summary: 'Baixa o arquivo (ADMIN)',
+          description:
+            'Passa pela API com o cookie de sessão. Dá 410 depois do prazo (padrão 10 dias), quando o arquivo é apagado.',
+          operationId: 'downloadRecording',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '200': { description: 'O arquivo (mp4 ou ogg)' },
+            '409': errorResponse('RECORDING_NOT_READY'),
+            '410': errorResponse('RECORDING_EXPIRED ou RECORDING_FILE_MISSING'),
+          },
+        },
+      },
+      '/recordings/{id}': {
+        delete: {
+          tags: ['Recordings'],
+          summary: 'Apaga a gravação e o arquivo antes do prazo (ADMIN)',
+          operationId: 'deleteRecording',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: { '204': { description: 'Apagada' } },
+        },
+      },
+      '/stats': {
+        get: {
+          tags: ['Admin'],
+          summary: 'Estatísticas do servidor (ADMIN)',
+          description:
+            'Lives, reuniões, pessoas, minutos conectados, ranking e série por dia no período (`days`, 1 a 365).',
+          operationId: 'getStats',
+          security: [{ sessionCookie: [] }],
+          responses: {
+            '200': { description: 'Números do período' },
+            '403': errorResponse('FORBIDDEN'),
+          },
+        },
+      },
+      '/calls': {
+        get: {
+          tags: ['Rooms'],
+          summary: 'Status das calls com live (qualquer membro)',
+          description: 'Quem está em cada call habilitada agora e a sala/sessão associada.',
+          operationId: 'listCalls',
+          security: [{ sessionCookie: [] }],
+          responses: { '200': { description: 'Lista de calls' } },
+        },
+      },
+      '/rooms/{id}/hand': {
+        post: {
+          tags: ['Moderation'],
+          summary: 'Levanta a mão (pede a palavra) na reunião',
+          operationId: 'raiseHand',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: {
+            '204': { description: 'Na fila' },
+            '409': errorResponse('PARTICIPANT_NOT_IN_ROOM ou MODERATION_ONLY_IN_MEETINGS'),
+          },
+        },
+        delete: {
+          tags: ['Moderation'],
+          summary: 'Abaixa a mão',
+          operationId: 'lowerHand',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: { '204': { description: 'Fora da fila' } },
+        },
+      },
+      '/rooms/{id}/hands': {
+        get: {
+          tags: ['Moderation'],
+          summary: 'Fila de quem pediu a palavra',
+          description: 'Moderação vê a fila inteira; os demais, só a própria mão.',
+          operationId: 'listHands',
+          security: [{ sessionCookie: [] }],
+          parameters: [roomIdParam],
+          responses: { '200': { description: 'Fila por ordem de chegada' } },
+        },
+      },
+      '/status': {
+        get: {
+          tags: ['Admin'],
+          summary: 'O que falta configurar (qualquer membro)',
+          description:
+            'Só sim ou não: `botInGuild`, `livesConfigured`, `announceConfigured`. Nenhum ID.',
+          operationId: 'getStatus',
+          security: [{ sessionCookie: [] }],
+          responses: { '200': { description: 'Estado da configuração' } },
+        },
+      },
       '/meetings/{id}/cancel': {
         post: {
           tags: ['Meetings'],

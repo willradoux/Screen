@@ -1,3 +1,5 @@
+import { recordingsRoutes } from './modules/recordings/recordings.routes.js';
+import type { RecordingService } from './modules/recordings/recordings.js';
 import { randomUUID } from 'node:crypto';
 import cors from 'cors';
 import express from 'express';
@@ -36,6 +38,8 @@ export interface AppDeps {
   admin?: AdminApi;
   /** Reuniões: criar, agendar, editar, abrir, cancelar e relatório. Exige `auth`. */
   meetings?: MeetingsApi;
+  /** Gravação de reuniões (ADMIN). Exige `auth`. */
+  recordings?: { recordings: RecordingService; now?: () => Date };
 }
 
 export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
@@ -106,6 +110,7 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   if (deps.auth && deps.moderation) api.use(moderationRoutes(deps.moderation, deps.auth));
   if (deps.auth && deps.admin) api.use(adminRoutes(deps.admin, deps.auth));
   if (deps.auth && deps.meetings) api.use(meetingsRoutes(deps.meetings, deps.auth));
+  if (deps.auth && deps.recordings) api.use(recordingsRoutes(deps.recordings, deps.auth));
   app.use('/api/v1', api);
 
   app.use((_req, _res, next) => next(new AppError('ROUTE_NOT_FOUND', 404, 'Rota não encontrada.')));

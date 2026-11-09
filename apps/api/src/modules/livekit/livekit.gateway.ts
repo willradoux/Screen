@@ -1,5 +1,14 @@
 import { createHash } from 'node:crypto';
-import { AccessToken, RoomServiceClient, TrackSource, WebhookReceiver } from 'livekit-server-sdk';
+import {
+  AccessToken,
+  EgressClient,
+  EncodedFileOutput,
+  EgressStatus,
+  EncodedFileType,
+  RoomServiceClient,
+  TrackSource,
+  WebhookReceiver,
+} from 'livekit-server-sdk';
 import type { Env } from '../../config/env.js';
 
 /** Fontes de mídia que um participante pode publicar. */
@@ -25,10 +34,32 @@ export interface TokenRequest {
   ttlSeconds: number;
 }
 
+/** O que gravar. GRID: todos; SPEAKER: quem fala/tela em destaque; AUDIO: só áudio; PARTICIPANT: uma pessoa; SCREEN: a tela de uma pessoa. */
+export type RecordingMode = 'GRID' | 'SPEAKER' | 'AUDIO' | 'PARTICIPANT' | 'SCREEN';
+
+export interface RecordingRequest {
+  roomName: string;
+  mode: RecordingMode;
+  /** Obrigatório em PARTICIPANT e SCREEN. */
+  userId?: string | undefined;
+  /** Caminho do arquivo dentro do serviço de gravação (Egress). */
+  filepath: string;
+}
+
+/** Andamento de uma gravação, vindo do webhook do Egress. */
+export interface EgressUpdate {
+  egressId: string;
+  status: 'STARTING' | 'ACTIVE' | 'ENDING' | 'COMPLETE' | 'FAILED' | 'ABORTED';
+  files: { filename: string; size: number; durationSec: number }[];
+  error: string | null;
+}
+
 /** Evento de webhook já validado e reduzido ao que usamos. */
 export interface LiveKitEvent {
   event: string;
   roomName: string | null;
+  /** Só nos eventos `egress_*`. */
+  egress?: EgressUpdate | undefined;
   participant: {
     identity: string;
     name: string;
@@ -70,6 +101,9 @@ export interface LiveKitGateway {
   /** Silencia as faixas já publicadas nessas fontes. Ignora quem já saiu. */
   muteSources(roomName: string, identity: string, sources: MediaSource[]): Promise<void>;
   deleteRoom(roomName: string): Promise<void>;
+  /** Começa a gravar. Devolve o id da gravação no Egress. */
+  startRecording(req: RecordingRequest): Promise<{ egressId: string }>;
+  stopRecording(egressId: string): Promise<void>;
   /** Quem está conectado e o que está transmitindo. Sala que não existe = lista vazia. */
   listParticipants(roomName: string): Promise<LiveKitParticipantInfo[]>;
   /** Valida a assinatura e devolve o evento. Lança `InvalidWebhookError`. */
@@ -96,6 +130,7 @@ type LiveKitEnv = Pick<Env, 'LIVEKIT_URL' | 'LIVEKIT_API_KEY' | 'LIVEKIT_API_SEC
 export function createLiveKitGateway(env: LiveKitEnv): LiveKitGateway {
   const rooms = new RoomServiceClient(env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
   const receiver = new WebhookReceiver(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
+  const egress = new EgressClient(env.LIVEKIT_URL, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
 
   const call = async <T>(what: string, fn: () => Promise<T>): Promise<T> => {
     try {
@@ -193,6 +228,41 @@ export function createLiveKitGateway(env: LiveKitEnv): LiveKitGateway {
         }
       }),
 
+    startRecording: (req) =>
+      call('iniciar a gravação', async () => {
+        const audioOnly = req.mode === 'AUDIO';
+        const output = new EncodedFileOutput({
+          fileType: audioOnly ? EncodedFileType.OGG : EncodedFileType.MP4,
+          filepath: req.filepath,
+        });
+        const info =
+          req.mode === 'PARTICIPANT' || req.mode === 'SCREEN'
+            ? await egress.startParticipantEgress(
+                req.roomName,
+                req.userId ?? '',
+                { file: output },
+                {
+                  screenShare: req.mode === 'SCREEN',
+                },
+              )
+            : await egress.startRoomCompositeEgress(req.roomName, output, {
+                layout: req.mode === 'SPEAKER' ? 'speaker' : 'grid',
+                audioOnly,
+              });
+        return { egressId: info.egressId };
+      }),
+
+    stopRecording: (egressId) =>
+      call('parar a gravação', async () => {
+        try {
+          await egress.stopEgress(egressId);
+        } catch (err) {
+          // Já terminou ou não existe mais: o resultado é o que queríamos.
+          if (isNotFound(err)) return;
+          throw err;
+        }
+      }),
+
     listParticipants: (roomName) =>
       call('listar participantes', async () => {
         try {
@@ -218,9 +288,25 @@ export function createLiveKitGateway(env: LiveKitEnv): LiveKitGateway {
         throw new InvalidWebhookError(`Webhook inválido: ${String(err)}`);
       }
       const p = event.participant;
+      const eg = event.egressInfo;
       return {
         event: event.event,
-        roomName: event.room?.name || null,
+        roomName: event.room?.name || eg?.roomName || null,
+        egress: eg
+          ? {
+              egressId: eg.egressId,
+              status: String(EgressStatus[eg.status] ?? 'FAILED').replace(
+                'EGRESS_',
+                '',
+              ) as EgressUpdate['status'],
+              files: (eg.fileResults ?? []).map((f) => ({
+                filename: f.filename,
+                size: Number(f.size),
+                durationSec: Math.round(Number(f.duration) / 1e9),
+              })),
+              error: eg.error || null,
+            }
+          : undefined,
         participant: p
           ? {
               identity: p.identity,

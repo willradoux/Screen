@@ -18,6 +18,8 @@ export const CAPABILITY_MIN_ROLE = {
   'moderation.speaker': 'MOD',
   'meeting.manage': 'ADMIN',
   'settings.manage': 'ADMIN',
+  /** Gravar reuniões, baixar e apagar as gravações. */
+  'recording.manage': 'ADMIN',
   /** Adicionar/remover pessoas com acesso ao painel e ver canais e cargos do servidor. */
   'panel.users': 'ADMIN',
   'audit.read': 'ADMIN',

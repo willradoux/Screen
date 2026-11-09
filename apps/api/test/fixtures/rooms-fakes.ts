@@ -11,6 +11,7 @@ import {
   type MediaSource,
   type LiveKitGateway,
   type TokenRequest,
+  type RecordingRequest,
 } from '../../src/modules/livekit/livekit.gateway.js';
 import { LiveKitWebhookHandler } from '../../src/modules/livekit/livekit.webhook.js';
 import { RoomAccess } from '../../src/modules/rooms/access.js';
@@ -18,6 +19,9 @@ import type { BanRepo, RoomBan } from '../../src/modules/rooms/participations.js
 import { HandQueue } from '../../src/modules/moderation/hand-queue.js';
 import { ModerationService } from '../../src/modules/moderation/moderation.service.js';
 import { SettingsService } from '../../src/modules/settings/settings.service.js';
+import { RecordingService } from '../../src/modules/recordings/recordings.js';
+import { StatsService } from '../../src/modules/stats/stats.js';
+import { FakeFiles, MemoryRecordings } from './recordings-fakes.js';
 import { CallsService } from '../../src/modules/rooms/calls.service.js';
 import { MediaSessionService } from '../../src/modules/rooms/media-session.js';
 import { PresenceService } from '../../src/modules/rooms/presence.js';
@@ -83,6 +87,19 @@ export class FakeLiveKit implements LiveKitGateway {
   async deleteRoom(roomName: string) {
     this.deleted.push(roomName);
     this.people.delete(roomName);
+  }
+  recordings: { egressId: string; req: RecordingRequest }[] = [];
+  stoppedRecordings: string[] = [];
+  failRecording = false;
+  async startRecording(req: RecordingRequest) {
+    this.check();
+    if (this.failRecording) throw new LiveKitUnavailableError('egress fora do ar');
+    const egressId = `EG_${this.recordings.length + 1}`;
+    this.recordings.push({ egressId, req });
+    return { egressId };
+  }
+  async stopRecording(egressId: string) {
+    this.stoppedRecordings.push(egressId);
   }
   /** Quem está conectado e o que transmite, por sala (o que `listParticipants` devolve). */
   people = new Map<
@@ -272,6 +289,21 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     admin: {
       settings: settingsService,
       audit: bot.audit,
+      stats: new StatsService({
+        repo: {
+          compute: async () => ({
+            livesOpened: 0,
+            meetingsHeld: 0,
+            uniqueParticipants: 0,
+            sessions: 0,
+            participantMinutes: 0,
+            avgSessionMinutes: 0,
+            topPeople: [],
+            perDay: [],
+          }),
+        },
+        guildId: env.DISCORD_GUILD_ID,
+      }),
       calls: new CallsService({
         gateway: bot.gateway,
         settings: bot.settings,
@@ -281,6 +313,23 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
       }),
     },
     meetings: { meetings: bot.meetings, participations, webUrl: WEB_URL },
+    recordings: {
+      recordings: new RecordingService({
+        repo: new MemoryRecordings(),
+        rooms: bot.rooms,
+        participations,
+        livekit,
+        realtime: emitter,
+        audit: bot.audit,
+        logger,
+        files: new FakeFiles(),
+        dir: '/rec',
+        egressDir: '/out',
+        retentionDays: 10,
+        now: bot.clock.now,
+      }),
+      now: bot.clock.now,
+    },
   });
 
   /** Sobe um servidor HTTP + Socket.IO de verdade numa porta livre. */

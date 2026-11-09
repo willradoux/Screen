@@ -17,6 +17,12 @@ const schema = z.object({
   /** Quantos proxies confiáveis há na frente (Caddy = 1). Sem isto, o limite de requisições enxerga só o IP do proxy. */
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   /** Porta interna das métricas Prometheus. 0 = desligado. Nunca publique esta porta. */
+  /** Onde ficam os arquivos das gravações (precisa ser um volume compartilhado com o Egress). */
+  RECORDINGS_DIR: z.string().min(1).default('./recordings'),
+  /** A mesma pasta, vista de dentro do container do Egress. */
+  RECORDINGS_EGRESS_DIR: z.string().min(1).default('/out'),
+  /** Dias que o admin tem para baixar uma gravação antes de ela ser apagada. */
+  RECORDING_RETENTION_DAYS: z.coerce.number().int().min(1).max(60).default(10),
   METRICS_PORT: z.coerce.number().int().min(0).max(65535).default(0),
   MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/screem'),
 

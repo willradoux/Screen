@@ -15,6 +15,7 @@ import { ALL_SOURCES } from '../../src/modules/livekit/livekit.gateway.js';
  */
 const MATRIX: Record<Capability, { MEMBER: boolean; MOD: boolean; ADMIN: boolean }> = {
   'panel.access': { MEMBER: false, MOD: true, ADMIN: true },
+  'recording.manage': { MEMBER: false, MOD: false, ADMIN: true },
   'panel.users': { MEMBER: false, MOD: false, ADMIN: true },
   'room.end': { MEMBER: false, MOD: true, ADMIN: true },
   'room.lecture': { MEMBER: false, MOD: true, ADMIN: true },

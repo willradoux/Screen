@@ -158,6 +158,39 @@ auditLogSchema.index({ at: -1 });
 auditLogSchema.index({ actorId: 1, at: -1 });
 auditLogSchema.index({ roomId: 1, at: -1 });
 
+const recordingSchema = new Schema(
+  {
+    _id: { type: String, required: true },
+    roomId: { type: String, required: true, index: true },
+    title: { type: String, required: true },
+    mode: {
+      type: String,
+      enum: ['GRID', 'SPEAKER', 'AUDIO', 'PARTICIPANT', 'SCREEN'],
+      required: true,
+    },
+    targetUserId: { type: String, default: null },
+    egressId: { type: String, default: null, index: true },
+    status: {
+      type: String,
+      enum: ['STARTING', 'RECORDING', 'PROCESSING', 'READY', 'FAILED', 'EXPIRED'],
+      required: true,
+    },
+    error: { type: String, default: null },
+    fileName: { type: String, required: true },
+    sizeBytes: { type: Number, default: 0 },
+    durationSec: { type: Number, default: 0 },
+    startedBy: { type: String, required: true },
+    startedAt: { type: Date, required: true },
+    endedAt: { type: Date, default: null },
+    // Depois desta data o arquivo é apagado (o admin tem este prazo para baixar).
+    expiresAt: { type: Date, default: null },
+    downloadedAt: { type: Date, default: null },
+  },
+  { timestamps: true },
+);
+recordingSchema.index({ expiresAt: 1 }, { partialFilterExpression: { status: 'READY' } });
+export const RecordingModel = model('Recording', recordingSchema, 'recordings');
+
 export const AuditLogModel = model('AuditLog', auditLogSchema, 'audit_logs');
 export const RoomModel = model('Room', roomSchema, 'rooms');
 export const ParticipationModel = model('Participation', participationSchema, 'participations');

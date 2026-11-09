@@ -67,6 +67,12 @@ services:
       SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-15}
       # Métricas só na rede interna (nenhum domínio deve apontar para esta porta).
       METRICS_PORT: '9100'
+      # Gravação de reuniões: a API lê os arquivos que o Egress escreve (mesmo volume).
+      RECORDINGS_DIR: /recordings
+      RECORDINGS_EGRESS_DIR: /out
+      RECORDING_RETENTION_DAYS: ${RECORDING_RETENTION_DAYS:-10}
+    volumes:
+      - recordings:/recordings
     depends_on:
       mongo: { condition: service_healthy }
       livekit: { condition: service_started }
@@ -114,6 +120,8 @@ services:
               protocol: tcp
               username: livekit
               credential: ${TURN_PASSWORD}
+        redis:
+          address: redis:6379
         keys:
           ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
         webhook:
@@ -124,6 +132,32 @@ services:
     ports:
       - '7881:7881/tcp'
       - '7882:7882/udp'
+
+  # Mensagens entre o LiveKit e o Egress (gravação).
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+
+  # Grava as reuniões em arquivo. Usa um Chrome sem tela, por isso pede SYS_ADMIN e bastante CPU.
+  egress:
+    image: livekit/egress:v1.9
+    restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        log_level: info
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://livekit:7880
+        redis:
+          address: redis:6379
+    volumes:
+      - recordings:/out
+    depends_on:
+      - livekit
+      - redis
 
   coturn:
     image: coturn/coturn:4.6
@@ -154,3 +188,4 @@ services:
 
 volumes:
   mongo_data: {}
+  recordings: {}
