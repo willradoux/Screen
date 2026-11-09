@@ -229,3 +229,24 @@ describe('loadEnv tolera espaços e aspas vindos de painéis (Coolify)', () => {
     );
   });
 });
+
+describe('CORS_ORIGINS', () => {
+  it('vazia (como o compose entrega) usa a WEB_URL; barra final é removida', () => {
+    expect(
+      loadEnv({ NODE_ENV: 'test', WEB_URL: 'https://app.exemplo.com/', CORS_ORIGINS: '' })
+        .corsOrigins,
+    ).toEqual(['https://app.exemplo.com']);
+    expect(loadEnv({ NODE_ENV: 'test', WEB_URL: 'https://app.exemplo.com' }).corsOrigins).toEqual([
+      'https://app.exemplo.com',
+    ]);
+  });
+  it('lista explícita vale', () => {
+    expect(
+      loadEnv({
+        NODE_ENV: 'test',
+        WEB_URL: 'https://a.com',
+        CORS_ORIGINS: 'https://b.com, https://c.com/',
+      }).corsOrigins,
+    ).toEqual(['https://b.com', 'https://c.com']);
+  });
+});

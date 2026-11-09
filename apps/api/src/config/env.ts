@@ -151,7 +151,9 @@ ADMIN_ROLE_IDS: ID inválido "${badRole}"`);
 
   return {
     ...env,
-    corsOrigins: list(env.CORS_ORIGINS ?? env.WEB_URL),
+    // CORS_ORIGINS vazio (como o compose entrega quando não definida) vale como ausente: usa a WEB_URL.
+    // Sem a barra final: o navegador manda a origem sem ela e a comparação é exata.
+    corsOrigins: list(env.CORS_ORIGINS?.trim() || env.WEB_URL).map((o) => o.replace(/\/+$/, '')),
     encryptionKey,
     bootstrapAdminIds,
     adminRoleIds,
