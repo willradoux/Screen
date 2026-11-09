@@ -4,7 +4,14 @@ import { io, type Socket } from 'socket.io-client';
 import { api as realApi, ApiError } from '../lib/api';
 import { SOCKET_URL } from '../lib/config';
 import { describeError } from '../lib/errors';
-import type { EndReason, JoinResult, ModerationAction, RaisedHand, Room } from '../lib/types';
+import type {
+  Caption,
+  EndReason,
+  JoinResult,
+  ModerationAction,
+  RaisedHand,
+  Room,
+} from '../lib/types';
 import {
   initialSessionState,
   pollIntervalMs,
@@ -52,6 +59,10 @@ export interface RoomSession {
   hands: RaisedHand[];
   /** A sala está sendo gravada? Todos precisam saber. */
   recording: boolean;
+  /** Legendas recentes de quem está falando (somem sozinhas). */
+  captions: Caption[];
+  /** Manda o que a pessoa acabou de falar para a sala. */
+  sendCaption: (text: string, final: boolean) => void;
   join: () => Promise<void>;
   leave: () => Promise<void>;
   retry: () => void;
@@ -76,6 +87,7 @@ export function useRoomSession(
   const [attempt, setAttempt] = useState(0);
   const [hands, setHands] = useState<RaisedHand[]>([]);
   const [recording, setRecording] = useState(false);
+  const [captions, setCaptions] = useState<Caption[]>([]);
 
   const mediaRef = useRef<LiveKitRoom | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -171,6 +183,13 @@ export function useRoomSession(
         dispatch({ type: 'SESSION_IDLE', reason: p?.reason ?? null });
         teardown();
         setRoom((r) => (r ? { ...r, mediaState: 'IDLE' } : r));
+      });
+      socket.on('caption', (p: Omit<Caption, 'at'>) => {
+        const at = Date.now();
+        setCaptions((list) => [
+          ...list.filter((c) => c.userId !== p.userId && at - c.at < 8000),
+          { ...p, at },
+        ]);
       });
       socket.on('recording:state', (p: { recording: boolean }) =>
         setRecording(Boolean(p.recording)),
@@ -298,6 +317,13 @@ export function useRoomSession(
     }
   }, [roomId, teardown]);
 
+  const sendCaption = useCallback(
+    (text: string, final: boolean) => {
+      socketRef.current?.emit('caption:send', { roomId, text, final });
+    },
+    [roomId],
+  );
+
   const retry = useCallback(() => {
     joinedRef.current = false;
     dispatch({ type: 'RETRY' });
@@ -322,6 +348,8 @@ export function useRoomSession(
     participantsVersion,
     hands,
     recording,
+    captions,
+    sendCaption,
     join,
     leave,
     retry,

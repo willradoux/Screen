@@ -38,6 +38,13 @@ const MAX_PAYLOAD_BYTES = 16 * 1024;
 /** Assinaturas de sala por socket: cada uma consulta o banco, então têm teto. */
 const SUBSCRIBES_PER_MINUTE = 30;
 const roomPayload = z.object({ roomId: z.string().regex(/^[\w-]{22}$/) });
+/** Legenda ao vivo: o navegador de quem fala transcreve e manda o texto; o servidor só repassa. */
+const captionPayload = z.object({
+  roomId: z.string().regex(/^[\w-]{22}$/),
+  text: z.string().trim().min(1).max(300),
+  final: z.boolean().default(false),
+});
+const CAPTIONS_PER_10S = 30;
 
 const fail = (code: string, message: string) => ({ ok: false, error: { code, message } });
 
@@ -141,6 +148,42 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
       } catch (err) {
         if (err instanceof AppError) return reply(fail(err.code, err.message));
         logger.error({ err }, 'falha em room:subscribe');
+        reply(fail('INTERNAL_ERROR', 'Erro interno.'));
+      }
+    });
+
+    const captionTimes: number[] = [];
+    socket.on('caption:send', async (payload: unknown, ack?: Ack) => {
+      const reply = typeof ack === 'function' ? ack : () => undefined;
+      try {
+        const now = Date.now();
+        while (captionTimes.length > 0 && now - captionTimes[0]! > 10_000) captionTimes.shift();
+        if (captionTimes.length >= CAPTIONS_PER_10S) {
+          return reply(fail('RATE_LIMITED', 'Muitas legendas seguidas. Aguarde um instante.'));
+        }
+        captionTimes.push(now);
+
+        const parsed = captionPayload.safeParse(payload);
+        if (!parsed.success) return reply(fail('VALIDATION_ERROR', 'Legenda inválida.'));
+        const { roomId, text, final } = parsed.data;
+
+        // Só quem acompanha a sala E está conectado nela pode legendar.
+        if (!socket.rooms.has(`room:${roomId}`)) {
+          return reply(fail('FORBIDDEN', 'Acompanhe a sala antes de enviar legendas.'));
+        }
+        const me = await deps.participations.findOpen(roomId, userId);
+        if (!me) return reply(fail('PARTICIPANT_NOT_IN_ROOM', 'Você não está conectado à sala.'));
+
+        io.to(`room:${roomId}`).emit('caption', {
+          roomId,
+          userId,
+          displayName: me.displayName,
+          text,
+          final,
+        });
+        reply({ ok: true });
+      } catch (err) {
+        logger.error({ err }, 'falha em caption:send');
         reply(fail('INTERNAL_ERROR', 'Erro interno.'));
       }
     });

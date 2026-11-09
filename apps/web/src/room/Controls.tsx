@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { canShareScreen, mediaErrorMessage } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
+import { EffectsPanel } from './EffectsPanel';
 import { VideoSettings } from './VideoSettings';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   onError: (message: string) => void;
   /** Pedir a palavra (só reuniões). */
   hand?: { raised: boolean; busy: boolean; onToggle: () => void };
+  captions?: { on: boolean; onToggle: () => void };
 }
 
 const SCREEN_UNSUPPORTED =
@@ -87,6 +89,7 @@ export function Controls({
   onLeave,
   onError,
   hand,
+  captions,
 }: Props) {
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
   const screenSupported = canShareScreen();
@@ -166,6 +169,14 @@ export function Controls({
           />
         )}
         <VideoSettings />
+        {captions && (
+          <EffectsPanel
+            local={local}
+            captionsOn={captions.on}
+            onToggleCaptions={captions.onToggle}
+            onError={onError}
+          />
+        )}
         <RoundButton
           icon="group"
           short="Pessoas"

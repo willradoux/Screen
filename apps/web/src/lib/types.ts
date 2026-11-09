@@ -68,6 +68,15 @@ export interface JoinResult {
   sessionActivated: boolean;
 }
 
+/** Uma legenda ao vivo (o que alguém acabou de falar). */
+export interface Caption {
+  userId: string;
+  displayName: string;
+  text: string;
+  final: boolean;
+  at: number;
+}
+
 /** Alguém com a mão levantada (pedindo a palavra) numa reunião. */
 export interface RaisedHand {
   userId: string;

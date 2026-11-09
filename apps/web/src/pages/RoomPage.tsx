@@ -7,7 +7,9 @@ import { ToastViewport, useToasts } from '../components/Toasts';
 import { Alert, Badge, Button } from '../components/ui';
 import { StatusBadge } from '../components/RoomCard';
 import { publishRestriction } from '../room/publish-rules';
+import { CaptionsOverlay, useSpeechCaptions } from '../room/captions';
 import { Controls } from '../room/Controls';
+import { useNow } from './MeetingsPage';
 import { ParticipantsPanel } from '../room/ParticipantsPanel';
 import {
   BlockedScreen,
@@ -55,6 +57,14 @@ function ConnectedRoom({
   const { tiles, remote, local } = useParticipants(media);
   const [panelOpen, setPanelOpen] = useState(true);
   const [handBusy, setHandBusy] = useState(false);
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const now = useNow(1000);
+  // Transcreve a própria fala só com legendas ligadas e microfone aberto.
+  useSpeechCaptions(
+    captionsOn && local?.isMicrophoneEnabled === true,
+    session.sendCaption,
+    toast.error,
+  );
   const raised = session.hands.some((h) => h.userId === me.id);
 
   async function toggleHand() {
@@ -97,6 +107,7 @@ function ConnectedRoom({
       <div className={`grid gap-4 ${panelOpen ? 'lg:grid-cols-[1fr_20rem]' : ''}`}>
         <div className="min-w-0 space-y-4">
           <Stage tiles={tiles} />
+          {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
           <Controls
             hand={
               room.type === 'MEETING'
@@ -107,6 +118,7 @@ function ConnectedRoom({
                   }
                 : undefined
             }
+            captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
             local={local}
             allowedSources={permissions?.canPublishSources}
             restriction={restriction}
