@@ -1,16 +1,12 @@
 import { Link } from 'react-router-dom';
 import { formatDateTime } from '../lib/format';
 import type { Room } from '../lib/types';
-import { Icon } from './Icon';
-import { Badge, Card } from './ui';
+import { Badge, StatusDot } from './ui';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
     return room.type === 'LIVE' ? (
-      <Badge tone="live">
-        <Icon name="radio_button_checked" size="0.9rem" className="mr-1" />
-        Ao vivo
-      </Badge>
+      <Badge tone="live">Ao vivo</Badge>
     ) : (
       <Badge tone="open">Aberta</Badge>
     );
@@ -20,7 +16,18 @@ export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   return <Badge>Encerrada</Badge>;
 }
 
-/** Cartão de uma sala (live ou reunião) com link para entrar. */
+function dotFor(room: Room) {
+  if (room.status === 'OPEN') {
+    if (room.type === 'LIVE') return room.mediaState === 'ACTIVE' ? 'live' : 'idle';
+    return 'open';
+  }
+  return room.status === 'SCHEDULED' ? 'scheduled' : 'off';
+}
+
+/**
+ * Uma sala (live ou reunião) como linha de lista: estado, título, ocupação e a ação de entrar.
+ * Listas de linhas com régua leem mais rápido que uma grade de cartões iguais.
+ */
 export function RoomCard({ room }: { room: Room }) {
   const when =
     room.status === 'SCHEDULED'
@@ -28,32 +35,37 @@ export function RoomCard({ room }: { room: Room }) {
       : room.openedAt
         ? `Aberta desde ${formatDateTime(room.openedAt)}`
         : '';
+  const session =
+    room.type === 'LIVE' && room.status === 'OPEN'
+      ? room.mediaState === 'ACTIVE'
+        ? 'Sessão em uso.'
+        : 'Sessão em espera: ao entrar você a ativa.'
+      : null;
 
   return (
-    <Card className="flex flex-col gap-3 transition-colors hover:border-zinc-700">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-zinc-50">{room.title}</h3>
-        <StatusBadge room={room} />
-      </div>
-      {room.description && <p className="line-clamp-2 text-sm text-zinc-400">{room.description}</p>}
-      {room.type === 'LIVE' && room.status === 'OPEN' && (
-        <p className="text-xs text-zinc-500">
-          {room.mediaState === 'ACTIVE'
-            ? 'Sessão em uso.'
-            : 'Sessão em espera: ao entrar você a ativa.'}
+    <div className="flex items-center gap-4 py-4" data-testid="room-row">
+      <StatusDot tone={dotFor(room)} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <h3 className="truncate text-base font-semibold text-zinc-50">{room.title}</h3>
+          <StatusBadge room={room} />
+        </div>
+        {room.description && (
+          <p className="mt-0.5 line-clamp-1 text-sm text-zinc-400">{room.description}</p>
+        )}
+        <p className="tabular mt-0.5 text-sm text-zinc-500">
+          {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {room.participantCount}/
+          {room.maxParticipants} {room.participantCount === 1 ? 'pessoa' : 'pessoas'}
+          {when && ` · ${when}`}
         </p>
-      )}
-      <p className="text-sm text-zinc-500">
-        {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {room.participantCount}/{room.maxParticipants}{' '}
-        {room.participantCount === 1 ? 'pessoa' : 'pessoas'}
-        {when && ` · ${when}`}
-      </p>
+        {session && <p className="text-xs text-zinc-500">{session}</p>}
+      </div>
       <Link
         to={`/r/${room.id}`}
-        className="mt-auto inline-flex w-fit items-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        className="inline-flex h-9 shrink-0 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-800"
       >
         {room.status === 'OPEN' ? 'Entrar' : 'Ver sala'}
       </Link>
-    </Card>
+    </div>
   );
 }

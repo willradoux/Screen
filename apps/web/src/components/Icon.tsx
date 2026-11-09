@@ -25,6 +25,7 @@ import info from '@material-symbols/svg-400/rounded/info.svg?url';
 import light from '@material-symbols/svg-400/rounded/light_mode.svg?url';
 import lock from '@material-symbols/svg-400/rounded/lock.svg?url';
 import logout from '@material-symbols/svg-400/rounded/logout.svg?url';
+import menuOpen from '@material-symbols/svg-400/rounded/menu_open.svg?url';
 import mic from '@material-symbols/svg-400/rounded/mic.svg?url';
 import micOff from '@material-symbols/svg-400/rounded/mic_off.svg?url';
 import openInNew from '@material-symbols/svg-400/rounded/open_in_new.svg?url';
@@ -76,6 +77,7 @@ const ICONS = {
   light_mode: light,
   lock,
   logout,
+  menu_open: menuOpen,
   mic,
   mic_off: micOff,
   open_in_new: openInNew,

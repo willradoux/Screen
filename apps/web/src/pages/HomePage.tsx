@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Alert, Button, Card, PageTitle, Spinner } from '../components/ui';
+import { Alert, Button, EmptyState, PageTitle, Section, Spinner } from '../components/ui';
+import { CallsSection } from '../components/CallsSection';
 import { RoomCard } from '../components/RoomCard';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import { useAsync } from '../lib/useAsync';
-import { CallsSection } from '../components/CallsSection';
 
 /** Salas abertas e reuniões agendadas. */
 export function HomePage() {
@@ -13,6 +13,7 @@ export function HomePage() {
   return (
     <>
       <PageTitle
+        description="O que está acontecendo agora no servidor."
         action={
           <Button size="sm" onClick={() => void reload()}>
             Atualizar
@@ -22,39 +23,40 @@ export function HomePage() {
         Salas
       </PageTitle>
 
-      <CallsSection />
+      <div className="space-y-10">
+        <CallsSection />
 
-      {state.status === 'loading' && <Spinner label="Carregando salas…" />}
+        <Section title="Abertas e agendadas">
+          {state.status === 'loading' && <Spinner label="Carregando salas…" />}
 
-      {state.status === 'error' && (
-        <Alert tone="error" title="Não foi possível carregar as salas">
-          {describeError(state.error)}
-        </Alert>
-      )}
+          {state.status === 'error' && (
+            <Alert tone="error" title="Não foi possível carregar as salas">
+              {describeError(state.error)}
+            </Alert>
+          )}
 
-      {state.status === 'ready' && state.data.length === 0 && (
-        <Card className="space-y-2 text-center">
-          <p className="text-zinc-200">Nenhuma sala aberta agora.</p>
-          <p className="text-sm text-zinc-500">
-            Entre em um canal de voz da categoria de lives no Discord: o bot abre a sala e envia o
-            link. Reuniões agendadas aparecem em{' '}
-            <Link to="/reunioes" className="text-brand-300 underline">
-              Reuniões
-            </Link>
-            .
-          </p>
-        </Card>
-      )}
+          {state.status === 'ready' && state.data.length === 0 && (
+            <EmptyState title="Nenhuma sala aberta agora.">
+              Entre em um canal de voz da categoria de lives no Discord: o bot abre a sala e envia o
+              link. Reuniões agendadas aparecem em{' '}
+              <Link to="/reunioes" className="text-brand-300 underline underline-offset-2">
+                Reuniões
+              </Link>
+              .
+            </EmptyState>
+          )}
 
-      {state.status === 'ready' && state.data.length > 0 && (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {state.data.map((room) => (
-            <li key={room.id}>
-              <RoomCard room={room} />
-            </li>
-          ))}
-        </ul>
-      )}
+          {state.status === 'ready' && state.data.length > 0 && (
+            <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+              {state.data.map((room) => (
+                <li key={room.id}>
+                  <RoomCard room={room} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      </div>
     </>
   );
 }

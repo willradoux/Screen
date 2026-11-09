@@ -1,34 +1,78 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/bricolage-grotesque';
 
 /*
- * Tema Screem: preto, branco e azul claro. O escuro é o padrão; o claro inverte a escala de
- * cinzas (zinc-950 vira branco, zinc-50 vira quase preto), então todas as telas se adaptam.
+ * Design system do Screem. Documentação: docs/design-system.md
+ *
+ * Direção: sala de controle de transmissão. Neutros frios quase pretos (e brancos azulados no
+ * claro), um único azul claro como sinal de "ativo", listas e réguas no lugar de cartões.
+ *
+ * Os componentes usam a escala `zinc-*` (neutros) e `brand-*` (azul) do Tailwind, redefinidas
+ * aqui. No tema claro a escala de neutros é invertida (zinc-950 vira o fundo branco, zinc-50 vira
+ * o texto quase preto), então um componente escrito uma vez serve aos dois temas.
  */
 @theme {
   --font-sans:
-    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Space Grotesk Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --color-brand-200: #cfe4ff;
-  --color-brand-300: #9ccaff;
-  --color-brand-400: #6db0ff;
-  --color-brand-500: #3d8bfd;
-  --color-brand-600: #2b72e0;
-  --color-on-brand: #ffffff;
+  /* Escala tipográfica (tamanho / altura de linha) */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 3.125rem;
 
-  --color-zinc-50: #f2f6fd;
-  --color-zinc-100: #e6ecf7;
-  --color-zinc-200: #cbd5e6;
-  --color-zinc-300: #aab6cc;
-  --color-zinc-400: #8190aa;
-  --color-zinc-500: #5f6f8a;
-  --color-zinc-600: #3d4a62;
-  --color-zinc-700: #2a3447;
-  --color-zinc-800: #1a2232;
-  --color-zinc-900: #101624;
-  --color-zinc-950: #080c16;
+  /* Raios: controles menores, painéis maiores. Nada de tudo igualmente redondo. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+
+  /* Azul de sinal (tema escuro). */
+  --color-brand-200: #d3e8ff;
+  --color-brand-300: #a9d2ff;
+  --color-brand-400: #86bfff;
+  --color-brand-500: #6cb4ff;
+  --color-brand-600: #4a9bf2;
+  --color-on-brand: #05101f;
+
+  /* Neutros frios (tema escuro). */
+  --color-zinc-50: #f3f6fb;
+  --color-zinc-100: #e4e9f2;
+  --color-zinc-200: #cbd3e1;
+  --color-zinc-300: #aeb8ca;
+  --color-zinc-400: #8f9bb0;
+  --color-zinc-500: #667289;
+  --color-zinc-600: #46526a;
+  --color-zinc-700: #2a3344;
+  --color-zinc-800: #1c2230;
+  --color-zinc-900: #10141c;
+  --color-zinc-950: #090b10;
+
+  /* Semânticas: cada cor tem uma função. */
+  --color-red-200: #ffc9c3;
+  --color-red-300: #ff9d94;
+  --color-red-500: #ff6b5e;
+  --color-red-600: #e5483a;
+  --color-amber-200: #fde2a8;
+  --color-amber-300: #f8cb74;
+  --color-emerald-200: #b6f1d2;
+  --color-emerald-300: #7fe3b0;
 }
 
 :root {
@@ -38,34 +82,33 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --color-brand-300: #1d62c9;
-  --color-brand-400: #2b72e0;
-  --color-brand-500: #2f7df0;
-  --color-brand-600: #1f66d0;
+  --color-brand-200: #0e3f8f;
+  --color-brand-300: #1a57bd;
+  --color-brand-400: #2368d6;
+  --color-brand-500: #1f6fe5;
+  --color-brand-600: #1859c0;
+  --color-on-brand: #ffffff;
 
   --color-zinc-50: #0b1220;
-  --color-zinc-100: #0f1a2e;
-  --color-zinc-200: #1c2942;
-  --color-zinc-300: #2d3d5b;
-  --color-zinc-400: #4a5b7a;
-  --color-zinc-500: #66789a;
-  --color-zinc-600: #9aa8c2;
-  --color-zinc-700: #c9d4e8;
-  --color-zinc-800: #e1e8f5;
-  --color-zinc-900: #eff4fc;
-  --color-zinc-950: #ffffff;
+  --color-zinc-100: #131d30;
+  --color-zinc-200: #26334a;
+  --color-zinc-300: #3d4b63;
+  --color-zinc-400: #5b6a84;
+  --color-zinc-500: #7c8aa3;
+  --color-zinc-600: #a9b5c9;
+  --color-zinc-700: #d3dbe8;
+  --color-zinc-800: #e5eaf3;
+  --color-zinc-900: #f3f6fb;
+  --color-zinc-950: #fbfcfe;
 
-  /* Textos de alertas e selos: no claro precisam ser escuros para ter contraste. */
-  --color-red-200: #b42318;
+  --color-red-200: #9f1d12;
   --color-red-300: #b42318;
-  --color-amber-200: #92400e;
-  --color-amber-300: #92400e;
-  --color-emerald-200: #166534;
+  --color-red-500: #d92d20;
+  --color-red-600: #c0261a;
+  --color-amber-200: #7a4a00;
+  --color-amber-300: #92560a;
+  --color-emerald-200: #0f5a2e;
   --color-emerald-300: #166534;
-  --color-green-200: #166534;
-  --color-green-300: #166534;
-  --color-indigo-200: #1d4ed8;
-  --color-sky-200: #075985;
 }
 
 html,
@@ -78,36 +121,82 @@ body {
   background: var(--color-zinc-950);
   color: var(--color-zinc-200);
   font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
-  /* Respeita a barra do celular (entalhe, gestos) quando instalado como app. */
+  text-rendering: optimizeLegibility;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
 
+/* Títulos: Bricolage Grotesque, firme e com espaçamento fechado. */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  text-wrap: balance;
 }
 
-/* Alvos de toque confortáveis no celular. */
+p {
+  text-wrap: pretty;
+}
+
+/* Números alinhados em colunas (tabelas, contagens, durações). */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+}
+
 button,
 a,
-select {
+select,
+summary {
   -webkit-tap-highlight-color: transparent;
 }
 
-@keyframes screem-spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* Foco visível e consistente em tudo que é interativo. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-400);
+  outline-offset: 2px;
 }
 
-/* Respeita quem prefere menos movimento. */
+/* Pulso do sinal "ao vivo": só em quem está de fato no ar. */
+@keyframes screem-signal {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-red-500) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.signal-live {
+  animation: screem-signal 1.8s ease-out infinite;
+}
+
+/* Popovers e diálogos: entram rápido, sem chamar atenção. */
+@keyframes screem-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+.pop-in {
+  animation: screem-pop 120ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

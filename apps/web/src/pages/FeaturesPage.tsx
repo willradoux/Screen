@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Wordmark } from '../components/Wordmark';
 
 interface Feature {
   icon: IconName;
@@ -310,14 +311,10 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 
 function StepList({ steps }: { steps: Step[] }) {
   return (
-    <ol className="space-y-3">
+    <ol>
       {steps.map((s, i) => (
-        <li
-          key={s.title}
-          className="flex gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4"
-          data-testid="step"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/15 font-display text-sm font-bold text-brand-300">
+        <li key={s.title} className="flex gap-4 border-t border-zinc-800 py-4" data-testid="step">
+          <span className="tabular w-6 shrink-0 font-display text-base font-semibold text-brand-400">
             {i + 1}
           </span>
           <div className="min-w-0 space-y-1">
@@ -363,7 +360,7 @@ export function FeaturesPage() {
             <ThemeToggle />
             <Link
               to="/"
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-on-brand hover:bg-brand-400"
+              className="inline-flex h-9 items-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-400"
             >
               Entrar
             </Link>
@@ -373,7 +370,6 @@ export function FeaturesPage() {
 
       <main className="mx-auto max-w-5xl space-y-10 px-4 py-10">
         <section className="space-y-4 text-center">
-          <p className="text-sm font-medium text-brand-300">Acelera DEV</p>
           <h1 className="font-display text-4xl font-bold text-zinc-50 sm:text-5xl">
             Transmita tela, câmera e voz com a comunidade
           </h1>
@@ -383,7 +379,7 @@ export function FeaturesPage() {
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-base font-semibold text-on-brand hover:bg-brand-400"
+            className="inline-flex h-11 items-center gap-2 rounded-lg bg-brand-500 px-5 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-400"
           >
             Entrar com Discord
             <Icon name="chevron_right" />
@@ -393,7 +389,7 @@ export function FeaturesPage() {
         <div
           role="tablist"
           aria-label="Seções"
-          className="flex flex-wrap justify-center gap-2 rounded-2xl bg-zinc-900/70 p-1.5"
+          className="flex flex-wrap justify-center gap-1 border-b border-zinc-800"
         >
           {TABS.map((t) => (
             <button
@@ -402,10 +398,10 @@ export function FeaturesPage() {
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => choose(t.id)}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`-mb-px inline-flex h-10 items-center border-b-2 px-4 text-sm font-medium transition-colors ${
                 tab === t.id
-                  ? 'bg-brand-500 text-on-brand'
-                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+                  ? 'border-brand-400 text-zinc-50'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-100'
               }`}
             >
               {t.label}
@@ -418,12 +414,10 @@ export function FeaturesPage() {
             {FEATURES.map((f) => (
               <article
                 key={f.title}
-                className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5"
+                className="space-y-2 border-t border-zinc-800 pt-5"
                 data-testid="feature"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300">
-                  <Icon name={f.icon} size="1.5rem" />
-                </span>
+                <Icon name={f.icon} size="1.5rem" className="text-brand-400" />
                 <h2 className="font-display text-lg font-semibold text-zinc-50">{f.title}</h2>
                 <p className="text-sm leading-relaxed text-zinc-400">{f.text}</p>
               </article>

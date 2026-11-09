@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, PageTitle, Spinner } from '../components/ui';
+import { Alert, EmptyState, PageTitle, Section, Spinner } from '../components/ui';
 import { RoomCard } from '../components/RoomCard';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
@@ -22,28 +22,35 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
   const now = useNow();
   const left = timeUntil(meeting.startsAt, now);
   return (
-    <Card className="space-y-2 border-brand-500/40 bg-brand-500/10">
-      <p className="text-sm font-medium text-brand-300">Próxima reunião</p>
-      <h2 className="text-xl font-bold text-zinc-50">{meeting.title}</h2>
-      <p className="text-zinc-300">
-        {formatDateTime(meeting.startsAt)}
-        {left !== null && (
-          <span className="text-zinc-400"> · começa em {formatDuration(left)}</span>
+    <section
+      aria-label="Próxima reunião"
+      className="grid gap-6 border-y border-zinc-800 py-6 sm:grid-cols-[1fr_auto] sm:items-end"
+    >
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-brand-300">Próxima reunião</p>
+        <h2 className="text-2xl font-semibold text-zinc-50">{meeting.title}</h2>
+        <p className="text-zinc-300">{formatDateTime(meeting.startsAt)}</p>
+        {meeting.reminders.length > 0 && (
+          <p className="text-sm text-zinc-500">
+            Lembretes no Discord:{' '}
+            {meeting.reminders.map((r) => formatReminder(r.minutesBefore)).join(', ')} antes.
+          </p>
         )}
-      </p>
-      {meeting.reminders.length > 0 && (
-        <p className="text-xs text-zinc-500">
-          Lembretes no Discord:{' '}
-          {meeting.reminders.map((r) => formatReminder(r.minutesBefore)).join(', ')} antes.
-        </p>
-      )}
-      <Link
-        to={`/r/${meeting.id}`}
-        className="inline-flex rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-400"
-      >
-        Ver sala
-      </Link>
-    </Card>
+      </div>
+      <div className="flex items-center gap-5 sm:flex-col sm:items-end sm:gap-3">
+        {left !== null && (
+          <p className="tabular font-display text-2xl font-semibold text-zinc-50">
+            começa em {formatDuration(left)}
+          </p>
+        )}
+        <Link
+          to={`/r/${meeting.id}`}
+          className="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-on-brand transition-colors hover:bg-brand-400"
+        >
+          Ver sala
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -53,7 +60,9 @@ export function MeetingsPage() {
 
   return (
     <>
-      <PageTitle>Reuniões</PageTitle>
+      <PageTitle description="As próximas reuniões da comunidade e as que já estão abertas.">
+        Reuniões
+      </PageTitle>
 
       {state.status === 'loading' && <Spinner label="Carregando reuniões…" />}
       {state.status === 'error' && (
@@ -63,26 +72,25 @@ export function MeetingsPage() {
       )}
 
       {state.status === 'ready' && state.data.length === 0 && (
-        <Card className="text-center">
-          <p className="text-zinc-200">Nenhuma reunião agendada.</p>
-          <p className="mt-1 text-sm text-zinc-500">
-            Os avisos aparecem no canal de avisos do Discord.
-          </p>
-        </Card>
+        <EmptyState title="Nenhuma reunião agendada.">
+          Os avisos aparecem no canal de avisos do Discord.
+        </EmptyState>
       )}
 
       {state.status === 'ready' && state.data.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {state.data.find((m) => m.status === 'SCHEDULED') && (
             <NextMeeting meeting={state.data.find((m) => m.status === 'SCHEDULED')!} />
           )}
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {state.data.map((m) => (
-              <li key={m.id}>
-                <RoomCard room={m} />
-              </li>
-            ))}
-          </ul>
+          <Section title="Todas">
+            <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+              {state.data.map((m) => (
+                <li key={m.id}>
+                  <RoomCard room={m} />
+                </li>
+              ))}
+            </ul>
+          </Section>
         </div>
       )}
     </>

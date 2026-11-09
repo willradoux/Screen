@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAsync } from '../lib/useAsync';
-import { Icon } from './Icon';
-import { Avatar, Badge, Card } from './ui';
+import { Avatar, Section, StatusDot } from './ui';
 
 /** Quem está em cada call com live agora. Some se não houver calls configuradas. */
 export function CallsSection() {
@@ -10,44 +9,40 @@ export function CallsSection() {
   if (state.status !== 'ready' || state.data.length === 0) return null;
 
   return (
-    <section aria-label="Calls agora" className="mb-8">
-      <h2 className="mb-3 font-display text-lg font-semibold text-zinc-50">Calls agora</h2>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <Section title="Calls agora" description="Quem está em cada call com live neste momento.">
+      <ul className="divide-y divide-zinc-800 border-y border-zinc-800" aria-label="Calls agora">
         {state.data.map((call) => (
-          <li key={call.id}>
-            <Card className="space-y-3 p-4" data-testid="call">
-              <div className="flex items-center gap-2">
-                <Icon name="mic" className="text-zinc-400" />
-                <h3 className="flex-1 truncate font-semibold text-zinc-50">{call.name}</h3>
-                {call.members.length > 0 ? (
-                  <Badge tone="live">{call.members.length}</Badge>
-                ) : (
-                  <Badge>vazia</Badge>
-                )}
-              </div>
-              {call.members.length > 0 && (
-                <ul className="flex flex-wrap gap-1.5">
+          <li key={call.id} className="flex items-center gap-4 py-3" data-testid="call">
+            <StatusDot tone={call.members.length > 0 ? 'open' : 'off'} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-zinc-50">{call.name}</p>
+              {call.members.length > 0 ? (
+                <ul className="mt-1.5 flex flex-wrap gap-1">
                   {call.members.map((m) => (
                     <li key={m.userId} title={m.displayName ?? m.userId}>
                       <Avatar name={m.displayName ?? '?'} url={m.avatarUrl} size="sm" />
                     </li>
                   ))}
                 </ul>
-              )}
-              {call.roomId ? (
-                <Link
-                  to={`/r/${call.roomId}`}
-                  className="text-sm font-medium text-brand-300 underline"
-                >
-                  Abrir a sala{call.mediaState === 'IDLE' ? ' (ativa a sessão)' : ''}
-                </Link>
               ) : (
-                <p className="text-xs text-zinc-500">Entre na call no Discord para abrir a sala.</p>
+                <p className="text-sm text-zinc-500">vazia</p>
               )}
-            </Card>
+            </div>
+            {call.roomId ? (
+              <Link
+                to={`/r/${call.roomId}`}
+                className="text-sm font-medium text-brand-300 underline underline-offset-2"
+              >
+                Abrir a sala{call.mediaState === 'IDLE' ? ' (ativa a sessão)' : ''}
+              </Link>
+            ) : (
+              <p className="hidden max-w-[14rem] text-right text-xs text-zinc-500 sm:block">
+                Entre na call no Discord para abrir a sala.
+              </p>
+            )}
           </li>
         ))}
       </ul>
-    </section>
+    </Section>
   );
 }

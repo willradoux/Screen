@@ -1,12 +1,22 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Icon, type IconName } from './Icon';
+
+/*
+ * Componentes base do design system (docs/design-system.md). Tudo que é botão, campo, painel,
+ * selo ou aviso no produto passa por aqui, para que a mesma função tenha sempre a mesma cara.
+ */
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-brand-500 text-on-brand hover:bg-brand-400 disabled:bg-brand-500/40',
-  secondary: 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700 disabled:text-zinc-500',
-  danger: 'bg-red-600 text-on-brand hover:bg-red-500 disabled:bg-red-600/40',
-  ghost: 'text-zinc-300 hover:bg-zinc-800 disabled:text-zinc-600',
+  primary:
+    'bg-brand-500 text-on-brand hover:bg-brand-400 active:bg-brand-600 disabled:bg-zinc-800 disabled:text-zinc-500',
+  secondary:
+    'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 active:bg-zinc-700 disabled:text-zinc-500',
+  danger:
+    'bg-red-600 text-white hover:bg-red-500 active:bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500',
+  ghost:
+    'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 active:bg-zinc-700 disabled:text-zinc-600',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -29,8 +39,8 @@ export function Button({
       type="button"
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:cursor-not-allowed ${
-        size === 'sm' ? 'px-2.5 py-1 text-sm' : 'px-4 py-2'
+      className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:cursor-not-allowed ${
+        size === 'sm' ? 'h-8 px-3 text-sm' : 'h-10 px-4 text-sm'
       } ${VARIANTS[variant]} ${className}`}
       {...rest}
     >
@@ -41,15 +51,15 @@ export function Button({
 }
 
 export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md'; label?: string }) {
-  const dim = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6';
+  const dim = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
   return (
     <span
       role="status"
       aria-label={label ?? 'Carregando'}
-      className="inline-flex items-center gap-2"
+      className="inline-flex items-center gap-2.5"
     >
       <span
-        className={`${dim} animate-spin rounded-full border-2 border-zinc-600 border-t-brand-400`}
+        className={`${dim} animate-spin rounded-full border-2 border-zinc-700 border-t-brand-400`}
       />
       {label && <span className="text-sm text-zinc-400">{label}</span>}
     </span>
@@ -57,12 +67,21 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md'; label?: st
 }
 
 const ALERTS = {
-  error: 'border-red-500/40 bg-red-500/10 text-red-200',
-  warning: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
-  info: 'border-brand-500/40 bg-brand-500/10 text-indigo-100',
-  success: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
-} as const;
+  error: { box: 'border-red-500/30 bg-red-500/[0.07]', icon: 'error', color: 'text-red-300' },
+  warning: {
+    box: 'border-amber-500/30 bg-amber-500/[0.07]',
+    icon: 'warning',
+    color: 'text-amber-300',
+  },
+  info: { box: 'border-brand-500/30 bg-brand-500/[0.07]', icon: 'info', color: 'text-brand-300' },
+  success: {
+    box: 'border-emerald-500/30 bg-emerald-500/[0.07]',
+    icon: 'check_circle',
+    color: 'text-emerald-300',
+  },
+} as const satisfies Record<string, { box: string; icon: IconName; color: string }>;
 
+/** Aviso em linha: ícone semântico, título curto e o que fazer. */
 export function Alert({
   tone = 'info',
   title,
@@ -72,22 +91,29 @@ export function Alert({
   title?: string;
   children?: ReactNode;
 }) {
+  const t = ALERTS[tone];
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
-      className={`rounded-lg border px-4 py-3 text-sm ${ALERTS[tone]}`}
+      className={`flex gap-3 rounded-xl border px-4 py-3 text-sm ${t.box}`}
     >
-      {title && <p className="font-semibold">{title}</p>}
-      {children && <div className={title ? 'mt-1' : ''}>{children}</div>}
+      <Icon name={t.icon} size="1.25rem" className={`mt-0.5 ${t.color}`} />
+      <div className="min-w-0 text-zinc-200">
+        {title && <p className="font-semibold text-zinc-50">{title}</p>}
+        {children && <div className={title ? 'mt-0.5 text-zinc-300' : ''}>{children}</div>}
+      </div>
     </div>
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+/** Painel: superfície com borda fina, sem sombra. Agrupa conteúdo que precisa de moldura. */
+export function Card({
+  children,
+  className = '',
+  ...rest
+}: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLElement>) {
   return (
-    <section
-      className={`rounded-2xl border border-zinc-800 bg-zinc-900/70 shadow-sm p-5 ${className}`}
-    >
+    <section className={`rounded-xl border border-zinc-800 bg-zinc-900 p-5 ${className}`} {...rest}>
       {children}
     </section>
   );
@@ -95,10 +121,10 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 
 const BADGES = {
   neutral: 'bg-zinc-800 text-zinc-300',
-  live: 'bg-red-500/20 text-red-300',
-  open: 'bg-emerald-500/20 text-emerald-300',
-  scheduled: 'bg-brand-500/20 text-indigo-200',
-  warn: 'bg-amber-500/20 text-amber-200',
+  live: 'bg-red-500/15 text-red-300',
+  open: 'bg-emerald-500/15 text-emerald-300',
+  scheduled: 'bg-brand-500/15 text-brand-300',
+  warn: 'bg-amber-500/15 text-amber-300',
 } as const;
 
 export function Badge({
@@ -110,10 +136,24 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${BADGES[tone]}`}
+      className={`inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium ${BADGES[tone]}`}
     >
       {children}
     </span>
+  );
+}
+
+/** Ponto de estado. `live` pulsa; é o único elemento animado sem ação da pessoa. */
+export function StatusDot({ tone }: { tone: 'live' | 'open' | 'idle' | 'scheduled' | 'off' }) {
+  const color = {
+    live: 'bg-red-500 signal-live',
+    open: 'bg-emerald-400',
+    idle: 'bg-amber-400',
+    scheduled: 'bg-brand-400',
+    off: 'bg-zinc-600',
+  }[tone];
+  return (
+    <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${color}`} />
   );
 }
 
@@ -129,8 +169,8 @@ export function Field({
   htmlFor?: string;
 }) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-zinc-200">
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-zinc-100">
         {label}
       </label>
       {children}
@@ -139,14 +179,72 @@ export function Field({
   );
 }
 
+/** Classe única para input, select e textarea: mesma altura, borda e foco em todo o produto. */
 export const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder:text-zinc-600 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400 disabled:opacity-50';
+  'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 transition-colors hover:border-zinc-600 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed disabled:opacity-50';
 
-export function PageTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+/** Cabeçalho de página: título à esquerda, ações à direita, descrição opcional embaixo. */
+export function PageTitle({
+  children,
+  action,
+  description,
+}: {
+  children: ReactNode;
+  action?: ReactNode;
+  description?: ReactNode;
+}) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-2xl font-bold text-zinc-50">{children}</h1>
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-zinc-800 pb-5">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold text-zinc-50">{children}</h1>
+        {description && <p className="mt-1 max-w-prose text-sm text-zinc-400">{description}</p>}
+      </div>
       {action}
+    </div>
+  );
+}
+
+/** Seção dentro de uma página: título pequeno e conteúdo, separados por régua e não por cartão. */
+export function Section({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-zinc-50">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-zinc-400">{description}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Estado vazio: diz o que falta e o que fazer. Sem ilustração. */
+export function EmptyState({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-dashed border-zinc-700 px-6 py-10 text-center">
+      <p className="font-medium text-zinc-100">{title}</p>
+      {children && <div className="mx-auto mt-1 max-w-md text-sm text-zinc-400">{children}</div>}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
@@ -174,7 +272,7 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`${dim} inline-flex items-center justify-center rounded-full bg-brand-500/30 font-semibold text-indigo-100`}
+      className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-800 font-semibold text-zinc-200`}
     >
       {letters || '?'}
     </span>
