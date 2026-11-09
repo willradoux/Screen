@@ -2,12 +2,7 @@ import { join } from 'node:path';
 import { FakeFiles, MemoryRecordings } from '../fixtures/recordings-fakes.js';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import {
-  RecordingService,
-  type RecordingFiles,
-  type RecordingRecord,
-  type RecordingRepo,
-} from '../../src/modules/recordings/recordings.js';
+import { RecordingService } from '../../src/modules/recordings/recordings.js';
 import { recordingsRoutes } from '../../src/modules/recordings/recordings.routes.js';
 import { ADMIN_ROLE, MOD_ROLE } from '../fixtures/fakes.js';
 import { buildRoomsApp, openMeeting, type RoomsCtx } from '../fixtures/rooms-fakes.js';
