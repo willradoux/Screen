@@ -347,14 +347,8 @@ export function FeaturesPage() {
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5">
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-display text-lg font-bold text-zinc-50"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500 text-on-brand">
-              <Icon name="play_arrow" size="1.3rem" />
-            </span>
-            Screem
+          <Link to="/">
+            <Wordmark />
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
