@@ -75,6 +75,7 @@ export function Layout() {
       { to: '/admin/reunioes', label: 'Gerenciar reuniões', icon: 'campaign' },
       { to: '/admin/config', label: 'Configurações', icon: 'settings' },
       { to: '/admin/pessoas', label: 'Pessoas', icon: 'group' },
+      { to: '/admin/estatisticas', label: 'Estatísticas', icon: 'bar_chart' },
       { to: '/admin/auditoria', label: 'Auditoria', icon: 'history' },
     );
   }

@@ -12,6 +12,7 @@ const userSchema = new Schema(
     globalName: { type: String, default: null },
     avatarHash: { type: String, default: null },
     blocked: { type: Boolean, default: false },
+    email: { type: String, default: null },
     lastLoginAt: { type: Date, required: true },
   },
   { timestamps: true },

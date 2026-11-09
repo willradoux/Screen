@@ -18,6 +18,7 @@ import type { BanRepo, RoomBan } from '../../src/modules/rooms/participations.js
 import { HandQueue } from '../../src/modules/moderation/hand-queue.js';
 import { ModerationService } from '../../src/modules/moderation/moderation.service.js';
 import { SettingsService } from '../../src/modules/settings/settings.service.js';
+import { CallsService } from '../../src/modules/rooms/calls.service.js';
 import { MediaSessionService } from '../../src/modules/rooms/media-session.js';
 import { PresenceService } from '../../src/modules/rooms/presence.js';
 import type { RoomsApi } from '../../src/modules/rooms/rooms.routes.js';
@@ -268,7 +269,17 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     auth,
     rooms: roomsApi,
     moderation: { moderation, access, participations, hands, webUrl: WEB_URL },
-    admin: { settings: settingsService, audit: bot.audit },
+    admin: {
+      settings: settingsService,
+      audit: bot.audit,
+      calls: new CallsService({
+        gateway: bot.gateway,
+        settings: bot.settings,
+        cache: bot.cache,
+        rooms: bot.rooms,
+        guildId: env.DISCORD_GUILD_ID,
+      }),
+    },
     meetings: { meetings: bot.meetings, participations, webUrl: WEB_URL },
   });
 

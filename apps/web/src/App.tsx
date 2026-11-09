@@ -21,6 +21,9 @@ const AdminHomePage = lazy(() =>
 const PeoplePage = lazy(() =>
   import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })),
 );
+const StatsPage = lazy(() =>
+  import('./pages/admin/StatsPage').then((m) => ({ default: m.StatsPage })),
+);
 const AuditPage = lazy(() =>
   import('./pages/admin/AuditPage').then((m) => ({ default: m.AuditPage })),
 );
@@ -56,6 +59,7 @@ export function App() {
             <Route element={<RequireAdmin />}>
               <Route path="admin/reunioes" element={<AdminMeetingsPage />} />
               <Route path="admin/pessoas" element={<PeoplePage />} />
+              <Route path="admin/estatisticas" element={<StatsPage />} />
               <Route path="admin/config" element={<SettingsPage />} />
               <Route path="admin/auditoria" element={<AuditPage />} />
             </Route>

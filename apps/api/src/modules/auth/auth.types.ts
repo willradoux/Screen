@@ -10,6 +10,8 @@ export interface UserRecord {
   avatarHash: string | null;
   blocked: boolean;
   lastLoginAt: Date;
+  /** E-mail da conta Discord (escopo `email`). Fica só no banco; nenhuma rota pública o devolve. */
+  email?: string | null;
 }
 
 export interface SessionRecord {
@@ -32,6 +34,7 @@ export interface UserRepo {
     username: string;
     globalName: string | null;
     avatarHash: string | null;
+    email?: string | null;
   }): Promise<UserRecord>;
   findById(id: string): Promise<UserRecord | null>;
 }

@@ -2,6 +2,8 @@ import { API_URL } from './config';
 import type {
   AccessResult,
   AuditEntry,
+  CallInfo,
+  ServerStats,
   JoinResult,
   MediaSource,
   GuildChannel,
@@ -197,6 +199,15 @@ export const api = {
   settings: {
     get: () => data<Settings>('GET', '/settings'),
     update: (patch: SettingsPatch) => data<Settings>('PATCH', '/settings', { body: patch }),
+  },
+
+  calls: {
+    /** Quem está em cada call com live agora. */
+    list: () => data<CallInfo[]>('GET', '/calls'),
+  },
+
+  stats: {
+    get: (days: number) => data<ServerStats>('GET', '/stats', { query: { days } }),
   },
 
   system: {

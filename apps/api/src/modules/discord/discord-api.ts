@@ -12,6 +12,8 @@ export interface DiscordUser {
   username: string;
   global_name: string | null;
   avatar: string | null;
+  /** Só vem de /users/@me com o escopo `email`. */
+  email?: string | null;
 }
 
 export interface DiscordMember {
@@ -36,7 +38,8 @@ export interface DiscordApi {
 }
 
 const BASE = 'https://discord.com/api/v10';
-const SCOPES = ['identify', 'guilds.members.read'];
+// `email` para a administração poder falar com quem usa o Screem (guardado só no banco, nunca exposto a membros).
+const SCOPES = ['identify', 'email', 'guilds.members.read'];
 
 type TokenResponse = { access_token: string; refresh_token: string; expires_in: number };
 

@@ -100,8 +100,11 @@ export class AuthService {
       throw new AppError('NOT_IN_GUILD', 403, 'Você precisa estar no servidor Acelera DEV.');
     }
 
+    // O e-mail só vem da conta do próprio usuário; se falhar, o login segue sem ele.
+    const me = await this.deps.discord.fetchMe(tokens.accessToken).catch(() => null);
     const user = await this.deps.users.upsertOnLogin({
       id: member.user.id,
+      email: me?.email ?? null,
       username: member.user.username,
       globalName: member.user.global_name,
       avatarHash: member.user.avatar,

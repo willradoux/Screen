@@ -30,6 +30,8 @@ export function createUserRepo(): UserRepo {
             globalName: user.globalName,
             avatarHash: user.avatarHash,
             lastLoginAt: new Date(),
+            // Só grava se veio (sem o escopo, não apaga o que já havia).
+            ...(user.email ? { email: user.email } : {}),
           },
           $setOnInsert: { blocked: false },
         },

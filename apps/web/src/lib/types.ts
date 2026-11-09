@@ -76,6 +76,28 @@ export interface RaisedHand {
   at: string;
 }
 
+export interface ServerStats {
+  days: number;
+  from: string;
+  to: string;
+  livesOpened: number;
+  meetingsHeld: number;
+  uniqueParticipants: number;
+  sessions: number;
+  participantMinutes: number;
+  avgSessionMinutes: number;
+  topPeople: { userId: string; displayName: string; minutes: number }[];
+  perDay: { date: string; participants: number; minutes: number }[];
+}
+
+export interface CallInfo {
+  id: string;
+  name: string;
+  members: { userId: string; displayName: string | null; avatarUrl: string | null }[];
+  roomId: string | null;
+  mediaState: 'ACTIVE' | 'IDLE' | null;
+}
+
 export interface Participant {
   userId: string;
   displayName: string;

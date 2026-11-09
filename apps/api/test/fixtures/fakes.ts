@@ -124,6 +124,7 @@ export class MemoryUsers implements UserRepo {
     username: string;
     globalName: string | null;
     avatarHash: string | null;
+    email?: string | null;
   }) {
     const existing = this.users.get(u.id);
     const record: UserRecord = {

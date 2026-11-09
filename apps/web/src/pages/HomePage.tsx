@@ -4,6 +4,7 @@ import { RoomCard } from '../components/RoomCard';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import { useAsync } from '../lib/useAsync';
+import { CallsSection } from '../components/CallsSection';
 
 /** Salas abertas e reuniões agendadas. */
 export function HomePage() {
@@ -20,6 +21,8 @@ export function HomePage() {
       >
         Salas
       </PageTitle>
+
+      <CallsSection />
 
       {state.status === 'loading' && <Spinner label="Carregando salas…" />}
 

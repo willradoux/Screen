@@ -24,6 +24,8 @@ import { createSettingsRepo } from './modules/settings/settings.repository.js';
 import type { AdminApi } from './modules/settings/settings.routes.js';
 import { SettingsService } from './modules/settings/settings.service.js';
 import { refreshGauges, startMetricsServer } from './observability/metrics.js';
+import { CallsService } from './modules/rooms/calls.service.js';
+import { createStatsRepo, StatsService } from './modules/stats/stats.js';
 import { LateBoundEmitter } from './realtime/emitter.js';
 import { createSocketServer, type SocketServer } from './realtime/socket.js';
 import { createLogger } from './shared/logger.js';
@@ -176,6 +178,14 @@ if (discord) {
       guildId: env.DISCORD_GUILD_ID,
     }),
     audit,
+    stats: new StatsService({ repo: createStatsRepo(), guildId: env.DISCORD_GUILD_ID }),
+    calls: new CallsService({
+      gateway: discord.gateway,
+      settings,
+      cache: voiceCache,
+      rooms,
+      guildId: env.DISCORD_GUILD_ID,
+    }),
   };
 }
 

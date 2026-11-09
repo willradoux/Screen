@@ -8,6 +8,8 @@ import { isValidAuditCursor, AUDIT_ACTIONS, type AuditService } from '../audit/a
 import { requireCapability } from '../permissions/capabilities.js';
 import type { GuildSettings } from './settings.types.js';
 import type { SettingsService } from './settings.service.js';
+import type { CallsService } from '../rooms/calls.service.js';
+import type { StatsService } from '../stats/stats.js';
 
 const roleList = z.array(snowflake).max(25);
 
@@ -81,6 +83,10 @@ const toDto = (s: GuildSettings) => ({
 export interface AdminApi {
   settings: SettingsService;
   audit: AuditService;
+  /** Estatísticas do servidor (ADMIN). */
+  stats?: StatsService;
+  /** Status das calls (qualquer membro). */
+  calls?: CallsService;
 }
 
 /** Configurações da guilda e auditoria. Só ADMIN. */
@@ -105,6 +111,31 @@ export function adminRoutes(api: AdminApi, auth: AuthService): Router {
       res.json({ data: toDto(updated) });
     },
   );
+
+  // Quem está em cada call com live agora (qualquer membro logado).
+  if (api.calls) {
+    const calls = api.calls;
+    router.get('/calls', needAuth, async (_req, res) => {
+      res.json({ data: await calls.list() });
+    });
+  }
+
+  // Estatísticas do servidor (só ADMIN).
+  if (api.stats) {
+    const stats = api.stats;
+    const statsSchemas = {
+      query: z.object({ days: z.coerce.number().int().min(1).max(365).default(30) }),
+    };
+    router.get(
+      '/stats',
+      needAuth,
+      requireCapability('audit.read'),
+      validate(statsSchemas),
+      async (_req, res) => {
+        res.json({ data: await stats.get(getValidated(res, statsSchemas).query.days) });
+      },
+    );
+  }
 
   // Qualquer membro logado: o site mostra "fale com um admin" quando algo não está configurado.
   router.get('/status', needAuth, async (_req, res) => {
