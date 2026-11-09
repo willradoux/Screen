@@ -50,7 +50,7 @@ export function HomePage() {
             <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
               {state.data.map((room) => (
                 <li key={room.id}>
-                  <RoomCard room={room} />
+                  <RoomCard room={room} onChanged={reload} />
                 </li>
               ))}
             </ul>

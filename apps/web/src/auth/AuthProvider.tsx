@@ -73,3 +73,8 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error('useAuth precisa estar dentro de <AuthProvider>');
   return ctx;
 }
+
+/** Como `useAuth`, mas devolve `null` fora do provedor (componentes que só enriquecem a tela). */
+export function useOptionalAuth(): AuthContextValue | null {
+  return useContext(AuthContext);
+}

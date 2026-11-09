@@ -56,7 +56,7 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
 
 /** Reuniões abertas e agendadas, para qualquer membro. */
 export function MeetingsPage() {
-  const { state } = useAsync(() => api.meetings.list({ limit: 50 }));
+  const { state, reload } = useAsync(() => api.meetings.list({ limit: 50 }));
 
   return (
     <>
@@ -86,7 +86,7 @@ export function MeetingsPage() {
             <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
               {state.data.map((m) => (
                 <li key={m.id}>
-                  <RoomCard room={m} />
+                  <RoomCard room={m} onChanged={reload} />
                 </li>
               ))}
             </ul>
