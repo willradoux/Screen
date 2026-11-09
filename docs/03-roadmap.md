@@ -113,7 +113,23 @@ Legenda: `[ ]` pendente, `[x]` concluído. Cada fase termina com **critérios de
 
 **Aceite:** checklist de segurança fechado; piloto com a comunidade sem incidentes críticos.
 
-## Fase 10 - Evoluções futuras
+## Fase 10 - Painel de administração e recursos de sala
+
+Entregue (detalhes em [painel-de-administracao.md](painel-de-administracao.md)):
+
+- [x] Painel (visão geral, configurações por seletores, pessoas com acesso, estatísticas, gravações, auditoria).
+- [x] Lives só em calls escolhidas, link no chat da call, sessão de vídeo em espera/ativa.
+- [x] Moderação só em reuniões; silenciar todos; desligar câmeras; pedir a palavra.
+- [x] Divulgar reunião quando o admin quiser; lembretes só depois.
+- [x] Canal de logs, avisos de configuração incompleta e erros com "o que fazer".
+- [x] Tema claro e escuro, ícones Material, PWA, QR code, ajustes de enquadramento do vídeo.
+- [x] Legendas ao vivo, efeitos de voz (robô, eco, rádio) e fundo virtual.
+- [x] Gravação de reuniões (Egress) com download em até 10 dias. **Falta testar com um Egress real.**
+- [x] Status das calls, e-mail do OAuth, correção do Node2Shell.
+- [ ] Mudança de tom da voz (grave e aguda), tela compartilhada no celular (impossível nos navegadores móveis).
+- [ ] Revisão visual com o site aberto (não foi possível ver as telas durante o desenvolvimento).
+
+## Fase 11 - Evoluções futuras
 
 - Chat da sala com histórico.
 - Gravação (LiveKit Egress).
