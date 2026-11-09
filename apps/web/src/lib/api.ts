@@ -13,6 +13,8 @@ import type {
   Page,
   PanelUser,
   Participant,
+  Recording,
+  RecordingMode,
   RaisedHand,
   Room,
   Settings,
@@ -199,6 +201,16 @@ export const api = {
   settings: {
     get: () => data<Settings>('GET', '/settings'),
     update: (patch: SettingsPatch) => data<Settings>('PATCH', '/settings', { body: patch }),
+  },
+
+  recordings: {
+    start: (roomId: string, body: { mode: RecordingMode; userId?: string }) =>
+      data<Recording>('POST', `/rooms/${enc(roomId)}/recordings`, { body }),
+    stop: (id: string) => data<Recording>('POST', `/recordings/${enc(id)}/stop`),
+    list: () => data<Recording[]>('GET', '/recordings'),
+    remove: (id: string) => call<void>('DELETE', `/recordings/${enc(id)}`),
+    /** Endereço do download (navegação com o cookie de sessão, não fetch). */
+    downloadUrl: (id: string) => `${API_URL}/recordings/${enc(id)}/download`,
   },
 
   calls: {

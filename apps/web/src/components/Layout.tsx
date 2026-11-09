@@ -76,6 +76,7 @@ export function Layout() {
       { to: '/admin/config', label: 'Configurações', icon: 'settings' },
       { to: '/admin/pessoas', label: 'Pessoas', icon: 'group' },
       { to: '/admin/estatisticas', label: 'Estatísticas', icon: 'bar_chart' },
+      { to: '/admin/gravacoes', label: 'Gravações', icon: 'radio_button_checked' },
       { to: '/admin/auditoria', label: 'Auditoria', icon: 'history' },
     );
   }

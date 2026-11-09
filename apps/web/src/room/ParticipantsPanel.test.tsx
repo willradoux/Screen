@@ -180,7 +180,7 @@ describe('ParticipantsPanel: ações', () => {
     await screen.findByText('Membro Um');
     await userEvent.click(within(row('Membro Um')).getByRole('button', { name: 'Banir' }));
 
-    const select = screen.getByRole('combobox');
+    const select = screen.getByRole('combobox', { name: 'Por quanto tempo' });
     expect(
       within(select)
         .getAllByRole('option')
@@ -196,7 +196,10 @@ describe('ParticipantsPanel: ações', () => {
     setup('ADMIN', [people.member]);
     await screen.findByText('Membro Um');
     await userEvent.click(within(row('Membro Um')).getByRole('button', { name: 'Banir' }));
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'Até o fim da sala');
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Por quanto tempo' }),
+      'Até o fim da sala',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
     expect(ban).toHaveBeenCalledWith(ROOM_ID, people.member.userId, { durationMinutes: 0 });
   });

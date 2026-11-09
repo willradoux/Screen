@@ -21,6 +21,9 @@ const AdminHomePage = lazy(() =>
 const PeoplePage = lazy(() =>
   import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })),
 );
+const RecordingsPage = lazy(() =>
+  import('./pages/admin/RecordingsPage').then((m) => ({ default: m.RecordingsPage })),
+);
 const StatsPage = lazy(() =>
   import('./pages/admin/StatsPage').then((m) => ({ default: m.StatsPage })),
 );
@@ -60,6 +63,7 @@ export function App() {
               <Route path="admin/reunioes" element={<AdminMeetingsPage />} />
               <Route path="admin/pessoas" element={<PeoplePage />} />
               <Route path="admin/estatisticas" element={<StatsPage />} />
+              <Route path="admin/gravacoes" element={<RecordingsPage />} />
               <Route path="admin/config" element={<SettingsPage />} />
               <Route path="admin/auditoria" element={<AuditPage />} />
             </Route>

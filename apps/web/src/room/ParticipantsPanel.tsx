@@ -11,6 +11,7 @@ import {
   isStaff,
 } from '../lib/moderation-rules';
 import type { Participant, RaisedHand, Role, Room } from '../lib/types';
+import { RecordingControl } from './RecordingControl';
 
 interface Props {
   room: Room;
@@ -20,6 +21,7 @@ interface Props {
   lectureMode: boolean;
   /** Quem pediu a palavra, por ordem. */
   hands?: RaisedHand[];
+  recording?: boolean;
   onInfo: (message: string) => void;
   onError: (message: string) => void;
 }
@@ -36,6 +38,7 @@ export function ParticipantsPanel({
   version,
   lectureMode,
   hands = [],
+  recording = false,
   onInfo,
   onError,
 }: Props) {
@@ -168,6 +171,16 @@ export function ParticipantsPanel({
             Encerrar sala
           </Button>
         </div>
+      )}
+
+      {staff && isAdmin(me.role) && (
+        <RecordingControl
+          roomId={room.id}
+          recording={recording}
+          people={people ?? []}
+          onInfo={onInfo}
+          onError={onError}
+        />
       )}
 
       {staff && hands.length > 0 && (

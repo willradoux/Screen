@@ -90,6 +90,26 @@ export interface ServerStats {
   perDay: { date: string; participants: number; minutes: number }[];
 }
 
+export type RecordingMode = 'GRID' | 'SPEAKER' | 'AUDIO' | 'PARTICIPANT' | 'SCREEN';
+
+export interface Recording {
+  id: string;
+  roomId: string;
+  title: string;
+  mode: RecordingMode;
+  targetUserId: string | null;
+  status: 'STARTING' | 'RECORDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'EXPIRED';
+  error: string | null;
+  sizeBytes: number;
+  durationSec: number;
+  startedBy: string;
+  startedAt: string;
+  endedAt: string | null;
+  expiresAt: string | null;
+  daysLeft: number | null;
+  downloaded: boolean;
+}
+
 export interface CallInfo {
   id: string;
   name: string;

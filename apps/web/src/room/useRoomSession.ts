@@ -50,6 +50,8 @@ export interface RoomSession {
   participantsVersion: number;
   /** Fila de quem pediu a palavra (reuniões). */
   hands: RaisedHand[];
+  /** A sala está sendo gravada? Todos precisam saber. */
+  recording: boolean;
   join: () => Promise<void>;
   leave: () => Promise<void>;
   retry: () => void;
@@ -73,6 +75,7 @@ export function useRoomSession(
   const [participantsVersion, setParticipantsVersion] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [hands, setHands] = useState<RaisedHand[]>([]);
+  const [recording, setRecording] = useState(false);
 
   const mediaRef = useRef<LiveKitRoom | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -169,6 +172,9 @@ export function useRoomSession(
         teardown();
         setRoom((r) => (r ? { ...r, mediaState: 'IDLE' } : r));
       });
+      socket.on('recording:state', (p: { recording: boolean }) =>
+        setRecording(Boolean(p.recording)),
+      );
       socket.on('hand:updated', (p: { hands: RaisedHand[] }) => setHands(p.hands ?? []));
       socket.on('voice:warning', (p: { secondsLeft: number }) =>
         dispatch({ type: 'VOICE_WARNING', secondsLeft: p.secondsLeft, at: Date.now() }),
@@ -308,5 +314,16 @@ export function useRoomSession(
     [],
   );
 
-  return { state, room, media, permissions, participantsVersion, hands, join, leave, retry };
+  return {
+    state,
+    room,
+    media,
+    permissions,
+    participantsVersion,
+    hands,
+    recording,
+    join,
+    leave,
+    retry,
+  };
 }

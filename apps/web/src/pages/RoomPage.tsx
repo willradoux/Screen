@@ -76,6 +76,12 @@ function ConnectedRoom({
 
   return (
     <div className="space-y-4">
+      {session.recording && (
+        <Alert tone="error" title="Esta reunião está sendo gravada">
+          Sua imagem e sua voz podem aparecer na gravação enquanto você estiver com câmera ou
+          microfone ligados.
+        </Alert>
+      )}
       {state.voiceWarning && <VoiceWarning warning={state.voiceWarning} />}
       {state.phase.kind === 'disconnected' && (
         <Alert tone="warning" title="Conexão perdida">
@@ -117,6 +123,7 @@ function ConnectedRoom({
             version={participantsVersion}
             lectureMode={state.lectureMode}
             hands={session.hands}
+            recording={session.recording}
             onInfo={toast.info}
             onError={toast.error}
           />
