@@ -73,6 +73,12 @@ Contraste de texto acima de 4,5:1 nos dois temas; foco visível; navegação por
 
 ## Estado da migração
 
-Reconstruídos por inteiro com esta linguagem: base (tokens, tipografia, componentes), estrutura do app (barra lateral e abas), tela de entrada, Salas, Reuniões, Calls agora, Guia (`/features`).
+Todas as telas usam a mesma linguagem: tokens, tipografia, componentes base, listas com réguas, `PageTitle` com descrição, `Section` e `EmptyState`.
 
-As demais telas (administração, sala, gravações, estatísticas, pessoas, configurações, auditoria) já usam os mesmos tokens e componentes base, portanto têm a mesma cor, fonte, raio e foco, mas **a composição de cada uma ainda segue a versão anterior** e deve ser refeita tela a tela no mesmo padrão (listas com réguas, `PageTitle` com descrição, `Section`, `EmptyState`).
+Telas: entrada, Salas, Calls agora, Reuniões, Guia, Painel, Gerenciar reuniões, Configurações, Pessoas, Estatísticas, Gravações, Auditoria, sala (entrada, bloqueios, controles, palco, pessoas, efeitos, gravação) e as páginas de erro e de acesso restrito.
+
+Ainda vale refinar com o site aberto: as telas de formulário longo (Configurações e Gerenciar reuniões) ainda agrupam o conteúdo em painéis com moldura, e a sala precisa de um ajuste fino de proporções que só se vê com vídeo de verdade.
+
+## Auditoria de rotas
+
+`apps/web/src/routes.test.tsx` abre **cada rota** do app (membro, moderador, admin e anônimo), confere o título e o acesso restrito, e falha se uma rota nova for criada sem entrar na lista. Hoje: `/`, `/reunioes`, `/features`, `/login`, `/admin`, `/admin/reunioes`, `/admin/config`, `/admin/pessoas`, `/admin/estatisticas`, `/admin/gravacoes`, `/admin/auditoria`, `/r/:roomId` e a página não encontrada.

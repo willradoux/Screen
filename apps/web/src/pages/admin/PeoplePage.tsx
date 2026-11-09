@@ -137,7 +137,7 @@ function PersonRow({
 
   const name = person.displayName ?? person.username ?? person.userId;
   return (
-    <li className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4" data-testid="panel-user">
+    <li className="py-4" data-testid="panel-user">
       <div className="flex flex-wrap items-center gap-3">
         <Avatar name={name} url={person.avatarUrl} size="sm" />
         <div className="min-w-0">
@@ -217,7 +217,9 @@ export function PeoplePage() {
 
   return (
     <>
-      <PageTitle>Pessoas com acesso</PageTitle>
+      <PageTitle description="Quem acessa o painel sem depender de cargo no Discord.">
+        Pessoas com acesso
+      </PageTitle>
       <div className="grid gap-6 lg:grid-cols-[24rem_1fr]">
         <AddForm onAdded={() => void reload({ silent: true })} />
         <div className="space-y-4">
@@ -232,7 +234,7 @@ export function PeoplePage() {
             <p className="text-sm text-zinc-500">Ninguém foi adicionado manualmente.</p>
           )}
           {state.status === 'ready' && state.data.length > 0 && (
-            <ul className="space-y-3">
+            <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
               {state.data.map((p) => (
                 <PersonRow
                   key={p.userId}

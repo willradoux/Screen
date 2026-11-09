@@ -515,7 +515,7 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageTitle>Configurações</PageTitle>
+      <PageTitle description="Calls, canais, cargos e tempos do servidor.">Configurações</PageTitle>
       {state.status === 'loading' && <Spinner label="Carregando…" />}
       {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
       {state.status === 'ready' && (

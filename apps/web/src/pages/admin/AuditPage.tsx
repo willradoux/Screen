@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Card, Field, PageTitle, Spinner, inputClass } from '../../components/ui';
+import { Alert, Button, Field, PageTitle, Spinner, inputClass } from '../../components/ui';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
 import { formatDateTime } from '../../lib/format';
@@ -23,6 +23,18 @@ export const AUDIT_LABELS: Record<string, string> = {
   SETTINGS_UPDATED: 'Alterou configurações',
   SESSION_REVOKED: 'Revogou sessão',
   USER_BLOCKED: 'Bloqueou usuário',
+  PANEL_USER_ADDED: 'Deu acesso ao painel',
+  PANEL_USER_REMOVED: 'Tirou acesso ao painel',
+  SESSION_IDLE: 'Sessão de vídeo em espera',
+  SESSION_ACTIVATED: 'Sessão de vídeo ativada',
+  MEETING_ANNOUNCED: 'Divulgou reunião',
+  MEETING_MUTE_ALL: 'Silenciou todos na reunião',
+  MEETING_CAMERAS_OFF: 'Desligou todas as câmeras',
+  RECORDING_STARTED: 'Começou uma gravação',
+  RECORDING_STOPPED: 'Parou uma gravação',
+  RECORDING_DOWNLOADED: 'Baixou uma gravação',
+  RECORDING_DELETED: 'Apagou uma gravação',
+  RECORDING_EXPIRED: 'Gravação apagada pelo prazo',
 };
 
 export const actionLabel = (action: string) => AUDIT_LABELS[action] ?? action;
@@ -71,9 +83,11 @@ export function AuditPage() {
 
   return (
     <>
-      <PageTitle>Auditoria</PageTitle>
+      <PageTitle description="Tudo o que admins e moderadores fizeram, com quem e quando.">
+        Auditoria
+      </PageTitle>
 
-      <Card className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 border-b border-zinc-800 pb-6 sm:grid-cols-3">
         <Field label="Ação" htmlFor="a-action">
           <select
             id="a-action"
@@ -106,13 +120,13 @@ export function AuditPage() {
             onChange={(e) => setRoomId(e.target.value)}
           />
         </Field>
-      </Card>
+      </div>
 
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-900 text-xs uppercase text-zinc-500">
+          <thead className="bg-zinc-900 text-xs font-medium text-zinc-500">
             <tr>
               <th className="px-3 py-2">Quando</th>
               <th className="px-3 py-2">Ação</th>

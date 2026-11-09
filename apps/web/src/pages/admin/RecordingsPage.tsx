@@ -52,7 +52,7 @@ function Row({ rec, onChanged }: { rec: Recording; onChanged: () => void }) {
   }
 
   return (
-    <li className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4" data-testid="recording">
+    <li className="py-4" data-testid="recording">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-semibold text-zinc-50">{rec.title}</h3>
         <Badge tone={s.tone}>{s.label}</Badge>
@@ -119,6 +119,7 @@ export function RecordingsPage() {
   return (
     <>
       <PageTitle
+        description="Baixe ou apague as gravações das reuniões."
         action={
           <Button size="sm" onClick={() => void reload()}>
             Atualizar
@@ -141,7 +142,7 @@ export function RecordingsPage() {
           </Card>
         )}
         {state.status === 'ready' && state.data.length > 0 && (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
             {state.data.map((r) => (
               <Row key={r.id} rec={r} onChanged={() => void reload({ silent: true })} />
             ))}

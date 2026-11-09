@@ -260,7 +260,7 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
   }
 
   return (
-    <li className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4" data-testid="meeting-row">
+    <li className="py-4" data-testid="meeting-row">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-semibold text-zinc-50">{meeting.title}</h3>
         <StatusBadge room={meeting} />
@@ -427,7 +427,9 @@ export function AdminMeetingsPage() {
 
   return (
     <>
-      <PageTitle>Gerenciar reuniões</PageTitle>
+      <PageTitle description="Crie, agende e divulgue reuniões; abra, cancele e veja o relatório.">
+        Gerenciar reuniões
+      </PageTitle>
       <div className="grid gap-6 lg:grid-cols-[24rem_1fr]">
         <MeetingForm onCreated={() => void reload({ silent: true })} />
 
@@ -441,7 +443,7 @@ export function AdminMeetingsPage() {
                 {state.data.active.length === 0 ? (
                   <p className="text-sm text-zinc-500">Nenhuma.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
                     {state.data.active.map((m) => (
                       <MeetingRow
                         key={m.id}
@@ -457,7 +459,7 @@ export function AdminMeetingsPage() {
                 {state.data.ended.length === 0 ? (
                   <p className="text-sm text-zinc-500">Nenhuma.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
                     {state.data.ended.map((m) => (
                       <MeetingRow
                         key={m.id}

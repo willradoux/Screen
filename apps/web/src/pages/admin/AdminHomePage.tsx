@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Icon } from '../../components/Icon';
-import { Alert, Badge, Card, PageTitle, Spinner } from '../../components/ui';
+import {
+  Alert,
+  Badge,
+  EmptyState,
+  PageTitle,
+  Section,
+  Spinner,
+  StatusDot,
+} from '../../components/ui';
 import { useAuth } from '../../auth/AuthProvider';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -22,25 +29,21 @@ export function setupChecklist(s: Settings): { done: boolean; text: string }[] {
 }
 
 function LiveRow({ room }: { room: Room }) {
+  const active = room.mediaState === 'ACTIVE';
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 px-3 py-2">
-      <span className="font-medium text-zinc-100">{room.title}</span>
-      {room.mediaState === 'ACTIVE' ? (
-        <Badge tone="live">
-          <Icon name="radio_button_checked" size="0.9rem" className="mr-1" />
-          Em uso
-        </Badge>
-      ) : (
-        <Badge>
-          <Icon name="bedtime" size="0.9rem" className="mr-1" />
-          Em espera
-        </Badge>
-      )}
-      <span className="text-sm text-zinc-400">
-        {room.participantCount} {room.participantCount === 1 ? 'pessoa' : 'pessoas'} conectada
-        {room.participantCount === 1 ? '' : 's'}
-      </span>
-      <Link to={`/r/${room.id}`} className="ml-auto text-sm text-brand-300 underline">
+    <li className="flex items-center gap-4 py-3">
+      <StatusDot tone={active ? 'live' : 'idle'} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-zinc-50">{room.title}</p>
+        <p className="tabular text-sm text-zinc-500">
+          {active ? 'Em uso' : 'Em espera'} · {room.participantCount}{' '}
+          {room.participantCount === 1 ? 'pessoa conectada' : 'pessoas conectadas'}
+        </p>
+      </div>
+      <Link
+        to={`/r/${room.id}`}
+        className="text-sm font-medium text-brand-300 underline underline-offset-2"
+      >
         Abrir
       </Link>
     </li>
@@ -49,19 +52,15 @@ function LiveRow({ room }: { room: Room }) {
 
 function MeetingRow({ meeting }: { meeting: Meeting }) {
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-800 px-3 py-2">
-      <span className="font-medium text-zinc-100">{meeting.title}</span>
-      {meeting.status === 'OPEN' ? (
-        <Badge tone="open">Aberta</Badge>
-      ) : (
-        <Badge tone="scheduled">Agendada</Badge>
-      )}
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
+      <StatusDot tone={meeting.status === 'OPEN' ? 'open' : 'scheduled'} />
+      <p className="min-w-0 flex-1 truncate font-medium text-zinc-50">{meeting.title}</p>
       {meeting.announced ? (
         <Badge tone="open">Divulgada</Badge>
       ) : (
         <Badge tone="warn">Não divulgada</Badge>
       )}
-      <span className="text-sm text-zinc-400">
+      <span className="tabular text-sm text-zinc-500">
         {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
       </span>
     </li>
@@ -83,7 +82,7 @@ export function AdminHomePage() {
 
   return (
     <>
-      <PageTitle>Painel</PageTitle>
+      <PageTitle description="O que está no ar e o que ainda falta configurar.">Painel</PageTitle>
       {state.status === 'loading' && <Spinner label="Carregando…" />}
       {state.status === 'error' && (
         <Alert tone="error" title="Não foi possível carregar o painel">
@@ -91,7 +90,7 @@ export function AdminHomePage() {
         </Alert>
       )}
       {state.status === 'ready' && (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {state.data.settings && setupChecklist(state.data.settings).some((i) => !i.done) && (
             <Alert tone="warning" title="Falta configurar">
               <ul className="list-disc pl-5">
@@ -101,46 +100,49 @@ export function AdminHomePage() {
                     <li key={i.text}>{i.text}</li>
                   ))}
               </ul>
-              <Link to="/admin/config" className="mt-2 inline-block underline">
+              <Link to="/admin/config" className="mt-2 inline-block underline underline-offset-2">
                 Ir para Configurações
               </Link>
             </Alert>
           )}
 
-          <Card className="space-y-3">
-            <h2 className="text-lg font-semibold text-zinc-50">Sessões de live agora</h2>
+          <Section title="Sessões de live agora">
             {state.data.lives.length === 0 ? (
-              <p className="text-sm text-zinc-500">
-                Nenhuma live aberta. Elas abrem sozinhas quando alguém entra numa call habilitada.
-              </p>
+              <EmptyState title="Nenhuma live aberta.">
+                Elas abrem sozinhas quando alguém entra numa call habilitada.
+              </EmptyState>
             ) : (
-              <ul className="space-y-2">
+              <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
                 {state.data.lives.map((r) => (
                   <LiveRow key={r.id} room={r} />
                 ))}
               </ul>
             )}
-          </Card>
+          </Section>
 
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-50">Reuniões</h2>
-              {admin && (
-                <Link to="/admin/reunioes" className="text-sm text-brand-300 underline">
+          <Section
+            title="Reuniões"
+            action={
+              admin ? (
+                <Link
+                  to="/admin/reunioes"
+                  className="text-sm font-medium text-brand-300 underline underline-offset-2"
+                >
                   Gerenciar
                 </Link>
-              )}
-            </div>
+              ) : undefined
+            }
+          >
             {state.data.meetings.length === 0 ? (
-              <p className="text-sm text-zinc-500">Nenhuma reunião aberta ou agendada.</p>
+              <EmptyState title="Nenhuma reunião aberta ou agendada." />
             ) : (
-              <ul className="space-y-2">
+              <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
                 {state.data.meetings.map((m) => (
                   <MeetingRow key={m.id} meeting={m} />
                 ))}
               </ul>
             )}
-          </Card>
+          </Section>
 
           {!admin && (
             <p className="text-sm text-zinc-500">

@@ -22,15 +22,13 @@ export function formatMinutes(total: number): string {
 
 function Stat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
-    <Card className="flex items-center gap-4">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-300">
-        <Icon name={icon} size="1.6rem" />
-      </span>
-      <div>
-        <p className="font-display text-2xl font-bold text-zinc-50">{value}</p>
-        <p className="text-sm text-zinc-400">{label}</p>
-      </div>
-    </Card>
+    <div className="border-t border-zinc-800 pt-4">
+      <p className="flex items-center gap-2 text-sm text-zinc-400">
+        <Icon name={icon} size="1.1rem" className="text-zinc-500" />
+        {label}
+      </p>
+      <p className="tabular mt-1 font-display text-3xl font-semibold text-zinc-50">{value}</p>
+    </div>
   );
 }
 
@@ -59,6 +57,7 @@ export function StatsPage() {
   return (
     <>
       <PageTitle
+        description="Participação no servidor no período escolhido."
         action={
           <div
             role="group"
@@ -90,7 +89,7 @@ export function StatsPage() {
       {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
       {state.status === 'ready' && (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             <Stat icon="videocam" label="Lives abertas" value={String(state.data.livesOpened)} />
             <Stat icon="calendar_month" label="Reuniões" value={String(state.data.meetingsHeld)} />
             <Stat

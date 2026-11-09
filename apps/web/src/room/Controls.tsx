@@ -125,7 +125,7 @@ export function Controls({
     <div
       role="toolbar"
       aria-label="Controles da sala"
-      className="rounded-3xl border border-zinc-800 bg-zinc-900/80 px-3 py-3 backdrop-blur"
+      className="rounded-2xl border border-zinc-800 bg-zinc-900/80 px-3 py-3 backdrop-blur"
     >
       <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3 sm:gap-x-5">
         <RoundButton
