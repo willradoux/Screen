@@ -128,6 +128,11 @@ export class FakeGateway implements DiscordGateway {
   async getMemberPermissions(userId: string) {
     return this.permissions.get(userId) ?? { isOwner: false, isAdmin: false, isMod: false };
   }
+  /** Simula o bot fora do servidor. */
+  guildPresent = true;
+  async guildAvailable() {
+    return this.guildPresent;
+  }
   async listChannels() {
     return [...this.channels.values()];
   }

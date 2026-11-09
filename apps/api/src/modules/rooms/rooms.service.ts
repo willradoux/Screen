@@ -1,6 +1,15 @@
+import { opsLog } from '../../shared/ops-log.js';
 import type { Logger } from '../../shared/logger.js';
 import type { RoomAnnouncer } from './announcer.js';
 import type { NewMeeting, RoomRecord, RoomRepo } from './rooms.types.js';
+
+const END_REASON_TEXT: Record<string, string> = {
+  ENDED_BY_MOD: 'encerrada por um moderador',
+  ENDED_BY_ADMIN: 'encerrada por um administrador',
+  VOICE_EMPTY: 'a call ficou vazia',
+  MEETING_FINISHED: 'a reunião terminou (ou ficou parada)',
+  CANCELED: 'cancelada',
+};
 
 export type EndReason =
   'VOICE_EMPTY' | 'ENDED_BY_MOD' | 'ENDED_BY_ADMIN' | 'MEETING_FINISHED' | 'CANCELED';
@@ -58,6 +67,11 @@ export class RoomService {
     });
     if (!room) return null;
     this.deps.announcer.cancelScheduled(room.id);
+    opsLog.info(
+      room.type === 'LIVE' ? 'Live encerrada' : 'Reunião encerrada',
+      `"${room.title}": ${END_REASON_TEXT[reason] ?? reason}.`,
+      [{ name: 'Sala', value: room.id }],
+    );
     await this.safely('atualizar embed', () => this.deps.announcer.refresh(room));
     for (const listener of this.endedListeners) {
       await this.safely('ouvinte de encerramento', () => listener(room, reason));

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { ROLE_LABEL, isAdmin, isStaff } from '../lib/moderation-rules';
 import { Icon, type IconName } from './Icon';
+import { SetupBanners } from './SetupBanners';
 import { ThemeToggle } from './ThemeToggle';
 import { Avatar, Badge, Button } from './ui';
 
@@ -134,6 +135,7 @@ export function Layout() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-28 md:py-8 md:pb-10">
+        <SetupBanners />
         <Outlet />
       </main>
 

@@ -113,7 +113,10 @@ describe('canal de logs', () => {
     await ctx.live.handle({ userId: USER, oldChannelId: null, newChannelId: VOICE_1 });
     await flush();
 
-    const logs = ctx.gateway.sent.filter((m) => m.channelId === ANNOUNCE);
+    const logs = ctx.gateway.sent.filter(
+      (m) =>
+        m.channelId === ANNOUNCE && String(m.payload.embeds[0]!.title).includes('Não consegui'),
+    );
     expect(logs).toHaveLength(1);
     expect(logs[0]!.payload.embeds[0]!.title).toContain('Não consegui enviar o aviso');
     expect(logs[0]!.payload.embeds[0]!.description).toMatch(

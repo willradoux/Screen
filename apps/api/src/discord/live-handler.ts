@@ -1,3 +1,4 @@
+import { opsLog } from '../shared/ops-log.js';
 import type { Logger } from '../shared/logger.js';
 import { KeyedQueue, type Scheduler } from '../shared/scheduler.js';
 import type { RoomAnnouncer } from '../modules/rooms/announcer.js';
@@ -82,6 +83,12 @@ export class LiveVoiceHandler {
       maxParticipants: settings.maxParticipantsLive,
       openedBy: userId,
     });
+
+    if (created) {
+      opsLog.info('Live aberta', `<@${userId}> abriu a live "${name}" ao entrar na call.`, [
+        { name: 'Sala', value: room.id },
+      ]);
+    }
 
     // Voltou para a call dentro da tolerância: continua na live.
     this.deps.presence?.userReturnedToVoice(room.id, userId);

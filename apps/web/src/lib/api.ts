@@ -194,6 +194,15 @@ export const api = {
     update: (patch: SettingsPatch) => data<Settings>('PATCH', '/settings', { body: patch }),
   },
 
+  system: {
+    /** Avisos de configuração (bot no servidor, calls e canal de avisos). */
+    status: () =>
+      data<{ botInGuild: boolean; livesConfigured: boolean; announceConfigured: boolean }>(
+        'GET',
+        '/status',
+      ),
+  },
+
   guild: {
     /** Canais e cargos do servidor, para os seletores do painel. */
     catalog: () => data<{ channels: GuildChannel[]; roles: GuildRole[] }>('GET', '/guild'),

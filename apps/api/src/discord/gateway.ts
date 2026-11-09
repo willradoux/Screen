@@ -51,6 +51,8 @@ export interface DiscordGateway {
   getMemberPermissions(userId: string): Promise<MemberPermissions>;
   /** Cargos do membro no servidor. Lança se ele não for encontrado. */
   getMemberRoleIds(userId: string): Promise<string[]>;
+  /** O bot está conectado e dentro do servidor configurado? */
+  guildAvailable(): Promise<boolean>;
   /** Todos os canais do servidor (voz, texto e categorias), para o painel escolher. */
   listChannels(): Promise<ChannelInfo[]>;
   /** Cargos do servidor (sem @everyone), para o painel escolher. */

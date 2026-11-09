@@ -106,6 +106,11 @@ export function adminRoutes(api: AdminApi, auth: AuthService): Router {
     },
   );
 
+  // Qualquer membro logado: o site mostra "fale com um admin" quando algo não está configurado.
+  router.get('/status', needAuth, async (_req, res) => {
+    res.json({ data: await api.settings.status() });
+  });
+
   // Canais e cargos do servidor, para o painel montar as listas de escolha.
   router.get('/guild', needAuth, requireCapability('panel.users'), async (_req, res) => {
     res.json({ data: await api.settings.catalog() });

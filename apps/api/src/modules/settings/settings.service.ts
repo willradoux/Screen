@@ -13,7 +13,12 @@ export interface SettingsServiceDeps {
   settings: SettingsRepo;
   gateway: Pick<
     DiscordGateway,
-    'getChannel' | 'roleExists' | 'listChannels' | 'listRoles' | 'getMemberProfile'
+    | 'getChannel'
+    | 'roleExists'
+    | 'listChannels'
+    | 'listRoles'
+    | 'getMemberProfile'
+    | 'guildAvailable'
   >;
   audit: AuditLog;
   realtime: RealtimeEmitter;
@@ -83,6 +88,26 @@ export class SettingsService {
     });
     this.deps.realtime.toAdmins('settings:updated', { keys });
     return after;
+  }
+
+  /**
+   * O que ainda impede o Screem de funcionar direito. Qualquer membro logado pode ver (para o
+   * site avisar "fale com um admin"); não expõe nenhum ID, só sim/não.
+   */
+  async status(): Promise<{
+    botInGuild: boolean;
+    livesConfigured: boolean;
+    announceConfigured: boolean;
+  }> {
+    const [s, botInGuild] = await Promise.all([
+      this.get(),
+      this.deps.gateway.guildAvailable().catch(() => false),
+    ]);
+    return {
+      botInGuild,
+      livesConfigured: s.liveChannelIds.length > 0 || s.liveCategoryId !== null,
+      announceConfigured: s.announceChannelId !== null,
+    };
   }
 
   // ---------- Catálogo do servidor (para o painel mostrar listas de escolha) ----------

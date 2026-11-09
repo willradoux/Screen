@@ -5,6 +5,7 @@ import type { Logger } from '../../shared/logger.js';
 import type { ParticipationRepo } from '../rooms/participations.js';
 import type { PresenceService } from '../rooms/presence.js';
 import type { RoomRepo } from '../rooms/rooms.types.js';
+import { opsLog } from '../../shared/ops-log.js';
 import { metrics } from '../../observability/metrics.js';
 import type { LiveKitEvent, LiveKitGateway } from './livekit.gateway.js';
 
@@ -98,6 +99,9 @@ export class LiveKitWebhookHandler {
     });
     if (!created) return;
 
+    opsLog.info('Entrou na sala', `<@${userId}> entrou em "${room.title}".`, [
+      { name: 'Sala', value: room.id },
+    ]);
     this.deps.realtime.toRoom(room.id, 'participant:joined', {
       roomId: room.id,
       participant: {
@@ -121,6 +125,11 @@ export class LiveKitWebhookHandler {
     const reason = participant.leaveCause === 'client' ? 'LEFT' : 'DISCONNECTED';
     const closed = await this.deps.participations.close(roomName, userId, reason, this.now());
     if (closed) {
+      opsLog.info(
+        'Saiu da sala',
+        `<@${userId}> saiu da sala${reason === 'LEFT' ? '' : ' (conexão perdida)'}.`,
+        [{ name: 'Sala', value: roomName }],
+      );
       this.deps.realtime.toRoom(roomName, 'participant:left', { roomId: roomName, userId, reason });
     }
   }

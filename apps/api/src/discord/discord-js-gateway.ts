@@ -109,6 +109,10 @@ export class DiscordJsGateway implements DiscordGateway {
     return out;
   }
 
+  async guildAvailable(): Promise<boolean> {
+    return this.client.isReady() && this.client.guilds.cache.has(this.guildId);
+  }
+
   async listChannels(): Promise<ChannelInfo[]> {
     const guild = this.client.guilds.cache.get(this.guildId);
     if (!guild) return [];
