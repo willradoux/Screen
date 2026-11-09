@@ -218,7 +218,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <Card className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        <h2 className="text-lg font-semibold text-zinc-50">{title}</h2>
         {hint && <p className="mt-1 text-sm text-zinc-500">{hint}</p>}
       </div>
       {children}

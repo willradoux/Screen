@@ -10,6 +10,7 @@ import {
   Spinner,
   inputClass,
 } from '../../components/ui';
+import { Icon } from '../../components/Icon';
 import { StatusBadge } from '../../components/RoomCard';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -109,7 +110,7 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
   return (
     <Card>
       <form onSubmit={(e) => void submit(e)} className="space-y-4" aria-label="Nova reunião">
-        <h2 className="text-lg font-semibold text-white">Nova reunião</h2>
+        <h2 className="text-lg font-semibold text-zinc-50">Nova reunião</h2>
         <Field label="Título" htmlFor="m-title">
           <input
             id="m-title"
@@ -287,7 +288,9 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
           {meeting.reminders.map((r) => (
             <Badge key={r.minutesBefore} tone={r.sent ? 'open' : 'neutral'}>
               {formatReminder(r.minutesBefore)}
-              {r.sent ? ' ✓' : ''}
+              {r.sent ? (
+                <Icon name="check" size="0.9rem" className="ml-0.5" label="enviado" />
+              ) : null}
             </Badge>
           ))}
         </p>

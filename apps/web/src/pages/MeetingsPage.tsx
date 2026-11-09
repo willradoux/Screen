@@ -24,7 +24,7 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
   return (
     <Card className="space-y-2 border-brand-500/40 bg-brand-500/10">
       <p className="text-sm font-medium text-brand-300">Próxima reunião</p>
-      <h2 className="text-xl font-bold text-white">{meeting.title}</h2>
+      <h2 className="text-xl font-bold text-zinc-50">{meeting.title}</h2>
       <p className="text-zinc-300">
         {formatDateTime(meeting.startsAt)}
         {left !== null && (
@@ -39,7 +39,7 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
       )}
       <Link
         to={`/r/${meeting.id}`}
-        className="inline-flex rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-400"
+        className="inline-flex rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-400"
       >
         Ver sala
       </Link>

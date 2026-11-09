@@ -61,7 +61,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
         className="space-y-4"
         aria-label="Dar acesso ao painel"
       >
-        <h2 className="text-lg font-semibold text-white">Dar acesso ao painel</h2>
+        <h2 className="text-lg font-semibold text-zinc-50">Dar acesso ao painel</h2>
         <p className="text-sm text-zinc-500">
           Para quem ajuda no projeto mas não tem cargo de admin no Discord. A pessoa entra com o
           Discord dela e já vê o painel; não precisa nem estar no servidor.

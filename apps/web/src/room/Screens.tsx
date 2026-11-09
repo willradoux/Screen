@@ -33,7 +33,7 @@ export function BlockedScreen({ access, room }: { access: AccessResult; room: Ro
       return (
         <Center>
           <Card className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">Entre na call para participar</h2>
+            <h2 className="text-xl font-semibold text-zinc-50">Entre na call para participar</h2>
             <p className="text-zinc-300">
               {access.voiceChannelName
                 ? `Entre no canal de voz “${access.voiceChannelName}” no Discord.`
@@ -54,11 +54,11 @@ export function BlockedScreen({ access, room }: { access: AccessResult; room: Ro
         return (
           <Center>
             <Card className="space-y-3">
-              <h2 className="text-xl font-semibold text-white">{room?.title ?? 'Reunião'}</h2>
+              <h2 className="text-xl font-semibold text-zinc-50">{room?.title ?? 'Reunião'}</h2>
               <p className="text-zinc-300">
                 Começa em {formatDateTime(access.startsAt)}
                 {left !== null && (
-                  <strong className="text-white"> · faltam {formatDuration(left)}</strong>
+                  <strong className="text-zinc-50"> · faltam {formatDuration(left)}</strong>
                 )}
                 .
               </p>
@@ -108,7 +108,7 @@ export function BlockedScreen({ access, room }: { access: AccessResult; room: Ro
       return (
         <Center>
           <Card className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">A sala está lotada</h2>
+            <h2 className="text-xl font-semibold text-zinc-50">A sala está lotada</h2>
             <p className="text-zinc-300">
               Limite de {access.maxParticipants ?? room?.maxParticipants} pessoas.
             </p>
@@ -138,7 +138,7 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
         <p className="text-sm font-medium text-brand-300">
           {room.type === 'LIVE' ? 'Live' : 'Reunião'}
         </p>
-        <h2 className="text-2xl font-bold text-white">{room.title}</h2>
+        <h2 className="text-2xl font-bold text-zinc-50">{room.title}</h2>
         {room.description && <p className="text-zinc-400">{room.description}</p>}
         <p className="text-sm text-zinc-500">
           {room.participantCount} {room.participantCount === 1 ? 'pessoa' : 'pessoas'} na sala.
@@ -184,7 +184,7 @@ export function IdleScreen({
   return (
     <Center>
       <Card className="space-y-4 text-center">
-        <h2 className="text-xl font-semibold text-white">Sessão em espera</h2>
+        <h2 className="text-xl font-semibold text-zinc-50">Sessão em espera</h2>
         <p className="text-zinc-300">
           {reason === 'NOBODY_CONNECTED'
             ? 'Ninguém estava conectado, então a sessão de vídeo foi pausada.'

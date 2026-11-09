@@ -28,7 +28,7 @@ const AuditPage = lazy(() =>
 function NotFound() {
   return (
     <div className="mx-auto max-w-md space-y-3 py-16 text-center">
-      <h1 className="text-2xl font-bold text-white">Página não encontrada</h1>
+      <h1 className="text-2xl font-bold text-zinc-50">Página não encontrada</h1>
       <Link to="/" className="text-brand-300 underline">
         Voltar para as salas
       </Link>

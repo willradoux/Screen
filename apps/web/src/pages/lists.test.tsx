@@ -27,7 +27,7 @@ describe('HomePage', () => {
     inRouter(<HomePage />);
 
     expect(await screen.findByText('Live - Live 1')).toBeInTheDocument();
-    expect(screen.getAllByText('● Ao vivo')).toHaveLength(2);
+    expect(screen.getAllByText('Ao vivo')).toHaveLength(2);
     expect(screen.getByText(/1\/25 pessoa\b/)).toBeInTheDocument();
     expect(screen.getByText(/4\/25 pessoas/)).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: 'Entrar' });

@@ -25,7 +25,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md space-y-6 text-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">Screem</h1>
+          <h1 className="text-3xl font-bold text-zinc-50">Screem</h1>
           <p className="mt-1 text-sm text-brand-300">Acelera DEV</p>
         </div>
 
@@ -42,7 +42,7 @@ export function LoginPage() {
 
         <a
           href={api.loginUrl(redirect)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 font-semibold text-on-brand transition-colors hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
         >
           Entrar com Discord
         </a>

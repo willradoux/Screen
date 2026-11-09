@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
 import { formatDateTime } from '../lib/format';
 import type { Room } from '../lib/types';
+import { Icon } from './Icon';
 import { Badge, Card } from './ui';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
     return room.type === 'LIVE' ? (
-      <Badge tone="live">● Ao vivo</Badge>
+      <Badge tone="live">
+        <Icon name="radio_button_checked" size="0.9rem" className="mr-1" />
+        Ao vivo
+      </Badge>
     ) : (
       <Badge tone="open">Aberta</Badge>
     );
@@ -46,7 +50,7 @@ export function RoomCard({ room }: { room: Room }) {
       </p>
       <Link
         to={`/r/${room.id}`}
-        className="mt-auto inline-flex w-fit items-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        className="mt-auto inline-flex w-fit items-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
       >
         {room.status === 'OPEN' ? 'Entrar' : 'Ver sala'}
       </Link>

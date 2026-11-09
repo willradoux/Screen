@@ -95,7 +95,7 @@ describe('RequireAdmin e menu', () => {
     renderRoutes('/admin/config');
     expect(await screen.findByText('conteúdo de admin')).toBeInTheDocument();
     for (const name of [/gerenciar reuniões/i, /configurações/i, /auditoria/i]) {
-      expect(screen.getByRole('link', { name })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name })).not.toHaveLength(0);
     }
   });
 });

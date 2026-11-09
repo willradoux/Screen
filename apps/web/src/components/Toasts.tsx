@@ -65,7 +65,7 @@ export function ToastViewport({
             type="button"
             aria-label="Fechar aviso"
             onClick={() => onDismiss(t.id)}
-            className="text-zinc-400 hover:text-white"
+            className="text-zinc-400 hover:text-zinc-50"
           >
             ×
           </button>

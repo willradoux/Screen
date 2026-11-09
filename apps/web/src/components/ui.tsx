@@ -3,9 +3,9 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-brand-500 text-white hover:bg-brand-400 disabled:bg-brand-500/40',
+  primary: 'bg-brand-500 text-on-brand hover:bg-brand-400 disabled:bg-brand-500/40',
   secondary: 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700 disabled:text-zinc-500',
-  danger: 'bg-red-600 text-white hover:bg-red-500 disabled:bg-red-600/40',
+  danger: 'bg-red-600 text-on-brand hover:bg-red-500 disabled:bg-red-600/40',
   ghost: 'text-zinc-300 hover:bg-zinc-800 disabled:text-zinc-600',
 };
 

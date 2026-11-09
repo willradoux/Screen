@@ -185,7 +185,7 @@ function RoomPageInner({
     <>
       {room && inRoom && (
         <header className="mb-4 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold text-white">{room.title}</h1>
+          <h1 className="text-xl font-bold text-zinc-50">{room.title}</h1>
           <StatusBadge room={room} />
           {state.lectureMode && <Badge tone="warn">Modo palestra</Badge>}
         </header>
