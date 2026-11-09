@@ -42,7 +42,8 @@ const createSchemas = {
       startsAt: z.coerce.date().nullable().optional(),
       maxParticipants: maxParticipants.optional(),
       allowedRoleIds: roleList.optional(),
-      announce: z.boolean().default(true),
+      /** Divulgar já na criação? Padrão: não; o admin divulga quando quiser. */
+      announce: z.boolean().default(false),
       reminders: reminders.optional(),
     })
     .strict(),
@@ -63,6 +64,14 @@ const updateSchemas = {
     .refine((b) => Object.keys(b).length > 0, 'Informe pelo menos um campo.'),
 };
 
+const announceSchemas = {
+  params: id,
+  body: z
+    .object({ resend: z.boolean().default(false) })
+    .strict()
+    .default({ resend: false }),
+};
+
 export interface MeetingsApi {
   meetings: MeetingService;
   participations: ParticipationRepo;
@@ -74,6 +83,8 @@ function toMeetingDto(room: RoomRecord, count: number, webUrl: string) {
   return {
     ...toRoomDto(room, count, webUrl),
     allowedRoleIds: room.allowedRoleIds,
+    /** Já foi divulgada no canal de avisos? */
+    announced: room.announceMessageId !== null,
     reminders: room.reminders.map((r) => ({
       minutesBefore: r.minutesBefore,
       sent: r.sentAt !== null,
@@ -132,6 +143,15 @@ export function meetingsRoutes(api: MeetingsApi, auth: AuthService): Router {
 
   router.post('/meetings/:id/open', ...admin, async (req, res) => {
     res.json({ data: await dto(await api.meetings.open(actorOf(req), String(req.params.id))) });
+  });
+
+  router.post('/meetings/:id/announce', ...admin, validate(announceSchemas), async (req, res) => {
+    const { body, params } = getValidated(res, announceSchemas);
+    res.json({
+      data: await dto(
+        await api.meetings.announce(actorOf(req), params.id, { resend: body.resend }),
+      ),
+    });
   });
 
   router.post('/meetings/:id/cancel', ...admin, async (req, res) => {

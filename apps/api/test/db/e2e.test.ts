@@ -514,6 +514,7 @@ describe('fluxo completo de uma reunião (MongoDB real)', () => {
       title: 'Reunião mensal',
       description: 'Pauta',
       startsAt,
+      announce: true,
     });
     expect(created.status).toBe(201);
     const id = created.body.data.id as string;

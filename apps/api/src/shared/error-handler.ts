@@ -1,7 +1,9 @@
 import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 import type { ApiErrorBody } from '@screem/shared';
+import { errorHint } from './error-catalog.js';
 import { AppError } from './errors.js';
+import { opsLog } from './ops-log.js';
 
 interface HttpLikeError {
   status?: number;
@@ -39,10 +41,25 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     }
   }
 
+  // Erro nosso (5xx): avisa o canal de logs com o código para achar nos logs do servidor.
+  if (status >= 500) {
+    const path = String(req.originalUrl ?? req.url ?? '').split('?')[0];
+    opsLog.error(
+      status === 500 ? 'Erro interno na API' : `Falha em um serviço externo (${code})`,
+      message,
+      [
+        { name: 'Rota', value: `${req.method} ${path}`.slice(0, 200) },
+        { name: 'Código do erro', value: String(req.id) },
+      ],
+    );
+  }
+
+  const hint = errorHint(code);
   const body: ApiErrorBody = {
     error: {
       code,
       message,
+      ...(hint ? { hint } : {}),
       ...(details !== undefined ? { details } : {}),
       requestId: String(req.id),
     },

@@ -30,7 +30,12 @@ const send = (
 ) =>
   agent[method](`/api/v1${path}`)
     .set('Origin', ctx.origin)
-    .send(body as object);
+    // Hoje a API não divulga sozinha; estes testes querem o aviso junto da criação.
+    .send(
+      (method === 'post' && path === '/meetings'
+        ? { announce: true, ...(body as object) }
+        : body) as object,
+    );
 
 const iso = (ctx: RoomsCtx, ms: number) => new Date(ctx.clock.now().getTime() + ms).toISOString();
 

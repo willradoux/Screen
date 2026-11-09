@@ -191,7 +191,7 @@ export class MeetingService {
 
     const rescheduled = startsAt !== undefined && startsAt.getTime() !== before.startsAt?.getTime();
     await this.safely('atualizar o aviso', () => this.deps.announcer.refresh(room));
-    if (rescheduled) {
+    if (rescheduled && room.announceMessageId) {
       await this.safely('avisar o reagendamento', () =>
         this.deps.announcer.sendNotice(room, 'rescheduled'),
       );
@@ -236,6 +236,50 @@ export class MeetingService {
     return opened;
   }
 
+  /**
+   * Divulga a reunião no canal de avisos (embed com botão). O admin escolhe o momento:
+   * no dia, ou antes, já com data e hora. Repetir exige `resend` (manda outra mensagem).
+   */
+  async announce(
+    actor: MeetingActor,
+    id: string,
+    options: { resend?: boolean } = {},
+  ): Promise<RoomRecord> {
+    const room = await this.load(id);
+    if (room.status !== 'SCHEDULED' && room.status !== 'OPEN') {
+      throw e.notEditable(
+        `Só reuniões agendadas ou abertas podem ser divulgadas (estado: ${room.status}).`,
+      );
+    }
+    if (room.announceMessageId && !options.resend) {
+      throw new AppError(
+        'ALREADY_ANNOUNCED',
+        409,
+        'Esta reunião já foi divulgada. Se quiser mandar de novo, use "Enviar de novo".',
+      );
+    }
+    const settings = await this.deps.settings.get(this.deps.guildId);
+    if (!settings.announceChannelId) throw e.noChannel();
+
+    try {
+      await this.deps.announcer.publish(room);
+    } catch (err) {
+      this.deps.logger.warn({ err, roomId: id }, 'falha ao divulgar a reunião');
+      throw new AppError(
+        'DISCORD_SEND_FAILED',
+        502,
+        'Não consegui enviar a mensagem no canal de avisos. Verifique se o bot pode ver e escrever nesse canal.',
+      );
+    }
+    await this.deps.audit.record({
+      actorId: actor.id,
+      roomId: id,
+      action: 'MEETING_ANNOUNCED',
+      meta: { via: actor.via, resend: Boolean(options.resend) },
+    });
+    return (await this.deps.rooms.findById(id)) ?? room;
+  }
+
   async cancel(actor: MeetingActor, id: string): Promise<RoomRecord> {
     const room = await this.load(id);
     if (room.status === 'OPEN') {
@@ -245,9 +289,11 @@ export class MeetingService {
     if (!canceled) {
       throw e.notEditable(`Essa reunião não pode ser cancelada (estado: ${room.status}).`);
     }
-    await this.safely('avisar o cancelamento', () =>
-      this.deps.announcer.sendNotice(canceled, 'canceled'),
-    );
+    if (canceled.announceMessageId) {
+      await this.safely('avisar o cancelamento', () =>
+        this.deps.announcer.sendNotice(canceled, 'canceled'),
+      );
+    }
     await this.deps.audit.record({
       actorId: actor.id,
       roomId: id,

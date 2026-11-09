@@ -1,3 +1,4 @@
+import { opsLog } from '../shared/ops-log.js';
 import {
   ApplicationCommandOptionType,
   Events,
@@ -35,6 +36,7 @@ export class DiscordBot {
 
     client.once(Events.ClientReady, (ready) => {
       logger.info({ bot: ready.user.tag }, 'bot conectado ao Discord');
+      opsLog.info('Bot conectado', `Conectado ao Discord como ${ready.user.tag}.`);
       void this.onReady();
     });
 
@@ -43,7 +45,13 @@ export class DiscordBot {
       metrics.botReady.set(1);
       void this.reconcile();
     });
-    client.on(Events.ShardDisconnect, () => metrics.botReady.set(0));
+    client.on(Events.ShardDisconnect, () => {
+      metrics.botReady.set(0);
+      opsLog.warn(
+        'Bot desconectado do Discord',
+        'As lives e os avisos ficam parados até reconectar. O bot tenta reconectar sozinho.',
+      );
+    });
 
     client.on(Events.VoiceStateUpdate, (oldState, newState) => {
       if (newState.guild.id !== this.deps.guildId) return;

@@ -82,6 +82,12 @@ export interface AuditServiceDeps {
 
 export class AuditService implements AuditLog {
   private readonly now: () => Date;
+  private sink: ((entry: AuditEntry & { at: Date }) => void) | null = null;
+
+  /** Recebe cada ação gravada (ex.: para espelhar no canal de logs do Discord). */
+  setSink(fn: ((entry: AuditEntry & { at: Date }) => void) | null): void {
+    this.sink = fn;
+  }
 
   constructor(private readonly deps: AuditServiceDeps) {
     this.now = deps.now ?? (() => new Date());
@@ -93,10 +99,16 @@ export class AuditService implements AuditLog {
    */
   async record(entry: AuditEntry): Promise<void> {
     metrics.auditActions.inc({ action: entry.action });
+    const at = this.now();
     try {
-      await this.deps.repo.insert({ ...entry, at: this.now() });
+      await this.deps.repo.insert({ ...entry, at });
     } catch (err) {
       this.deps.logger.error({ err, audit: entry }, 'FALHA ao gravar auditoria');
+    }
+    try {
+      this.sink?.({ ...entry, at });
+    } catch {
+      // Espelhar no Discord nunca pode atrapalhar a ação já feita.
     }
   }
 

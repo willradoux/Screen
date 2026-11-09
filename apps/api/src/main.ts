@@ -26,6 +26,7 @@ import { refreshGauges, startMetricsServer } from './observability/metrics.js';
 import { LateBoundEmitter } from './realtime/emitter.js';
 import { createSocketServer, type SocketServer } from './realtime/socket.js';
 import { createLogger } from './shared/logger.js';
+import { opsLog } from './shared/ops-log.js';
 import { realScheduler } from './shared/scheduler.js';
 
 const env = loadEnv();
@@ -86,6 +87,11 @@ const discord = env.DISCORD_BOT_TOKEN
     })
   : null;
 if (!discord) logger.warn('DISCORD_BOT_TOKEN ausente: o bot e as salas não serão iniciados');
+if (discord) {
+  // Ações dos admins/mods e erros importantes também vão para o canal de logs do painel.
+  audit.setSink(discord.opsLogger.fromAudit);
+  opsLog.sink = discord.opsLogger.fromOps;
+}
 
 const auth = new AuthService({
   env,

@@ -16,5 +16,12 @@ export type RoomStatus = z.infer<typeof roomStatusSchema>;
 export const ROLE_RANK: Record<Role, number> = { MEMBER: 0, MOD: 1, ADMIN: 2 };
 
 export interface ApiErrorBody {
-  error: { code: string; message: string; details?: unknown; requestId?: string };
+  error: {
+    code: string;
+    message: string;
+    /** O que fazer a respeito (próximo passo para a pessoa). */
+    hint?: string;
+    details?: unknown;
+    requestId?: string;
+  };
 }

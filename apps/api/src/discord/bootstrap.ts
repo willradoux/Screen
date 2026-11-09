@@ -15,6 +15,7 @@ import type { SettingsRepo } from '../modules/settings/settings.types.js';
 import type { Logger } from '../shared/logger.js';
 import { realScheduler } from '../shared/scheduler.js';
 import { DiscordBot } from './bot.js';
+import { DiscordOpsLogger } from './ops-logger.js';
 import { ConfigHandler } from './commands/config-handler.js';
 import { MeetingHandler } from './commands/meeting-handler.js';
 import { CommandRouter } from './commands/router.js';
@@ -33,6 +34,8 @@ export interface DiscordSystem {
   /** Abre reuniões no horário, manda lembretes e encerra reuniões abandonadas. */
   meetingScheduler: MeetingScheduler;
   voiceCache: VoiceCache;
+  /** Escreve no canal de logs escolhido no painel. */
+  opsLogger: DiscordOpsLogger;
 }
 
 /** Monta o bot e tudo que ele usa. Só é chamado quando há `DISCORD_BOT_TOKEN`. */
@@ -151,6 +154,8 @@ export function createDiscordSystem(
     logger,
   });
 
+  const opsLogger = new DiscordOpsLogger({ gateway, settings: repos.settings, guildId, logger });
+
   const bot = new DiscordBot({
     client,
     token,
@@ -166,5 +171,15 @@ export function createDiscordSystem(
     },
   });
 
-  return { bot, gateway, roomService, announcer, roles, meetings, meetingScheduler, voiceCache };
+  return {
+    bot,
+    gateway,
+    roomService,
+    announcer,
+    roles,
+    meetings,
+    meetingScheduler,
+    voiceCache,
+    opsLogger,
+  };
 }

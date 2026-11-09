@@ -138,6 +138,8 @@ export class MeetingScheduler {
 
   private async sendReminders(room: RoomRecord): Promise<number> {
     if (!room.startsAt) return 0;
+    // Lembrete é de uma divulgação: reunião que o admin ainda não divulgou não é lembrada.
+    if (!room.announceMessageId) return 0;
     const now = this.now().getTime();
     let sent = 0;
 

@@ -5,6 +5,7 @@ import {
 } from '../../discord/embeds.js';
 import type { DiscordGateway } from '../../discord/gateway.js';
 import type { Logger } from '../../shared/logger.js';
+import { opsLog } from '../../shared/ops-log.js';
 import type { Scheduler } from '../../shared/scheduler.js';
 import type { MeetingSummary } from '../meetings/report.js';
 import type { SettingsRepo } from '../settings/settings.types.js';
@@ -118,13 +119,20 @@ export class RoomAnnouncer {
         );
       }
     }
+    opsLog.error(
+      'Não consegui enviar o aviso no Discord',
+      room.type === 'LIVE'
+        ? `O bot não conseguiu escrever no chat da call nem no canal de texto das lives ("${room.title}"). Dê ao bot as permissões Ver Canal, Enviar Mensagens e Inserir Links.`
+        : `O bot não conseguiu escrever no canal de avisos ("${room.title}"). Dê ao bot as permissões Ver Canal, Enviar Mensagens e Inserir Links.`,
+    );
     throw lastError;
   }
 
   /** Publica se ainda não há mensagem; senão atualiza (reenvia se foi apagada). */
   async refresh(room: RoomRecord): Promise<void> {
     if (!room.announceChannelId || !room.announceMessageId) {
-      await this.publish(room);
+      // Lives publicam sozinhas. Reunião só é divulgada quando o admin manda (botão "Enviar aviso").
+      if (room.type === 'LIVE') await this.publish(room);
       return;
     }
     const result = await this.deps.gateway.editMessage(

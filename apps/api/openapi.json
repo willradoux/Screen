@@ -2186,7 +2186,7 @@
       "post": {
         "tags": ["Meetings"],
         "summary": "Cria uma reunião (ADMIN)",
-        "description": "Sem `startsAt` a reunião abre agora; com `startsAt` ela é agendada, abre sozinha no horário e manda lembretes. `reminders` são minutos antes do início (padrão 1440, 60 e 5; até 5; `[]` = nenhum); os que já passaram são descartados. `announce` (padrão `true`) publica o aviso no canal de avisos. Se `allowedRoleIds` não vier, vale o `/config cargo-reuniao`.",
+        "description": "Sem `startsAt` a reunião abre agora; com `startsAt` ela é agendada, abre sozinha no horário e manda lembretes. `reminders` são minutos antes do início (padrão 1440, 60 e 5; até 5; `[]` = nenhum); os que já passaram são descartados. `announce` (padrão `false`) publica o aviso já na criação; senão o admin divulga depois com `POST /meetings/{id}/announce`. Se `allowedRoleIds` não vier, vale o `/config cargo-reuniao`.",
         "operationId": "createMeeting",
         "security": [
           {
@@ -2497,6 +2497,358 @@
           },
           "409": {
             "description": "MEETING_NOT_EDITABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meetings/{id}/announce": {
+      "post": {
+        "tags": ["Meetings"],
+        "summary": "Divulga a reunião no canal de avisos (ADMIN)",
+        "description": "O admin escolhe o momento: no dia ou antes, já com data e hora. Sem `resend`, divulgar duas vezes dá `ALREADY_ANNOUNCED`. Lembretes e avisos de reagendamento/cancelamento só existem depois da divulgação.",
+        "operationId": "announceMeeting",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "resend": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Divulgada; devolve a reunião com `announced: true`"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ROOM_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_ANNOUNCED, ANNOUNCE_CHANNEL_NOT_SET ou MEETING_NOT_EDITABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "DISCORD_SEND_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{id}/mute-all": {
+      "post": {
+        "tags": ["Moderation"],
+        "summary": "Desliga o microfone de todos na reunião (MOD ou ADMIN)",
+        "description": "Só reuniões. Como o \"silenciar todos\" do Meet: desliga o que está no ar agora, mas cada pessoa pode ligar de novo. Não atinge papel igual ou superior ao seu nem você mesmo. Para impedir de falar, use o modo palestra.",
+        "operationId": "muteAll",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quantas pessoas foram atingidas (`data.affected`)"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODERATION_ONLY_IN_MEETINGS ou ROOM_NOT_OPEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{id}/cameras-off": {
+      "post": {
+        "tags": ["Moderation"],
+        "summary": "Desliga câmera e tela de todos na reunião (MOD ou ADMIN)",
+        "description": "Mesmas regras de `mute-all`, para câmera, tela e áudio da tela.",
+        "operationId": "camerasOff",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da sala (22 caracteres)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{22}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quantas pessoas foram atingidas (`data.affected`)"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MODERATION_ONLY_IN_MEETINGS ou ROOM_NOT_OPEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guild": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Canais e cargos do servidor (ADMIN)",
+        "description": "Para o painel montar as listas de escolha (calls, canais de texto, cargos).",
+        "operationId": "getGuildCatalog",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`data.channels` (id, name, kind, parentId) e `data.roles` (id, name, color, position)"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel-users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Pessoas com acesso ao painel concedido manualmente (ADMIN)",
+        "operationId": "listPanelUsers",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista com nome e foto quando a pessoa está no servidor"
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Dá acesso ao painel a alguém, com ou sem cargo (ADMIN)",
+        "description": "A pessoa vira ADMIN ou MOD na hora, mesmo sem cargo no Discord. Já na lista = troca o nível. Quem não está no servidor consegue entrar, só com esse acesso.",
+        "operationId": "addPanelUser",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "role"],
+                "additionalProperties": false,
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "ID do Discord"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["ADMIN", "MOD"]
+                  },
+                  "note": {
+                    "type": ["string", "null"],
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Adicionado"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel-users/{userId}": {
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Tira o acesso manual ao painel (ADMIN)",
+        "description": "Não mexe nos cargos do Discord: quem tem cargo de admin continua com acesso.",
+        "operationId": "removePanelUser",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removido"
+          },
+          "403": {
+            "description": "FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -2905,6 +3257,39 @@
             "type": "integer",
             "minimum": 5,
             "maximum": 300
+          },
+          "liveChannelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Calls de voz escolhidas no painel para terem live (além da categoria, se houver)"
+          },
+          "logChannelId": {
+            "type": ["string", "null"],
+            "description": "Canal de texto dos logs"
+          },
+          "mentionRoleId": {
+            "type": ["string", "null"],
+            "description": "Cargo marcado nos avisos de reunião. null = não marca ninguém"
+          },
+          "emptyLiveEndSeconds": {
+            "type": ["integer", "null"],
+            "minimum": 10,
+            "maximum": 3600,
+            "description": "Segundos com a call vazia até encerrar a live. null = padrão"
+          },
+          "idleSessionMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 240,
+            "description": "Minutos sem ninguém transmitindo câmera/tela até a sessão entrar em espera"
+          },
+          "activationGraceMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Minutos para alguém começar a transmitir depois de ativar a sessão"
           }
         }
       },
@@ -2955,6 +3340,39 @@
             "type": "integer",
             "minimum": 5,
             "maximum": 300
+          },
+          "liveChannelIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Calls de voz escolhidas no painel para terem live (além da categoria, se houver)"
+          },
+          "logChannelId": {
+            "type": ["string", "null"],
+            "description": "Canal de texto dos logs"
+          },
+          "mentionRoleId": {
+            "type": ["string", "null"],
+            "description": "Cargo marcado nos avisos de reunião. null = não marca ninguém"
+          },
+          "emptyLiveEndSeconds": {
+            "type": ["integer", "null"],
+            "minimum": 10,
+            "maximum": 3600,
+            "description": "Segundos com a call vazia até encerrar a live. null = padrão"
+          },
+          "idleSessionMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 240,
+            "description": "Minutos sem ninguém transmitindo câmera/tela até a sessão entrar em espera"
+          },
+          "activationGraceMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Minutos para alguém começar a transmitir depois de ativar a sessão"
           }
         }
       },
@@ -3081,6 +3499,11 @@
           "lectureMode": {
             "type": "boolean"
           },
+          "mediaState": {
+            "type": "string",
+            "enum": ["ACTIVE", "IDLE"],
+            "description": "Só lives: ACTIVE (em uso) ou IDLE (em espera; ativa quando alguém entra pelo link)"
+          },
           "participantCount": {
             "type": "integer"
           },
@@ -3192,7 +3615,12 @@
                 "example": "VALIDATION_ERROR"
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "O que aconteceu e por quê"
+              },
+              "hint": {
+                "type": "string",
+                "description": "O que fazer a respeito"
               },
               "details": {},
               "requestId": {
