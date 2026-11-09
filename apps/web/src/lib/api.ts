@@ -11,6 +11,7 @@ import type {
   Page,
   PanelUser,
   Participant,
+  RaisedHand,
   Room,
   Settings,
   SettingsPatch,
@@ -132,6 +133,10 @@ export const api = {
     access: (id: string) => data<AccessResult>('GET', `/rooms/${enc(id)}/access`),
     join: (id: string) => data<JoinResult>('POST', `/rooms/${enc(id)}/join`),
     leave: (id: string) => call<void>('POST', `/rooms/${enc(id)}/leave`),
+    /** Levanta a mão (pede a palavra) numa reunião. */
+    raiseHand: (id: string) => call<void>('POST', `/rooms/${enc(id)}/hand`),
+    lowerHand: (id: string) => call<void>('DELETE', `/rooms/${enc(id)}/hand`),
+    hands: (id: string) => data<RaisedHand[]>('GET', `/rooms/${enc(id)}/hands`),
     end: (id: string) => call<void>('POST', `/rooms/${enc(id)}/end`),
     participants: (id: string) => data<Participant[]>('GET', `/rooms/${enc(id)}/participants`),
     update: (

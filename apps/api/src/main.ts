@@ -10,6 +10,7 @@ import { AuthService } from './modules/auth/auth.service.js';
 import { createDiscordApi } from './modules/discord/discord-api.js';
 import { createLiveKitGateway } from './modules/livekit/livekit.gateway.js';
 import { LiveKitWebhookHandler } from './modules/livekit/livekit.webhook.js';
+import { HandQueue } from './modules/moderation/hand-queue.js';
 import { ModerationService } from './modules/moderation/moderation.service.js';
 import type { MeetingsApi } from './modules/meetings/meetings.routes.js';
 import type { ModerationApi } from './modules/moderation/moderation.routes.js';
@@ -139,8 +140,11 @@ if (discord) {
     webUrl: env.WEB_URL,
   };
 
+  const hands = new HandQueue({ participations, realtime });
   moderationApi = {
+    hands,
     moderation: new ModerationService({
+      hands,
       rooms,
       participations,
       bans,

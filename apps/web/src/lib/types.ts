@@ -68,6 +68,14 @@ export interface JoinResult {
   sessionActivated: boolean;
 }
 
+/** Alguém com a mão levantada (pedindo a palavra) numa reunião. */
+export interface RaisedHand {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  at: string;
+}
+
 export interface Participant {
   userId: string;
   displayName: string;

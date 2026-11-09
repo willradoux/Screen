@@ -15,6 +15,7 @@ import {
 import { LiveKitWebhookHandler } from '../../src/modules/livekit/livekit.webhook.js';
 import { RoomAccess } from '../../src/modules/rooms/access.js';
 import type { BanRepo, RoomBan } from '../../src/modules/rooms/participations.js';
+import { HandQueue } from '../../src/modules/moderation/hand-queue.js';
 import { ModerationService } from '../../src/modules/moderation/moderation.service.js';
 import { SettingsService } from '../../src/modules/settings/settings.service.js';
 import { MediaSessionService } from '../../src/modules/rooms/media-session.js';
@@ -238,7 +239,9 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
   bot.gateway.getMemberRoleIds = async (id: string) => discord.members.get(id)?.roles ?? [];
 
   const roomChanges: string[] = [];
+  const hands = new HandQueue({ participations, realtime: emitter, now: bot.clock.now });
   const moderation = new ModerationService({
+    hands,
     rooms: bot.rooms,
     participations,
     bans,
@@ -264,7 +267,7 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
   const app = createApp(env, logger, {
     auth,
     rooms: roomsApi,
-    moderation: { moderation, access, participations, webUrl: WEB_URL },
+    moderation: { moderation, access, participations, hands, webUrl: WEB_URL },
     admin: { settings: settingsService, audit: bot.audit },
     meetings: { meetings: bot.meetings, participations, webUrl: WEB_URL },
   });
@@ -317,6 +320,7 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     emitter,
     presence,
     media,
+    hands,
     access,
     webhook,
     roomsApi,

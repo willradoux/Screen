@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { QrCode } from '../components/QrCode';
 import { Alert, Button, Card, Spinner } from '../components/ui';
 import { formatDateTime, formatDuration, timeUntil } from '../lib/format';
 import { messageFor } from '../lib/errors';
@@ -132,6 +133,7 @@ export function BlockedScreen({ access, room }: { access: AccessResult; room: Ro
 
 /** Antes de conectar: o clique em "Entrar" libera o áudio e a captura no navegador. */
 export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }) {
+  const link = room.url || (typeof location !== 'undefined' ? location.href : '');
   return (
     <Center>
       <Card className="space-y-4 text-center">
@@ -153,6 +155,14 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
         <Button variant="primary" className="w-full py-3 text-lg" onClick={onJoin}>
           Entrar na sala
         </Button>
+        <details className="text-left text-sm text-zinc-400">
+          <summary className="cursor-pointer text-center text-zinc-300">
+            Abrir no celular (QR code)
+          </summary>
+          <div className="mt-3 flex justify-center">
+            <QrCode value={link} size={176} />
+          </div>
+        </details>
       </Card>
       <BackHome />
     </Center>

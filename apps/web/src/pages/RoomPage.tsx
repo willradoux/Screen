@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { api } from '../lib/api';
+import { describeError } from '../lib/errors';
 import { ToastViewport, useToasts } from '../components/Toasts';
 import { Alert, Badge, Button } from '../components/ui';
 import { StatusBadge } from '../components/RoomCard';
@@ -52,6 +54,21 @@ function ConnectedRoom({
   const { media, room, state, permissions, participantsVersion } = session;
   const { tiles, remote, local } = useParticipants(media);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [handBusy, setHandBusy] = useState(false);
+  const raised = session.hands.some((h) => h.userId === me.id);
+
+  async function toggleHand() {
+    if (!room) return;
+    setHandBusy(true);
+    try {
+      if (raised) await api.rooms.lowerHand(room.id);
+      else await api.rooms.raiseHand(room.id);
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setHandBusy(false);
+    }
+  }
 
   if (!media || !local || !room) return <JoiningScreen />;
 
@@ -75,6 +92,15 @@ function ConnectedRoom({
         <div className="min-w-0 space-y-4">
           <Stage tiles={tiles} />
           <Controls
+            hand={
+              room.type === 'MEETING'
+                ? {
+                    raised: session.hands.some((h) => h.userId === me.id),
+                    busy: handBusy,
+                    onToggle: () => void toggleHand(),
+                  }
+                : undefined
+            }
             local={local}
             allowedSources={permissions?.canPublishSources}
             restriction={restriction}
@@ -90,6 +116,7 @@ function ConnectedRoom({
             me={me}
             version={participantsVersion}
             lectureMode={state.lectureMode}
+            hands={session.hands}
             onInfo={toast.info}
             onError={toast.error}
           />

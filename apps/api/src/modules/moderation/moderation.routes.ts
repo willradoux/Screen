@@ -11,6 +11,7 @@ import { toParticipantDto, toRoomDto } from '../rooms/dto.js';
 import type { ParticipationRepo } from '../rooms/participations.js';
 import { AppError, forbidden } from '../../shared/errors.js';
 import { ROLE_RANK } from '@screem/shared';
+import type { HandQueue } from './hand-queue.js';
 import { MAX_BAN_MINUTES, type Actor, type ModerationService } from './moderation.service.js';
 
 const ROOM_ID = /^[\w-]{22}$/;
@@ -60,6 +61,8 @@ export interface ModerationApi {
   moderation: ModerationService;
   access: RoomAccess;
   participations: ParticipationRepo;
+  /** Fila de pedir a palavra (reuniões). */
+  hands?: HandQueue;
   webUrl: string;
 }
 
@@ -96,6 +99,52 @@ export function moderationRoutes(api: ModerationApi, auth: AuthService): Router 
     await api.moderation.mute(actorOf(req), roomId(req), params.userId, body);
     res.status(204).end();
   });
+
+  // Pedir a palavra: qualquer pessoa que está na reunião pode levantar e abaixar a mão.
+  if (api.hands) {
+    const hands = api.hands;
+    const meetingId = async (req: Request) => {
+      const id = roomId(req);
+      const { room } = await api.moderation.participants(id);
+      if (room.type !== 'MEETING') {
+        throw new AppError(
+          'MODERATION_ONLY_IN_MEETINGS',
+          409,
+          'Pedir a palavra só existe em reuniões.',
+        );
+      }
+      if (room.status !== 'OPEN')
+        throw new AppError('ROOM_NOT_OPEN', 409, 'Esta sala não está aberta.');
+      return id;
+    };
+
+    router.post('/rooms/:id/hand', needAuth, limiter, async (req, res) => {
+      const id = await meetingId(req);
+      const ok = await hands.raise(id, req.auth!.identity!.user.id);
+      if (!ok) {
+        throw new AppError(
+          'PARTICIPANT_NOT_IN_ROOM',
+          409,
+          'Entre na sala antes de pedir a palavra.',
+        );
+      }
+      res.status(204).end();
+    });
+
+    router.delete('/rooms/:id/hand', needAuth, limiter, async (req, res) => {
+      hands.lower(roomId(req), req.auth!.identity!.user.id);
+      res.status(204).end();
+    });
+
+    // Quem modera vê a fila inteira; os demais, só se a própria mão está levantada.
+    router.get('/rooms/:id/hands', needAuth, async (req, res) => {
+      const id = roomId(req);
+      const identity = req.auth!.identity!;
+      const list = await hands.list(id);
+      const staff = ROLE_RANK[identity.role] >= ROLE_RANK.MOD;
+      res.json({ data: staff ? list : list.filter((h) => h.userId === identity.user.id) });
+    });
+  }
 
   // Silenciar todos / desligar todas as câmeras (só reuniões).
   const bulkParams = { params: z.object({ id: z.string().min(1) }) };

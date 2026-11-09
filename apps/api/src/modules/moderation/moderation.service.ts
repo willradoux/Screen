@@ -32,6 +32,8 @@ export interface ModerationDeps {
   roles: Pick<RoleResolver, 'resolveUser'>;
   /** Chamado quando título/descrição da sala mudam (para atualizar o embed). */
   onRoomChanged?: (room: RoomRecord) => Promise<void>;
+  /** Fila de "pedir a palavra": quem recebe a palavra sai dela. */
+  hands?: { lower(roomId: string, userId: string): void };
   logger: Logger;
   now?: () => Date;
 }
@@ -365,6 +367,7 @@ export class ModerationService {
       await this.applyPermissions(room, targetId, perms);
     }
 
+    if (speaker) this.deps.hands?.lower(room.id, targetId);
     this.updated(room, targetId, speaker, muted);
     await this.audit({
       actorId: actor.id,

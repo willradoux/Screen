@@ -4,7 +4,7 @@ import { io, type Socket } from 'socket.io-client';
 import { api as realApi, ApiError } from '../lib/api';
 import { SOCKET_URL } from '../lib/config';
 import { describeError } from '../lib/errors';
-import type { EndReason, JoinResult, ModerationAction, Room } from '../lib/types';
+import type { EndReason, JoinResult, ModerationAction, RaisedHand, Room } from '../lib/types';
 import {
   initialSessionState,
   pollIntervalMs,
@@ -48,6 +48,8 @@ export interface RoomSession {
   permissions: JoinResult['permissions'] | null;
   /** Muda a cada evento que altera quem está na sala (para atualizar a lista). */
   participantsVersion: number;
+  /** Fila de quem pediu a palavra (reuniões). */
+  hands: RaisedHand[];
   join: () => Promise<void>;
   leave: () => Promise<void>;
   retry: () => void;
@@ -70,6 +72,7 @@ export function useRoomSession(
   const [permissions, setPermissions] = useState<JoinResult['permissions'] | null>(null);
   const [participantsVersion, setParticipantsVersion] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  const [hands, setHands] = useState<RaisedHand[]>([]);
 
   const mediaRef = useRef<LiveKitRoom | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -166,6 +169,7 @@ export function useRoomSession(
         teardown();
         setRoom((r) => (r ? { ...r, mediaState: 'IDLE' } : r));
       });
+      socket.on('hand:updated', (p: { hands: RaisedHand[] }) => setHands(p.hands ?? []));
       socket.on('voice:warning', (p: { secondsLeft: number }) =>
         dispatch({ type: 'VOICE_WARNING', secondsLeft: p.secondsLeft, at: Date.now() }),
       );
@@ -258,6 +262,11 @@ export function useRoomSession(
       wireSocket(socket);
 
       dispatch({ type: 'CONNECTED', lectureMode: result.room.lectureMode });
+      // Fila atual de quem pediu a palavra (só reuniões).
+      void depsRef.current.api.rooms
+        .hands?.(roomId)
+        .then(setHands)
+        .catch(() => undefined);
     } catch (err) {
       joinedRef.current = false;
       teardown();
@@ -299,5 +308,5 @@ export function useRoomSession(
     [],
   );
 
-  return { state, room, media, permissions, participantsVersion, join, leave, retry };
+  return { state, room, media, permissions, participantsVersion, hands, join, leave, retry };
 }

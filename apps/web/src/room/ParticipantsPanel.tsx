@@ -10,7 +10,7 @@ import {
   isAdmin,
   isStaff,
 } from '../lib/moderation-rules';
-import type { Participant, Role, Room } from '../lib/types';
+import type { Participant, RaisedHand, Role, Room } from '../lib/types';
 
 interface Props {
   room: Room;
@@ -18,6 +18,8 @@ interface Props {
   /** Muda quando alguém entra, sai ou é alterado: recarrega a lista. */
   version: number;
   lectureMode: boolean;
+  /** Quem pediu a palavra, por ordem. */
+  hands?: RaisedHand[];
   onInfo: (message: string) => void;
   onError: (message: string) => void;
 }
@@ -28,7 +30,15 @@ type Pending = { userId: string; action: 'kick' | 'ban' } | null;
  * Lista de quem está na sala. Para moderação, cada pessoa tem as ações permitidas pela
  * hierarquia (a interface só esconde o que o servidor recusaria; ele confere de novo).
  */
-export function ParticipantsPanel({ room, me, version, lectureMode, onInfo, onError }: Props) {
+export function ParticipantsPanel({
+  room,
+  me,
+  version,
+  lectureMode,
+  hands = [],
+  onInfo,
+  onError,
+}: Props) {
   const [people, setPeople] = useState<Participant[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
@@ -158,6 +168,37 @@ export function ParticipantsPanel({ room, me, version, lectureMode, onInfo, onEr
             Encerrar sala
           </Button>
         </div>
+      )}
+
+      {staff && hands.length > 0 && (
+        <section aria-label="Querem falar" className="space-y-2 rounded-xl bg-brand-500/10 p-3">
+          <h3 className="text-sm font-semibold text-brand-300">Querem falar ({hands.length})</h3>
+          <ol className="space-y-2">
+            {hands.map((h, i) => (
+              <li key={h.userId} className="flex items-center gap-2" data-testid="hand">
+                <span className="w-5 text-xs text-zinc-500">{i + 1}.</span>
+                <Avatar name={h.displayName} url={h.avatarUrl} size="sm" />
+                <span className="min-w-0 flex-1 truncate text-sm text-zinc-100">
+                  {h.displayName}
+                </span>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  loading={busy === `hand-${h.userId}`}
+                  onClick={() =>
+                    void run(
+                      `hand-${h.userId}`,
+                      () => api.moderation.promote(room.id, h.userId),
+                      `${h.displayName} recebeu a palavra.`,
+                    )
+                  }
+                >
+                  Dar a palavra
+                </Button>
+              </li>
+            ))}
+          </ol>
+        </section>
       )}
 
       {people === null && !failed && <Spinner label="Carregando…" />}

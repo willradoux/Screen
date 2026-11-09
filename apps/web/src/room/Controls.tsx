@@ -15,6 +15,8 @@ interface Props {
   onTogglePanel: () => void;
   onLeave: () => void;
   onError: (message: string) => void;
+  /** Pedir a palavra (só reuniões). */
+  hand?: { raised: boolean; busy: boolean; onToggle: () => void };
 }
 
 const SCREEN_UNSUPPORTED =
@@ -84,6 +86,7 @@ export function Controls({
   onTogglePanel,
   onLeave,
   onError,
+  hand,
 }: Props) {
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
   const screenSupported = canShareScreen();
@@ -152,6 +155,16 @@ export function Controls({
           busy={busy === 'screen'}
           onClick={() => void toggle('screen')}
         />
+        {hand && (
+          <RoundButton
+            icon="front_hand"
+            short={hand.raised ? 'Abaixar mão' : 'Pedir a palavra'}
+            fullLabel={hand.raised ? 'Abaixar a mão' : 'Pedir a palavra'}
+            active={hand.raised}
+            busy={hand.busy}
+            onClick={hand.onToggle}
+          />
+        )}
         <VideoSettings />
         <RoundButton
           icon="group"

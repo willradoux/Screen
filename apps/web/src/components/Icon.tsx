@@ -13,6 +13,9 @@ import dark from '@material-symbols/svg-400/rounded/dark_mode.svg?url';
 import dashboard from '@material-symbols/svg-400/rounded/dashboard.svg?url';
 import download from '@material-symbols/svg-400/rounded/download.svg?url';
 import edit from '@material-symbols/svg-400/rounded/edit.svg?url';
+import frontHand from '@material-symbols/svg-400/rounded/front_hand.svg?url';
+import qrCode from '@material-symbols/svg-400/rounded/qr_code_2.svg?url';
+import barChart from '@material-symbols/svg-400/rounded/bar_chart.svg?url';
 import error from '@material-symbols/svg-400/rounded/error.svg?url';
 import group from '@material-symbols/svg-400/rounded/group.svg?url';
 import history from '@material-symbols/svg-400/rounded/history.svg?url';
@@ -60,6 +63,9 @@ const ICONS = {
   download,
   edit,
   error,
+  front_hand: frontHand,
+  qr_code_2: qrCode,
+  bar_chart: barChart,
   group,
   history,
   info,
