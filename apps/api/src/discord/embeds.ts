@@ -14,9 +14,9 @@ export interface EmbedContext {
 }
 
 const COLORS = {
-  live: 0xed4245,
-  open: 0x57f287,
-  scheduled: 0x5865f2,
+  live: 0x3d8bfd,
+  open: 0x34d399,
+  scheduled: 0x6db0ff,
   ended: 0x747f8d,
   canceled: 0x747f8d,
 } as const;
@@ -45,7 +45,7 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
     return {
       embeds: [
         {
-          title: '⚫ Live encerrada',
+          title: 'Live encerrada',
           description: `A sala de ${channel} foi encerrada.`,
           color: COLORS.ended,
           footer: FOOTER,
@@ -59,7 +59,7 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
   return {
     embeds: [
       {
-        title: `🔴 Live aberta: ${room.title.replace(/^Live - /, '')}`,
+        title: `Live aberta: ${room.title.replace(/^Live - /, '')}`,
         description:
           `<@${room.createdBy}> iniciou uma sala. Entre no canal de voz e abra o Screem ` +
           'para transmitir câmera e tela.',
@@ -69,8 +69,7 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
           { name: 'Canal', value: channel, inline: true },
           {
             name: 'Sessão',
-            value:
-              room.mediaState === 'ACTIVE' ? '🟢 Em uso' : '💤 Em espera: abra a sala para ativar',
+            value: room.mediaState === 'ACTIVE' ? 'Em uso' : 'Em espera: abra a sala para ativar',
             inline: true,
           },
         ],
@@ -102,16 +101,14 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
 
   if (room.status === 'ENDED') {
     return {
-      embeds: [
-        base(`⚫ Reunião encerrada: ${room.title}`, COLORS.ended, summaryFields(ctx.summary)),
-      ],
+      embeds: [base(`Reunião encerrada: ${room.title}`, COLORS.ended, summaryFields(ctx.summary))],
       components: [],
       allowed_mentions: { parse: [] },
     };
   }
   if (room.status === 'CANCELED') {
     return {
-      embeds: [base(`🚫 Reunião cancelada: ${room.title}`, COLORS.canceled, [])],
+      embeds: [base(`Reunião cancelada: ${room.title}`, COLORS.canceled, [])],
       components: [],
       allowed_mentions: { parse: [] },
     };
@@ -119,7 +116,7 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
 
   const open = room.status === 'OPEN';
   const embed = base(
-    open ? `🟢 Reunião aberta agora: ${room.title}` : `📅 Reunião: ${room.title}`,
+    open ? `Reunião aberta agora: ${room.title}` : `Reunião: ${room.title}`,
     open ? COLORS.open : COLORS.scheduled,
     [
       { name: 'Quando', value: when, inline: false },
@@ -177,7 +174,7 @@ export function buildMeetingNotice(
   if (kind === 'canceled') {
     return {
       embeds: [
-        { title: `🚫 Reunião cancelada: ${room.title}`, color: COLORS.canceled, footer: FOOTER },
+        { title: `Reunião cancelada: ${room.title}`, color: COLORS.canceled, footer: FOOTER },
       ],
       components: [],
       allowed_mentions: { parse: [] },
@@ -188,14 +185,14 @@ export function buildMeetingNotice(
   const embed =
     kind === 'reminder'
       ? {
-          title: `⏰ Reunião em breve: ${room.title}`,
+          title: `Reunião em breve: ${room.title}`,
           description: `Começa ${room.startsAt ? discordTime(room.startsAt, 'R') : 'agora'}.`,
           color: COLORS.scheduled,
           fields: [{ name: 'Quando', value: when, inline: false }],
           footer: FOOTER,
         }
       : {
-          title: `🔁 Reunião reagendada: ${room.title}`,
+          title: `Reunião reagendada: ${room.title}`,
           description: `Nova data: ${when}`,
           color: COLORS.scheduled,
           footer: FOOTER,

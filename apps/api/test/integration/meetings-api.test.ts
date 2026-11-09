@@ -100,7 +100,7 @@ describe('POST /meetings', () => {
       { minutesBefore: 60, sent: false },
       { minutesBefore: 5, sent: false },
     ]);
-    expect(ctx.gateway.sent[0]!.payload.embeds[0]!.title).toBe('📅 Reunião: Reunião de dezembro');
+    expect(ctx.gateway.sent[0]!.payload.embeds[0]!.title).toBe('Reunião: Reunião de dezembro');
   });
 
   it('lembretes personalizados: sem repetição, do maior para o menor, e só os que ainda fazem sentido', async () => {
@@ -298,9 +298,7 @@ describe('PATCH /meetings/:id', () => {
       maxParticipants: 50,
       allowedRoleIds: ['610000000000000003'],
     });
-    expect(ctx.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe(
-      '📅 Reunião: Mensal de dezembro',
-    );
+    expect(ctx.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('Reunião: Mensal de dezembro');
     expect(ctx.gateway.sent).toHaveLength(0); // sem mudança de horário não há novo aviso
     expect(ctx.auditRepo.of('MEETING_UPDATED')[0]).toMatchObject({
       actorId: ADMIN,
@@ -322,7 +320,7 @@ describe('PATCH /meetings/:id', () => {
       { minutesBefore: 5, sent: false },
     ]);
     expect(ctx.gateway.sent.map((s) => s.payload.embeds[0]!.title)).toEqual([
-      '🔁 Reunião reagendada: Reunião mensal',
+      'Reunião reagendada: Reunião mensal',
     ]);
     expect(ctx.gateway.sent[0]!.payload.content).toBeUndefined();
     expect(ctx.gateway.sent[0]!.payload.allowed_mentions).toEqual({ parse: [] });
@@ -396,7 +394,7 @@ describe('POST /meetings/:id/open e /cancel', () => {
     expect(res.body.data).toMatchObject({ status: 'OPEN' });
     expect(res.body.data.startsAt).not.toBeNull();
     expect(ctx.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe(
-      '🟢 Reunião aberta agora: Reunião mensal',
+      'Reunião aberta agora: Reunião mensal',
     );
     expect(ctx.auditRepo.of('MEETING_OPENED')).toMatchObject([
       { actorId: ADMIN, meta: { via: 'api' } },
@@ -415,10 +413,10 @@ describe('POST /meetings/:id/open e /cancel', () => {
     expect(res.status).toBe(204);
     expect(ctx.rooms.rooms.get(m.id)!.status).toBe('CANCELED');
     expect(ctx.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe(
-      '🚫 Reunião cancelada: Reunião mensal',
+      'Reunião cancelada: Reunião mensal',
     );
     const notice = ctx.gateway.sent.at(-1)!.payload;
-    expect(notice.embeds[0]!.title).toBe('🚫 Reunião cancelada: Reunião mensal');
+    expect(notice.embeds[0]!.title).toBe('Reunião cancelada: Reunião mensal');
     expect(notice.content).toBeUndefined(); // sem @everyone
     expect(notice.components).toEqual([]);
     expect(ctx.auditRepo.of('MEETING_CANCELED')).toHaveLength(1);

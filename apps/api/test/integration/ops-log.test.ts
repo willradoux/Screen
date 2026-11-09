@@ -55,7 +55,7 @@ describe('canal de logs', () => {
     const sent = ctx.gateway.sent.filter((m) => m.channelId === LIVE_TEXT);
     expect(sent).toHaveLength(1);
     const embed = sent[0]!.payload.embeds[0]!;
-    expect(embed.description).toContain(`<@${ADMIN}> 👢 expulsou <@${USER}>`);
+    expect(embed.description).toContain(`<@${ADMIN}> expulsou <@${USER}>`);
     expect(embed.description).toContain('Motivo: spam');
     expect(sent[0]!.payload.allowed_mentions).toEqual({ parse: [] });
   });

@@ -160,7 +160,7 @@ describe('embeds', () => {
 
   it('live aberta: título, contagem, canal clicável e botão de link', () => {
     const m = buildRoomMessage(live, ctx);
-    expect(m.embeds[0]!.title).toBe('🔴 Live aberta: Live 1');
+    expect(m.embeds[0]!.title).toBe('Live aberta: Live 1');
     expect(JSON.stringify(m.embeds[0]!.fields)).toContain('<#123>');
     expect(JSON.stringify(m.components)).toContain('https://app.exemplo.com/r/abc');
     expect(m.content).toBeUndefined();
@@ -168,7 +168,7 @@ describe('embeds', () => {
 
   it('live encerrada: sem botão', () => {
     const m = buildRoomMessage({ ...live, status: 'ENDED' }, ctx);
-    expect(m.embeds[0]!.title).toBe('⚫ Live encerrada');
+    expect(m.embeds[0]!.title).toBe('Live encerrada');
     expect(m.components).toEqual([]);
   });
 
@@ -181,12 +181,12 @@ describe('embeds', () => {
       voiceChannelId: null,
       startsAt: new Date('2026-12-05T23:00:00Z'),
     };
-    expect(buildRoomMessage(meeting, ctx).embeds[0]!.title).toBe('📅 Reunião: Mensal');
+    expect(buildRoomMessage(meeting, ctx).embeds[0]!.title).toBe('Reunião: Mensal');
     expect(buildRoomMessage({ ...meeting, status: 'OPEN' }, ctx).embeds[0]!.title).toBe(
-      '🟢 Reunião aberta agora: Mensal',
+      'Reunião aberta agora: Mensal',
     );
     const canceled = buildRoomMessage({ ...meeting, status: 'CANCELED' }, ctx);
-    expect(canceled.embeds[0]!.title).toBe('🚫 Reunião cancelada: Mensal');
+    expect(canceled.embeds[0]!.title).toBe('Reunião cancelada: Mensal');
     expect(canceled.components).toEqual([]);
     expect(buildRoomMessage({ ...meeting, status: 'ENDED' }, ctx).components).toEqual([]);
   });

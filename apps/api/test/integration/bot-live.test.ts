@@ -44,7 +44,7 @@ describe('entrada num canal da categoria de lives', () => {
     const { channelId, payload } = b.gateway.sent[0]!;
     // O link vai para o chat da própria call.
     expect(channelId).toBe(VOICE_1);
-    expect(payload.embeds[0]!.title).toBe('🔴 Live aberta: Live 1');
+    expect(payload.embeds[0]!.title).toBe('Live aberta: Live 1');
     expect(payload.embeds[0]!.description).toContain(`<@${U1}>`);
     expect(field(payload, 'Participantes')).toBe('1');
     expect(payload.components).toEqual([
@@ -227,7 +227,7 @@ describe('saída e encerramento', () => {
     expect(room.status).toBe('ENDED');
     expect(room.endReason).toBe('VOICE_EMPTY');
     const last = b.gateway.edits.at(-1)!.payload;
-    expect(last.embeds[0]!.title).toBe('⚫ Live encerrada');
+    expect(last.embeds[0]!.title).toBe('Live encerrada');
     expect(last.components).toEqual([]);
   });
 

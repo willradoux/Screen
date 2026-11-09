@@ -29,7 +29,7 @@ describe('/reuniao reagendar', () => {
     expect(r.content).toContain('<t:1797114600:F>');
     expect(b.rooms.rooms.get(room.id)!.startsAt?.toISOString()).toBe('2026-12-12T22:30:00.000Z');
     expect(b.gateway.sent.map((s) => s.payload.embeds[0]!.title)).toEqual([
-      '🔁 Reunião reagendada: Reunião de dezembro',
+      'Reunião reagendada: Reunião de dezembro',
     ]);
     expect(JSON.stringify(b.gateway.edits.at(-1)!.payload)).toContain('<t:1797114600:F>');
     expect(b.auditRepo.of('MEETING_UPDATED')).toMatchObject([
@@ -82,7 +82,7 @@ describe('/reuniao cancelar e encerrar (avisos e resumo)', () => {
     const { b, room } = await withMeeting();
     await b.router.handle(ADMIN, call('reuniao', 'cancelar', { reuniao: room.id }));
     const notice = b.gateway.sent.at(-1)!.payload;
-    expect(notice.embeds[0]!.title).toBe('🚫 Reunião cancelada: Reunião de dezembro');
+    expect(notice.embeds[0]!.title).toBe('Reunião cancelada: Reunião de dezembro');
     expect(notice.content).toBeUndefined();
     expect(notice.allowed_mentions).toEqual({ parse: [] });
   });

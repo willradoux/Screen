@@ -93,7 +93,7 @@ describe('botão Enviar aviso', () => {
     ctx.clock.advance(6 * HOUR + 60_000); // 1 min depois da hora do lembrete de 24 h
     await ctx.meetingScheduler.tick();
     const reminders = ctx.gateway.sent.filter((m) =>
-      String(m.payload.embeds[0]!.title).startsWith('⏰'),
+      String(m.payload.embeds[0]!.title).startsWith('Reunião em breve'),
     );
     expect(reminders).toHaveLength(1);
   });

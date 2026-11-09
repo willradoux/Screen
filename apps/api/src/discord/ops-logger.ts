@@ -5,33 +5,32 @@ import type { OpsEvent } from '../shared/ops-log.js';
 import type { DiscordGateway } from './gateway.js';
 
 const COLORS = { info: 0x3b82f6, warn: 0xf59e0b, error: 0xef4444 } as const;
-const ICONS = { info: 'ℹ️', warn: '⚠️', error: '🛑' } as const;
 
 /** Frase humana de cada ação auditada, para o canal de logs. */
 export const AUDIT_LABELS: Record<string, string> = {
-  PARTICIPANT_MUTED: '🔇 silenciou',
-  PARTICIPANT_UNMUTED: '🔊 liberou o áudio de',
-  PARTICIPANT_KICKED: '👢 expulsou',
-  PARTICIPANT_BANNED: '⛔ baniu',
-  BAN_REMOVED: '✅ removeu o banimento de',
-  SPEAKER_PROMOTED: '🎤 tornou palestrante',
-  SPEAKER_DEMOTED: '🎤 tirou de palestrante',
-  ROOM_ENDED: '⚫ encerrou a sala',
-  ROOM_UPDATED: '✏️ editou a sala',
-  MEETING_CREATED: '📅 criou uma reunião',
-  MEETING_UPDATED: '✏️ editou uma reunião',
-  MEETING_CANCELED: '🚫 cancelou uma reunião',
-  MEETING_OPENED: '🟢 abriu uma reunião',
-  MEETING_ANNOUNCED: '📣 divulgou uma reunião',
-  MEETING_MUTE_ALL: '🔇 silenciou todos na reunião',
-  MEETING_CAMERAS_OFF: '📷 desligou todas as câmeras na reunião',
-  SETTINGS_UPDATED: '⚙️ alterou as configurações',
-  PANEL_USER_ADDED: '🛡️ deu acesso ao painel a',
-  PANEL_USER_REMOVED: '🛡️ tirou o acesso ao painel de',
-  SESSION_REVOKED: '🔒 revogou a sessão de',
-  USER_BLOCKED: '🚷 bloqueou',
-  SESSION_IDLE: '💤 sessão de vídeo em espera (ninguém usando)',
-  SESSION_ACTIVATED: '▶️ sessão de vídeo ativada',
+  PARTICIPANT_MUTED: 'silenciou',
+  PARTICIPANT_UNMUTED: 'liberou o áudio de',
+  PARTICIPANT_KICKED: 'expulsou',
+  PARTICIPANT_BANNED: 'baniu',
+  BAN_REMOVED: 'removeu o banimento de',
+  SPEAKER_PROMOTED: 'tornou palestrante',
+  SPEAKER_DEMOTED: 'tirou de palestrante',
+  ROOM_ENDED: 'encerrou a sala',
+  ROOM_UPDATED: 'editou a sala',
+  MEETING_CREATED: 'criou uma reunião',
+  MEETING_UPDATED: 'editou uma reunião',
+  MEETING_CANCELED: 'cancelou uma reunião',
+  MEETING_OPENED: 'abriu uma reunião',
+  MEETING_ANNOUNCED: 'divulgou uma reunião',
+  MEETING_MUTE_ALL: 'silenciou todos na reunião',
+  MEETING_CAMERAS_OFF: 'desligou todas as câmeras na reunião',
+  SETTINGS_UPDATED: 'alterou as configurações',
+  PANEL_USER_ADDED: 'deu acesso ao painel a',
+  PANEL_USER_REMOVED: 'tirou o acesso ao painel de',
+  SESSION_REVOKED: 'revogou a sessão de',
+  USER_BLOCKED: 'bloqueou',
+  SESSION_IDLE: 'sessão de vídeo em espera (ninguém usando)',
+  SESSION_ACTIVATED: '▶sessão de vídeo ativada',
 };
 
 export interface OpsLoggerDeps {
@@ -96,7 +95,7 @@ export class DiscordOpsLogger {
       await this.deps.gateway.sendMessage(logChannelId, {
         embeds: [
           {
-            title: `${ICONS[event.level]} ${event.title}`.slice(0, 256),
+            title: event.title.slice(0, 256),
             ...(event.description ? { description: event.description.slice(0, 2000) } : {}),
             color: COLORS[event.level],
             ...(event.fields?.length

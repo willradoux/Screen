@@ -445,7 +445,7 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
         endReason: 'VOICE_EMPTY',
       });
       expect(w.livekit.deleted).toContain(roomId);
-      expect(w.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('⚫ Live encerrada');
+      expect(w.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('Live encerrada');
       expect(await ParticipationModel.countDocuments({ roomId, leftAt: null })).toBe(0);
     });
 
@@ -534,7 +534,7 @@ describe('fluxo completo de uma reunião (MongoDB real)', () => {
     w.clock.advance(55 * MIN);
     await w.meetingScheduler.tick();
     const reminders = w.gateway.sent.filter((m) =>
-      String(m.payload.embeds[0]!.title).startsWith('⏰'),
+      String(m.payload.embeds[0]!.title).startsWith('Reunião em breve'),
     );
     expect(reminders).toHaveLength(3);
     expect((await RoomModel.findById(id).lean())!.reminders.every((r) => r.sentAt)).toBe(true);

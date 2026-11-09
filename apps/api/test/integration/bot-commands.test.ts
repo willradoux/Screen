@@ -216,7 +216,7 @@ describe('/reuniao criar', () => {
     expect(msg.channelId).toBe(ANNOUNCE);
     expect(msg.payload.content).toBeUndefined();
     expect(msg.payload.allowed_mentions).toEqual({ parse: [] });
-    expect(msg.payload.embeds[0]!.title).toBe('🟢 Reunião aberta agora: Reunião mensal');
+    expect(msg.payload.embeds[0]!.title).toBe('Reunião aberta agora: Reunião mensal');
     expect(msg.payload.embeds[0]!.description).toBe('Pauta do mês');
     expect(JSON.stringify(msg.payload.components)).toContain(`${WEB_URL}/r/${room.id}`);
   });
@@ -292,7 +292,7 @@ describe('/reuniao agendar', () => {
     expect(r.content).toContain('<t:1796511600:F>');
 
     const msg = b.gateway.sent[0]!.payload;
-    expect(msg.embeds[0]!.title).toBe('📅 Reunião: Reunião de dezembro');
+    expect(msg.embeds[0]!.title).toBe('Reunião: Reunião de dezembro');
     expect(JSON.stringify(msg.embeds)).toContain('<t:1796511600:F>');
     expect(JSON.stringify(msg.embeds)).toContain('<t:1796511600:R>');
   });
@@ -402,7 +402,7 @@ describe('/reuniao cancelar, encerrar, listar', () => {
     expect(r.content).toContain('cancelada');
     expect(b.rooms.rooms.get(scheduled.id)!.status).toBe('CANCELED');
     const edit = b.gateway.edits.at(-1)!.payload;
-    expect(edit.embeds[0]!.title).toBe('🚫 Reunião cancelada: Futura');
+    expect(edit.embeds[0]!.title).toBe('Reunião cancelada: Futura');
     expect(edit.components).toEqual([]);
   });
 

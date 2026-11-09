@@ -38,7 +38,7 @@ describe('lembretes', () => {
     b.clock.advance(2 * H); // faltam 24 h
     expect((await b.meetingScheduler.tick()).reminded).toBe(1);
     expect((await b.meetingScheduler.tick()).reminded).toBe(0); // não repete
-    expect(notices(b)).toEqual([`⏰ Reunião em breve: ${room.title}`]);
+    expect(notices(b)).toEqual([`Reunião em breve: ${room.title}`]);
 
     b.clock.advance(23 * H); // faltam 1 h
     await b.meetingScheduler.tick();
@@ -195,7 +195,7 @@ describe('abertura automática', () => {
 
     expect(state(b, room.id)).toMatchObject({ status: 'OPEN', openedAt: b.clock.now() });
     const edit = b.gateway.edits.at(-1)!.payload;
-    expect(edit.embeds[0]!.title).toBe(`🟢 Reunião aberta agora: ${room.title}`);
+    expect(edit.embeds[0]!.title).toBe(`Reunião aberta agora: ${room.title}`);
     expect(JSON.stringify(edit.components)).toContain('Entrar na reunião');
     expect(b.auditRepo.of('MEETING_OPENED')).toMatchObject([
       { actorId: 'system', roomId: room.id, meta: { via: 'scheduler' } },
@@ -285,7 +285,7 @@ describe('encerramento de reunião abandonada', () => {
       { actorId: 'system', meta: { via: 'scheduler', reason: 'MEETING_FINISHED' } },
     ]);
     const edit = b.gateway.edits.at(-1)!.payload;
-    expect(edit.embeds[0]!.title).toBe(`⚫ Reunião encerrada: ${room.title}`);
+    expect(edit.embeds[0]!.title).toBe(`Reunião encerrada: ${room.title}`);
     expect(edit.embeds[0]!.fields).toEqual([
       { name: 'Duração', value: '15 min', inline: true },
       { name: 'Participantes', value: '0', inline: true },
@@ -430,8 +430,8 @@ describe('reagendar', () => {
       [60, null],
       [5, null],
     ]);
-    expect(notices(b)).toEqual([`🔁 Reunião reagendada: ${room.title}`]);
-    expect(b.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe(`📅 Reunião: ${room.title}`);
+    expect(notices(b)).toEqual([`Reunião reagendada: ${room.title}`]);
+    expect(b.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe(`Reunião: ${room.title}`);
     expect(b.auditRepo.of('MEETING_UPDATED')).toHaveLength(1);
 
     // o lembrete antigo não dispara de novo agora; só 24 h antes do novo horário
