@@ -17,6 +17,8 @@ export interface RoomDto {
   createdBy: string;
   maxParticipants: number;
   lectureMode: boolean;
+  /** Só lives: `ACTIVE` (em uso) ou `IDLE` (em espera, ativa quando alguém entra). */
+  mediaState: 'ACTIVE' | 'IDLE';
   participantCount: number;
   url: string;
 }
@@ -35,6 +37,7 @@ export function toRoomDto(room: RoomRecord, participantCount: number, webUrl: st
     createdBy: room.createdBy,
     maxParticipants: room.maxParticipants,
     lectureMode: room.lectureMode,
+    mediaState: room.mediaState,
     participantCount,
     url: roomUrl(webUrl, room.id),
   };

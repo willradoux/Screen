@@ -3,7 +3,7 @@ import { ParticipationModel, RoomBanModel } from '../../db/models.js';
 import type { MediaSource } from '../livekit/livekit.gateway.js';
 
 export type LeaveReason =
-  'LEFT' | 'LEFT_VOICE' | 'KICKED' | 'BANNED' | 'DISCONNECTED' | 'ROOM_ENDED';
+  'LEFT' | 'LEFT_VOICE' | 'KICKED' | 'BANNED' | 'DISCONNECTED' | 'ROOM_ENDED' | 'SESSION_IDLE';
 
 export interface Participation {
   roomId: string;

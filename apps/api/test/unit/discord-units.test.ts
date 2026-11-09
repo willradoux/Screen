@@ -145,6 +145,7 @@ describe('embeds', () => {
     maxParticipants: 25,
     allowedRoleIds: [],
     lectureMode: false,
+    mediaState: 'IDLE',
     speakerIds: [],
     reminders: [],
     endReason: null,

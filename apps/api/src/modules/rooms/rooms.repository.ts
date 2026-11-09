@@ -19,6 +19,7 @@ type Doc = {
   maxParticipants: number;
   allowedRoleIds?: string[];
   lectureMode?: boolean | null;
+  mediaState?: 'ACTIVE' | 'IDLE' | null;
   speakerIds?: string[];
   reminders?: { minutesBefore?: number | null; sentAt?: Date | null }[];
   endReason?: string | null;
@@ -45,6 +46,7 @@ function toRecord(d: Doc): RoomRecord {
     maxParticipants: d.maxParticipants,
     allowedRoleIds: d.allowedRoleIds ?? [],
     lectureMode: d.lectureMode ?? false,
+    mediaState: d.mediaState ?? 'IDLE',
     speakerIds: d.speakerIds ?? [],
     reminders: (d.reminders ?? []).map((r) => ({
       minutesBefore: r.minutesBefore ?? 0,
@@ -115,6 +117,7 @@ export function createRoomRepo(): RoomRepo {
         maxParticipants: input.maxParticipants,
         allowedRoleIds: input.allowedRoleIds,
         reminders: input.reminders.map((minutesBefore) => ({ minutesBefore, sentAt: null })),
+        mediaState: 'ACTIVE', // reuniões não têm modo de espera
         livekitRoomName: id,
       });
       return toRecord(doc.toObject() as Doc);
@@ -221,6 +224,15 @@ export function createRoomRepo(): RoomRepo {
         { _id: id },
         { $set: { announceChannelId: channelId, announceMessageId: messageId } },
       );
+    },
+
+    async setMediaState(id, from, to, at) {
+      const doc = await RoomModel.findOneAndUpdate(
+        { _id: id, status: 'OPEN', mediaState: from },
+        { $set: { mediaState: to, mediaStateAt: at } },
+        { new: true, lean: true },
+      );
+      return doc ? toRecord(doc as Doc) : null;
     },
 
     async transition(id, from, to, patch) {

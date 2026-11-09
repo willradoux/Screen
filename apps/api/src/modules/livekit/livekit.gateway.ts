@@ -41,6 +41,12 @@ export interface LiveKitEvent {
   } | null;
 }
 
+/** Participante conectado, com as faixas publicadas (para saber se alguém está transmitindo). */
+export interface LiveKitParticipantInfo {
+  identity: string;
+  tracks: { source: MediaSource | 'unknown'; muted: boolean }[];
+}
+
 /** Falha de comunicação com o servidor de mídia. */
 export class LiveKitUnavailableError extends Error {}
 /** Webhook sem assinatura válida. */
@@ -64,6 +70,8 @@ export interface LiveKitGateway {
   /** Silencia as faixas já publicadas nessas fontes. Ignora quem já saiu. */
   muteSources(roomName: string, identity: string, sources: MediaSource[]): Promise<void>;
   deleteRoom(roomName: string): Promise<void>;
+  /** Quem está conectado e o que está transmitindo. Sala que não existe = lista vazia. */
+  listParticipants(roomName: string): Promise<LiveKitParticipantInfo[]>;
   /** Valida a assinatura e devolve o evento. Lança `InvalidWebhookError`. */
   verifyWebhook(rawBody: string, authHeader: string | undefined): Promise<LiveKitEvent>;
 }
@@ -74,6 +82,10 @@ const SOURCE_TO_ENUM: Record<MediaSource, TrackSource> = {
   screen_share: TrackSource.SCREEN_SHARE,
   screen_share_audio: TrackSource.SCREEN_SHARE_AUDIO,
 };
+
+const ENUM_TO_SOURCE = new Map<TrackSource, MediaSource>(
+  (Object.entries(SOURCE_TO_ENUM) as [MediaSource, TrackSource][]).map(([k, v]) => [v, k]),
+);
 
 // DisconnectReason do protocolo do LiveKit.
 const CLIENT_INITIATED = 1;
@@ -177,6 +189,23 @@ export function createLiveKitGateway(env: LiveKitEnv): LiveKitGateway {
           await rooms.deleteRoom(roomName);
         } catch (err) {
           if (isNotFound(err)) return;
+          throw err;
+        }
+      }),
+
+    listParticipants: (roomName) =>
+      call('listar participantes', async () => {
+        try {
+          const list = await rooms.listParticipants(roomName);
+          return list.map((p) => ({
+            identity: p.identity,
+            tracks: p.tracks.map((t) => ({
+              source: ENUM_TO_SOURCE.get(t.source) ?? 'unknown',
+              muted: t.muted,
+            })),
+          }));
+        } catch (err) {
+          if (isNotFound(err)) return [];
           throw err;
         }
       }),

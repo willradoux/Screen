@@ -63,7 +63,9 @@ describe('POST /rooms/:id/join (lives)', () => {
         canPublishSources: ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
         canModerate: false,
       },
-      room: { id: room.id, lectureMode: false },
+      // A live estava em espera: entrar pelo link ativou a sessão.
+      room: { id: room.id, lectureMode: false, mediaState: 'ACTIVE' },
+      sessionActivated: true,
     });
 
     // O token é pedido ao LiveKit com a identidade do Discord e papel no metadata.

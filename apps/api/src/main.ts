@@ -15,6 +15,7 @@ import type { MeetingsApi } from './modules/meetings/meetings.routes.js';
 import type { ModerationApi } from './modules/moderation/moderation.routes.js';
 import { RoomAccess } from './modules/rooms/access.js';
 import { createBanRepo, createParticipationRepo } from './modules/rooms/participations.js';
+import { MediaSessionService } from './modules/rooms/media-session.js';
 import { PresenceService } from './modules/rooms/presence.js';
 import { createRoomRepo } from './modules/rooms/rooms.repository.js';
 import type { RoomsApi } from './modules/rooms/rooms.routes.js';
@@ -60,6 +61,18 @@ const presence = new PresenceService({
   guildId: env.DISCORD_GUILD_ID,
 });
 
+const mediaSessions = new MediaSessionService({
+  rooms,
+  participations,
+  livekit,
+  realtime,
+  settings,
+  audit,
+  scheduler: realScheduler,
+  logger,
+  guildId: env.DISCORD_GUILD_ID,
+});
+
 // O bot é opcional em desenvolvimento: sem token, a API sobe sem ele (e sem salas).
 const discord = env.DISCORD_BOT_TOKEN
   ? createDiscordSystem(env, logger, {
@@ -69,6 +82,7 @@ const discord = env.DISCORD_BOT_TOKEN
       presence,
       audit,
       participations,
+      mediaSessions,
     })
   : null;
 if (!discord) logger.warn('DISCORD_BOT_TOKEN ausente: o bot e as salas não serão iniciados');
@@ -97,6 +111,7 @@ if (discord) {
     livekit,
     livekitPublicUrl: env.LIVEKIT_PUBLIC_URL,
     tokenTtlSeconds: env.JOIN_TOKEN_TTL_SECONDS,
+    sessions: mediaSessions,
   });
   roomsApi = {
     rooms,
@@ -207,6 +222,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     logger.info(`${sig} recebido, encerrando`);
     void (async () => {
       discord?.meetingScheduler.stop();
+      mediaSessions.stop();
       metricsServer?.close();
       await sockets?.close();
       await discord?.bot.stop();

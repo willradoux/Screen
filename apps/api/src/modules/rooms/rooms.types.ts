@@ -23,6 +23,11 @@ export interface RoomRecord {
   maxParticipants: number;
   allowedRoleIds: string[];
   lectureMode: boolean;
+  /**
+   * Só lives. `ACTIVE`: há gente usando o vídeo agora. `IDLE`: em espera, sem ninguém conectado
+   * ao LiveKit; é ativada de novo quando alguém entra pelo link.
+   */
+  mediaState: 'ACTIVE' | 'IDLE';
   speakerIds: string[];
   reminders: Reminder[];
   endReason: string | null;
@@ -92,6 +97,13 @@ export interface RoomRepo {
   releaseReminder(id: string, minutesBefore: number): Promise<void>;
   /** Adiciona ou remove um palestrante (sem duplicar). */
   updateSpeakers(id: string, action: 'add' | 'remove', userId: string): Promise<RoomRecord | null>;
+  /** Troca o estado da sessão de mídia só se o atual for `from` e a sala estiver aberta. */
+  setMediaState(
+    id: string,
+    from: 'ACTIVE' | 'IDLE',
+    to: 'ACTIVE' | 'IDLE',
+    at: Date,
+  ): Promise<RoomRecord | null>;
   /** Muda o estado só se o atual estiver em `from`. `null` se não estava. */
   transition(
     id: string,

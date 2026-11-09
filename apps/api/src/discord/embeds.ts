@@ -67,6 +67,12 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
         fields: [
           { name: 'Participantes', value: String(ctx.participants), inline: true },
           { name: 'Canal', value: channel, inline: true },
+          {
+            name: 'Sessão',
+            value:
+              room.mediaState === 'ACTIVE' ? '🟢 Em uso' : '💤 Em espera: abra a sala para ativar',
+            inline: true,
+          },
         ],
         footer: FOOTER,
       },

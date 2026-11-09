@@ -9,6 +9,7 @@ import {
   type LiveKitGateway,
   type MediaSource,
 } from '../livekit/livekit.gateway.js';
+import type { MediaSessionService } from './media-session.js';
 import type { BanRepo, ParticipationRepo } from './participations.js';
 import type { RoomRecord } from './rooms.types.js';
 
@@ -65,7 +66,9 @@ export interface JoinResult {
   livekit: { url: string; token: string };
   participant: { identity: string; name: string; role: Role };
   permissions: RoomPermissions;
-  room: { id: string; lectureMode: boolean };
+  room: { id: string; lectureMode: boolean; mediaState: 'ACTIVE' | 'IDLE' };
+  /** `true` quando este join tirou a live do modo de espera ("ativando sessão"). */
+  sessionActivated: boolean;
 }
 
 /** Erro HTTP de cada motivo de recusa. Catálogo: docs/backend/erros.md. */
@@ -89,6 +92,8 @@ export interface AccessDeps {
   livekit: LiveKitGateway;
   livekitPublicUrl: string;
   tokenTtlSeconds: number;
+  /** Ativa a sessão de mídia de lives em espera. */
+  sessions?: Pick<MediaSessionService, 'ensureActive'>;
   now?: () => Date;
 }
 
@@ -177,6 +182,9 @@ export class RoomAccess {
     const permissions = await this.permissionsFor(room, identity);
     const metadata = JSON.stringify({ role: identity.role, avatarUrl: identity.avatarUrl });
 
+    // Live em espera: quem entra pelo link ativa a sessão antes de conectar.
+    const sessionActivated = (await this.deps.sessions?.ensureActive(room)) ?? false;
+
     try {
       await this.deps.livekit.ensureRoom(room.id, room.maxParticipants);
       const token = await this.deps.livekit.createToken({
@@ -197,7 +205,8 @@ export class RoomAccess {
           role: identity.role,
         },
         permissions,
-        room: { id: room.id, lectureMode: room.lectureMode },
+        room: { id: room.id, lectureMode: room.lectureMode, mediaState: room.mediaState },
+        sessionActivated,
       };
     } catch (err) {
       if (err instanceof LiveKitUnavailableError) {

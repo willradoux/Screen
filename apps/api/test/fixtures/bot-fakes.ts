@@ -172,6 +172,7 @@ export class MemoryRooms implements RoomRepo {
       maxParticipants: input.maxParticipants,
       allowedRoleIds: [],
       lectureMode: false,
+      mediaState: 'IDLE',
       speakerIds: [],
       reminders: [],
       endReason: null,
@@ -199,6 +200,7 @@ export class MemoryRooms implements RoomRepo {
       maxParticipants: input.maxParticipants,
       allowedRoleIds: input.allowedRoleIds,
       lectureMode: false,
+      mediaState: 'ACTIVE',
       speakerIds: [],
       reminders: input.reminders.map((m) => ({ minutesBefore: m, sentAt: null })),
       endReason: null,
@@ -300,6 +302,12 @@ export class MemoryRooms implements RoomRepo {
       r.announceChannelId = channelId;
       r.announceMessageId = messageId;
     }
+  }
+  async setMediaState(id: string, from: 'ACTIVE' | 'IDLE', to: 'ACTIVE' | 'IDLE', _at: Date) {
+    const r = this.rooms.get(id);
+    if (!r || r.status !== 'OPEN' || r.mediaState !== from) return null;
+    r.mediaState = to;
+    return structuredClone(r);
   }
   async transition(
     id: string,

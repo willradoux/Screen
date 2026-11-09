@@ -8,6 +8,7 @@ import { MeetingService } from '../modules/meetings/meetings.service.js';
 import { MeetingScheduler } from '../modules/meetings/scheduler.js';
 import { RoleResolver } from '../modules/permissions/role-resolver.js';
 import type { ParticipationRepo } from '../modules/rooms/participations.js';
+import type { MediaSessionService } from '../modules/rooms/media-session.js';
 import type { PresenceService } from '../modules/rooms/presence.js';
 import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { SettingsRepo } from '../modules/settings/settings.types.js';
@@ -44,6 +45,8 @@ export function createDiscordSystem(
     /** Compartilhado com a API: é a fonte da verdade de "quem está na call". */
     voiceCache: VoiceCache;
     presence: PresenceService;
+    /** Sessão de mídia das lives (ativa/em espera). */
+    mediaSessions: MediaSessionService;
     audit: AuditLog;
     participations: ParticipationRepo;
   },
@@ -119,7 +122,12 @@ export function createDiscordSystem(
   });
 
   // Sala encerrada (por qualquer motivo): derruba o LiveKit e avisa os clientes.
-  roomService.onEnded((room, reason) => deps.presence.onRoomEnded(room, reason));
+  roomService.onEnded((room, reason) => {
+    deps.mediaSessions.forget(room.id);
+    return deps.presence.onRoomEnded(room, reason);
+  });
+  // Quando a sessão entra em espera ou é ativada, o embed da live acompanha.
+  deps.mediaSessions.setOnChange((room) => announcer.scheduleRefresh(room.id));
 
   // Papel de qualquer pessoa, sempre recalculado (comandos do bot e moderação).
   const roles = new RoleResolver({
@@ -152,7 +160,10 @@ export function createDiscordSystem(
     settings: repos.settings,
     logger,
     // Só liga o relógio das reuniões com o bot conectado (avisos e lembretes precisam dele).
-    onReady: () => meetingScheduler.start(),
+    onReady: () => {
+      meetingScheduler.start();
+      deps.mediaSessions.start();
+    },
   });
 
   return { bot, gateway, roomService, announcer, roles, meetings, meetingScheduler, voiceCache };

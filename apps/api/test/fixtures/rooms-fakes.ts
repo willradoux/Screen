@@ -17,6 +17,7 @@ import { RoomAccess } from '../../src/modules/rooms/access.js';
 import type { BanRepo, RoomBan } from '../../src/modules/rooms/participations.js';
 import { ModerationService } from '../../src/modules/moderation/moderation.service.js';
 import { SettingsService } from '../../src/modules/settings/settings.service.js';
+import { MediaSessionService } from '../../src/modules/rooms/media-session.js';
 import { PresenceService } from '../../src/modules/rooms/presence.js';
 import type { RoomsApi } from '../../src/modules/rooms/rooms.routes.js';
 import type { RealtimeEmitter } from '../../src/realtime/emitter.js';
@@ -79,6 +80,16 @@ export class FakeLiveKit implements LiveKitGateway {
   }
   async deleteRoom(roomName: string) {
     this.deleted.push(roomName);
+    this.people.delete(roomName);
+  }
+  /** Quem está conectado e o que transmite, por sala (o que `listParticipants` devolve). */
+  people = new Map<
+    string,
+    { identity: string; tracks: { source: MediaSource | 'unknown'; muted: boolean }[] }[]
+  >();
+  async listParticipants(roomName: string) {
+    this.check();
+    return structuredClone(this.people.get(roomName) ?? []);
   }
   async setPermissions(
     roomName: string,
@@ -170,6 +181,21 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     now: bot.clock.now,
   });
   bot.roomService.onEnded((room, reason) => presence.onRoomEnded(room, reason));
+  // Sessão de mídia das lives (ativa/em espera), com o mesmo relógio e agendador.
+  const media = new MediaSessionService({
+    rooms: bot.rooms,
+    participations,
+    livekit,
+    realtime: emitter,
+    settings: bot.settings,
+    audit: bot.audit,
+    scheduler: bot.scheduler,
+    logger,
+    guildId: env.DISCORD_GUILD_ID,
+    now: bot.clock.now,
+  });
+  bot.roomService.onEnded((room) => media.forget(room.id));
+  media.setOnChange((room) => bot.announcer.scheduleRefresh(room.id));
   // Liga a presença ao tratador de voz do bot.
   (bot.live as unknown as { deps: { presence: PresenceService } }).deps.presence = presence;
 
@@ -181,6 +207,7 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     livekit,
     livekitPublicUrl: env.LIVEKIT_PUBLIC_URL,
     tokenTtlSeconds: env.JOIN_TOKEN_TTL_SECONDS,
+    sessions: media,
     now: bot.clock.now,
   });
 
@@ -289,6 +316,7 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     bans,
     emitter,
     presence,
+    media,
     access,
     webhook,
     roomsApi,

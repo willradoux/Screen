@@ -88,6 +88,9 @@ const roomSchema = new Schema(
     maxParticipants: { type: Number, required: true },
     allowedRoleIds: { type: [String], default: [] },
     lectureMode: { type: Boolean, default: false },
+    // Sessão de mídia das lives: ACTIVE quando há gente usando, IDLE quando em espera.
+    mediaState: { type: String, enum: ['ACTIVE', 'IDLE'], default: 'IDLE' },
+    mediaStateAt: { type: Date, default: null },
     speakerIds: { type: [String], default: [] },
     reminders: {
       type: [{ _id: false, minutesBefore: Number, sentAt: { type: Date, default: null } }],
