@@ -54,13 +54,19 @@ export class LiveVoiceHandler {
     }
   }
 
-  /** Canal de voz dentro da categoria de lives configurada? Devolve o nome. */
+  /**
+   * A call está habilitada para lives? Vale se foi escolhida no painel (`liveChannelIds`) ou se
+   * está dentro da categoria configurada. Devolve o nome da call.
+   */
   private async liveChannelName(channelId: string): Promise<string | null> {
     const settings = await this.deps.settings.get(this.deps.guildId);
-    if (!settings.liveCategoryId) return null;
+    if (!settings.liveCategoryId && settings.liveChannelIds.length === 0) return null;
     const channel = await this.deps.gateway.getChannel(channelId);
     if (!channel || channel.kind !== 'voice') return null;
-    return channel.parentId === settings.liveCategoryId ? channel.name : null;
+    const chosen = settings.liveChannelIds.includes(channelId);
+    const inCategory =
+      settings.liveCategoryId !== null && channel.parentId === settings.liveCategoryId;
+    return chosen || inCategory ? channel.name : null;
   }
 
   private async onJoin(channelId: string, userId: string): Promise<void> {
@@ -97,14 +103,16 @@ export class LiveVoiceHandler {
     await this.deps.presence?.userLeftVoice(room, userId);
 
     if (this.deps.cache.count(channelId) === 0) {
-      this.startEmptyTimer(channelId, room.id);
+      await this.startEmptyTimer(channelId, room.id);
     } else {
       this.deps.announcer.scheduleRefresh(room.id);
     }
   }
 
-  private startEmptyTimer(channelId: string, roomId: string): void {
+  private async startEmptyTimer(channelId: string, roomId: string): Promise<void> {
     this.cancelEmptyTimer(channelId);
+    const { emptyLiveEndSeconds } = await this.deps.settings.get(this.deps.guildId);
+    const seconds = emptyLiveEndSeconds ?? this.deps.emptyEndSeconds;
     const handle = this.deps.scheduler.setTimeout(() => {
       this.emptyTimers.delete(channelId);
       void this.queue
@@ -114,7 +122,7 @@ export class LiveVoiceHandler {
           await this.deps.roomService.endRoom(roomId, 'VOICE_EMPTY');
         })
         .catch((err) => this.deps.logger.error({ err, roomId }, 'falha ao encerrar live vazia'));
-    }, this.deps.emptyEndSeconds * 1000);
+    }, seconds * 1000);
     this.emptyTimers.set(channelId, handle);
   }
 
@@ -158,7 +166,7 @@ export class LiveVoiceHandler {
       }
     }
 
-    if (!settings.liveCategoryId) return;
+    if (!settings.liveCategoryId && settings.liveChannelIds.length === 0) return;
     const openChannels = new Set(open.map((r) => r.voiceChannelId));
     for (const channelId of this.deps.cache.occupiedChannels()) {
       if (openChannels.has(channelId)) continue;

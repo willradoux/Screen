@@ -45,6 +45,26 @@ const guildSettingsSchema = new Schema(
     meetingAllowedRoleIds: { type: [String], default: [] },
     maxParticipantsLive: { type: Number, default: 25 },
     graceSeconds: { type: Number, default: 30 },
+    // Painel de administração (Fase 10)
+    liveChannelIds: { type: [String], default: [] },
+    logChannelId: { type: String, default: null },
+    mentionRoleId: { type: String, default: null },
+    emptyLiveEndSeconds: { type: Number, default: null },
+    idleSessionMinutes: { type: Number, default: 10 },
+    activationGraceMinutes: { type: Number, default: 3 },
+    panelUsers: {
+      type: [
+        {
+          _id: false,
+          userId: { type: String, required: true },
+          role: { type: String, enum: ['ADMIN', 'MOD'], required: true },
+          note: { type: String, default: null },
+          addedBy: { type: String, required: true },
+          addedAt: { type: Date, required: true },
+        },
+      ],
+      default: [],
+    },
     updatedBy: { type: String, default: null },
   },
   { timestamps: true },

@@ -7,6 +7,8 @@ import type {
   ChannelInfo,
   DiscordGateway,
   MemberPermissions,
+  MemberProfile,
+  RoleInfo,
   MessagePayload,
   VoiceStateEntry,
 } from '../../src/discord/gateway.js';
@@ -82,6 +84,9 @@ export class FakeGateway implements DiscordGateway {
   sent: { channelId: string; messageId: string; payload: MessagePayload }[] = [];
   edits: { channelId: string; messageId: string; payload: MessagePayload }[] = [];
   failSend = false;
+  /** Canais onde enviar falha (ex.: bot sem permissão no chat da call). */
+  failSendChannels = new Set<string>();
+  profiles = new Map<string, MemberProfile>();
   private counter = 0;
 
   addChannel(info: ChannelInfo) {
@@ -89,7 +94,7 @@ export class FakeGateway implements DiscordGateway {
   }
 
   async sendMessage(channelId: string, payload: MessagePayload) {
-    if (this.failSend) throw new Error('Missing Access');
+    if (this.failSend || this.failSendChannels.has(channelId)) throw new Error('Missing Access');
     const messageId = `m${++this.counter}`;
     this.messages.set(`${channelId}/${messageId}`, payload);
     this.sent.push({ channelId, messageId, payload });
@@ -122,6 +127,20 @@ export class FakeGateway implements DiscordGateway {
   }
   async getMemberPermissions(userId: string) {
     return this.permissions.get(userId) ?? { isOwner: false, isAdmin: false, isMod: false };
+  }
+  async listChannels() {
+    return [...this.channels.values()];
+  }
+  async listRoles(): Promise<RoleInfo[]> {
+    return [...this.roles].map((id, i) => ({
+      id,
+      name: `cargo-${id.slice(-4)}`,
+      color: 0,
+      position: i,
+    }));
+  }
+  async getMemberProfile(userId: string) {
+    return this.profiles.get(userId) ?? null;
   }
 }
 

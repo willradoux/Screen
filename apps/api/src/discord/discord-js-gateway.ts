@@ -10,6 +10,8 @@ import type {
   ChannelInfo,
   DiscordGateway,
   MemberPermissions,
+  MemberProfile,
+  RoleInfo,
   MessagePayload,
   VoiceStateEntry,
 } from './gateway.js';
@@ -105,6 +107,47 @@ export class DiscordJsGateway implements DiscordGateway {
       }
     }
     return out;
+  }
+
+  async listChannels(): Promise<ChannelInfo[]> {
+    const guild = this.client.guilds.cache.get(this.guildId);
+    if (!guild) return [];
+    const channels = await guild.channels.fetch();
+    const out: ChannelInfo[] = [];
+    for (const c of channels.values()) {
+      if (!c) continue;
+      let kind: ChannelInfo['kind'] = 'other';
+      if (c.type === ChannelType.GuildVoice) kind = 'voice';
+      else if (c.type === ChannelType.GuildText || c.type === ChannelType.GuildAnnouncement) {
+        kind = 'text';
+      } else if (c.type === ChannelType.GuildCategory) kind = 'category';
+      if (kind === 'other') continue;
+      out.push({ id: c.id, name: c.name, kind, parentId: c.parentId ?? null });
+    }
+    return out;
+  }
+
+  async listRoles(): Promise<RoleInfo[]> {
+    const guild = this.client.guilds.cache.get(this.guildId);
+    if (!guild) return [];
+    const roles = await guild.roles.fetch();
+    return [...roles.values()]
+      .filter((r) => r.id !== guild.id && !r.managed)
+      .map((r) => ({ id: r.id, name: r.name, color: r.color, position: r.position }))
+      .sort((a, b) => b.position - a.position);
+  }
+
+  async getMemberProfile(userId: string): Promise<MemberProfile | null> {
+    const guild = this.client.guilds.cache.get(this.guildId);
+    if (!guild) return null;
+    const member = await guild.members.fetch(userId).catch(() => null);
+    if (!member) return null;
+    return {
+      id: member.id,
+      username: member.user.username,
+      displayName: member.displayName,
+      avatarUrl: member.displayAvatarURL({ extension: 'png', size: 64 }),
+    };
   }
 
   async getMemberRoleIds(userId: string): Promise<string[]> {

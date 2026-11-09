@@ -103,8 +103,20 @@ describe('SettingsRepo (MongoDB)', () => {
       meetingAllowedRoleIds: [],
       maxParticipantsLive: 25,
       graceSeconds: 30,
+      liveChannelIds: [],
+      logChannelId: null,
+      mentionRoleId: null,
+      emptyLiveEndSeconds: null,
+      idleSessionMinutes: 10,
+      activationGraceMinutes: 3,
+      panelUsers: [],
     });
-    expect(await settings.getRoleConfig(GUILD)).toEqual({ adminRoleIds: [], modRoleIds: [] });
+    expect(await settings.getRoleConfig(GUILD)).toEqual({
+      adminRoleIds: [],
+      modRoleIds: [],
+      adminUserIds: [],
+      modUserIds: [],
+    });
   });
 
   it('update faz upsert e mantém o resto', async () => {

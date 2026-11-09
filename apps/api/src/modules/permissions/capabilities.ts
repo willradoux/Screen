@@ -7,6 +7,8 @@ import { forbidden, unauthenticated } from '../../shared/errors.js';
  * docs/backend/permissoes.md: mudou aqui, mude lá (e em `capabilities.test.ts`).
  */
 export const CAPABILITY_MIN_ROLE = {
+  /** Abrir o painel de administração (ver sessões, reuniões; ADMIN altera configurações). */
+  'panel.access': 'MOD',
   'room.end': 'MOD',
   'room.lecture': 'MOD',
   'room.edit': 'ADMIN',
@@ -16,6 +18,8 @@ export const CAPABILITY_MIN_ROLE = {
   'moderation.speaker': 'MOD',
   'meeting.manage': 'ADMIN',
   'settings.manage': 'ADMIN',
+  /** Adicionar/remover pessoas com acesso ao painel e ver canais e cargos do servidor. */
+  'panel.users': 'ADMIN',
   'audit.read': 'ADMIN',
 } as const satisfies Record<string, Role>;
 

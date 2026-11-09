@@ -39,9 +39,26 @@ export class RoomAnnouncer {
     this.debounceMs = deps.debounceMs ?? 15_000;
   }
 
-  private async targetChannel(room: RoomRecord): Promise<string | null> {
+  /**
+   * Onde publicar. Live: no chat da própria call (canal de voz). Reunião: canal de avisos.
+   * O canal de texto de lives, se existir, é só o plano B quando o bot não consegue escrever na call.
+   */
+  private async targetChannels(room: RoomRecord): Promise<string[]> {
     const s = await this.deps.settings.get(this.deps.guildId);
-    return room.type === 'LIVE' ? s.liveTextChannelId : s.announceChannelId;
+    if (room.type === 'LIVE') {
+      return [room.voiceChannelId, s.liveTextChannelId].filter((c): c is string => Boolean(c));
+    }
+    return s.announceChannelId ? [s.announceChannelId] : [];
+  }
+
+  private async targetChannel(room: RoomRecord): Promise<string | null> {
+    return (await this.targetChannels(room))[0] ?? null;
+  }
+
+  /** Cargo marcado nos avisos: o do painel; sem ele, o da variável de ambiente; sem nenhum, ninguém. */
+  private async mentionRole(): Promise<string | undefined> {
+    const s = await this.deps.settings.get(this.deps.guildId);
+    return s.mentionRoleId ?? this.deps.mentionRoleId;
   }
 
   private async render(room: RoomRecord) {
@@ -52,7 +69,7 @@ export class RoomAnnouncer {
     return buildRoomMessage(room, {
       webUrl: this.deps.webUrl,
       participants: this.deps.countParticipants(room),
-      mentionRoleId: this.deps.mentionRoleId,
+      mentionRoleId: await this.mentionRole(),
       summary,
     });
   }
@@ -68,7 +85,7 @@ export class RoomAnnouncer {
       channelId,
       buildMeetingNotice(room, kind, {
         webUrl: this.deps.webUrl,
-        mentionRoleId: this.deps.mentionRoleId,
+        mentionRoleId: await this.mentionRole(),
       }),
     );
     return true;
@@ -76,19 +93,32 @@ export class RoomAnnouncer {
 
   /** Envia uma mensagem nova e grava o ID. `false` se não houver canal configurado. */
   async publish(room: RoomRecord): Promise<boolean> {
-    const channelId = await this.targetChannel(room);
-    if (!channelId) {
+    const candidates = await this.targetChannels(room);
+    if (candidates.length === 0) {
       this.deps.logger.warn(
         { roomId: room.id, type: room.type },
         'canal de avisos não configurado',
       );
       return false;
     }
-    const messageId = await this.deps.gateway.sendMessage(channelId, await this.render(room));
-    await this.deps.rooms.setAnnouncement(room.id, channelId, messageId);
-    room.announceChannelId = channelId;
-    room.announceMessageId = messageId;
-    return true;
+    const payload = await this.render(room);
+    let lastError: unknown;
+    for (const channelId of candidates) {
+      try {
+        const messageId = await this.deps.gateway.sendMessage(channelId, payload);
+        await this.deps.rooms.setAnnouncement(room.id, channelId, messageId);
+        room.announceChannelId = channelId;
+        room.announceMessageId = messageId;
+        return true;
+      } catch (err) {
+        lastError = err;
+        this.deps.logger.warn(
+          { err, roomId: room.id, channelId },
+          'não consegui enviar o aviso neste canal; tentando o próximo',
+        );
+      }
+    }
+    throw lastError;
   }
 
   /** Publica se ainda não há mensagem; senão atualiza (reenvia se foi apagada). */

@@ -22,6 +22,12 @@ const patchSchemas = {
       meetingAllowedRoleIds: roleList.optional(),
       maxParticipantsLive: z.number().int().min(2).max(100).optional(),
       graceSeconds: z.number().int().min(5).max(300).optional(),
+      liveChannelIds: z.array(snowflake).max(50).optional(),
+      logChannelId: snowflake.nullable().optional(),
+      mentionRoleId: snowflake.nullable().optional(),
+      emptyLiveEndSeconds: z.number().int().min(10).max(3600).nullable().optional(),
+      idleSessionMinutes: z.number().int().min(1).max(240).optional(),
+      activationGraceMinutes: z.number().int().min(1).max(60).optional(),
     })
     .strict()
     .refine((b) => Object.keys(b).length > 0, 'Informe pelo menos um campo.'),
@@ -43,6 +49,17 @@ const auditSchemas = {
   }),
 };
 
+const panelUserSchemas = {
+  body: z
+    .object({
+      userId: snowflake,
+      role: z.enum(['ADMIN', 'MOD']),
+      note: z.string().trim().max(100).nullable().optional(),
+    })
+    .strict(),
+};
+const panelUserParams = { params: z.object({ userId: snowflake }) };
+
 const toDto = (s: GuildSettings) => ({
   guildId: s.guildId,
   liveCategoryId: s.liveCategoryId,
@@ -53,6 +70,12 @@ const toDto = (s: GuildSettings) => ({
   meetingAllowedRoleIds: s.meetingAllowedRoleIds,
   maxParticipantsLive: s.maxParticipantsLive,
   graceSeconds: s.graceSeconds,
+  liveChannelIds: s.liveChannelIds,
+  logChannelId: s.logChannelId,
+  mentionRoleId: s.mentionRoleId,
+  emptyLiveEndSeconds: s.emptyLiveEndSeconds,
+  idleSessionMinutes: s.idleSessionMinutes,
+  activationGraceMinutes: s.activationGraceMinutes,
 });
 
 export interface AdminApi {
@@ -80,6 +103,52 @@ export function adminRoutes(api: AdminApi, auth: AuthService): Router {
       const patch = Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined));
       const updated = await api.settings.update(req.auth!.identity!.user.id, patch);
       res.json({ data: toDto(updated) });
+    },
+  );
+
+  // Canais e cargos do servidor, para o painel montar as listas de escolha.
+  router.get('/guild', needAuth, requireCapability('panel.users'), async (_req, res) => {
+    res.json({ data: await api.settings.catalog() });
+  });
+
+  router.get('/panel-users', needAuth, requireCapability('panel.users'), async (_req, res) => {
+    const users = await api.settings.listPanelUsers();
+    res.json({
+      data: users.map((u) => ({
+        userId: u.userId,
+        role: u.role,
+        note: u.note,
+        addedBy: u.addedBy,
+        addedAt: u.addedAt.toISOString(),
+        displayName: u.profile?.displayName ?? null,
+        username: u.profile?.username ?? null,
+        avatarUrl: u.profile?.avatarUrl ?? null,
+        inServer: u.profile !== null,
+      })),
+    });
+  });
+
+  router.post(
+    '/panel-users',
+    needAuth,
+    requireCapability('panel.users'),
+    validate(panelUserSchemas),
+    async (req, res) => {
+      const { body } = getValidated(res, panelUserSchemas);
+      await api.settings.addPanelUser(req.auth!.identity!.user.id, body);
+      res.status(201).json({ data: { userId: body.userId, role: body.role } });
+    },
+  );
+
+  router.delete(
+    '/panel-users/:userId',
+    needAuth,
+    requireCapability('panel.users'),
+    validate(panelUserParams),
+    async (req, res) => {
+      const { params } = getValidated(res, panelUserParams);
+      await api.settings.removePanelUser(req.auth!.identity!.user.id, params.userId);
+      res.status(204).end();
     },
   );
 

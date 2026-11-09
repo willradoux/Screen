@@ -23,11 +23,18 @@ export function resolveRole(input: ResolveRoleInput): Role {
   if (
     input.hasDiscordAdminPermission ||
     input.bootstrapAdminIds.includes(input.userId) ||
+    (input.config.adminUserIds ?? []).includes(input.userId) ||
     has(input.config.adminRoleIds) ||
     has(input.fixedAdminRoleIds ?? [])
   ) {
     return 'ADMIN';
   }
-  if (input.hasDiscordModPermission || has(input.config.modRoleIds)) return 'MOD';
+  if (
+    input.hasDiscordModPermission ||
+    has(input.config.modRoleIds) ||
+    (input.config.modUserIds ?? []).includes(input.userId)
+  ) {
+    return 'MOD';
+  }
   return 'MEMBER';
 }

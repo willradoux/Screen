@@ -51,4 +51,25 @@ export interface DiscordGateway {
   getMemberPermissions(userId: string): Promise<MemberPermissions>;
   /** Cargos do membro no servidor. Lança se ele não for encontrado. */
   getMemberRoleIds(userId: string): Promise<string[]>;
+  /** Todos os canais do servidor (voz, texto e categorias), para o painel escolher. */
+  listChannels(): Promise<ChannelInfo[]>;
+  /** Cargos do servidor (sem @everyone), para o painel escolher. */
+  listRoles(): Promise<RoleInfo[]>;
+  /** Dados públicos de uma pessoa do servidor (para o painel mostrar nome ao adicionar). `null` se não for membro. */
+  getMemberProfile(userId: string): Promise<MemberProfile | null>;
+}
+
+export interface RoleInfo {
+  id: string;
+  name: string;
+  color: number;
+  /** Posição na hierarquia (maior = mais alto). */
+  position: number;
+}
+
+export interface MemberProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
 }

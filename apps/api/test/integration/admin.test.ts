@@ -50,6 +50,12 @@ describe('GET /settings', () => {
       meetingAllowedRoleIds: [],
       maxParticipantsLive: 25,
       graceSeconds: 30,
+      liveChannelIds: [],
+      logChannelId: null,
+      mentionRoleId: null,
+      emptyLiveEndSeconds: null,
+      idleSessionMinutes: 10,
+      activationGraceMinutes: 3,
     });
 
     for (const roles of [[MOD_ROLE], []]) {

@@ -14,6 +14,8 @@ import { ALL_SOURCES } from '../../src/modules/livekit/livekit.gateway.js';
  * que mudar uma capacidade sem mudar a documentação quebre este teste.
  */
 const MATRIX: Record<Capability, { MEMBER: boolean; MOD: boolean; ADMIN: boolean }> = {
+  'panel.access': { MEMBER: false, MOD: true, ADMIN: true },
+  'panel.users': { MEMBER: false, MOD: false, ADMIN: true },
   'room.end': { MEMBER: false, MOD: true, ADMIN: true },
   'room.lecture': { MEMBER: false, MOD: true, ADMIN: true },
   'room.edit': { MEMBER: false, MOD: false, ADMIN: true },

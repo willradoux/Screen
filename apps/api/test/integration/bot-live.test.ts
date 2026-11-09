@@ -42,7 +42,8 @@ describe('entrada num canal da categoria de lives', () => {
 
     expect(b.gateway.sent).toHaveLength(1);
     const { channelId, payload } = b.gateway.sent[0]!;
-    expect(channelId).toBe(LIVE_TEXT);
+    // O link vai para o chat da própria call.
+    expect(channelId).toBe(VOICE_1);
     expect(payload.embeds[0]!.title).toBe('🔴 Live aberta: Live 1');
     expect(payload.embeds[0]!.description).toContain(`<@${U1}>`);
     expect(field(payload, 'Participantes')).toBe('1');
@@ -147,18 +148,33 @@ describe('o que NÃO deve abrir sala', () => {
 });
 
 describe('canal de embeds não configurado ou com problema', () => {
-  it('sem canal das lives: a sala é criada, sem embed e sem erro; ao configurar, o próximo join publica', async () => {
+  it('sem canal de texto configurado: o link vai direto para o chat da call', async () => {
     const b = buildBot();
     b.configureLives();
     b.settings.settings.liveTextChannelId = null;
     await join(b, U1, VOICE_1);
     expect(b.rooms.rooms.size).toBe(1);
-    expect(b.gateway.sent).toHaveLength(0);
-
-    b.settings.settings.liveTextChannelId = LIVE_TEXT;
-    await join(b, U2, VOICE_1);
     expect(b.gateway.sent).toHaveLength(1);
+    expect(b.gateway.sent[0]!.channelId).toBe(VOICE_1);
+  });
+
+  it('bot sem permissão no chat da call: usa o canal de texto como plano B', async () => {
+    const b = buildBot();
+    b.configureLives();
+    b.gateway.failSendChannels.add(VOICE_1);
+    await join(b, U1, VOICE_1);
+    expect(b.gateway.sent).toHaveLength(1);
+    expect(b.gateway.sent[0]!.channelId).toBe(LIVE_TEXT);
+  });
+
+  it('sem permissão na call e sem plano B: a sala é criada, sem embed e sem derrubar nada', async () => {
+    const b = buildBot();
+    b.configureLives();
+    b.settings.settings.liveTextChannelId = null;
+    b.gateway.failSendChannels.add(VOICE_1);
+    await expect(join(b, U1, VOICE_1)).resolves.toBeUndefined();
     expect(b.rooms.rooms.size).toBe(1);
+    expect(b.gateway.sent).toHaveLength(0);
   });
 
   it('falha ao enviar (bot sem permissão) não derruba o handler', async () => {

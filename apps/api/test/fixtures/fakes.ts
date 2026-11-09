@@ -9,6 +9,7 @@ import type {
 } from '../../src/modules/auth/auth.types.js';
 import type {
   GuildSettings,
+  PanelUser,
   RoleConfig,
   RoleListField,
   SettingsPatch,
@@ -166,13 +167,26 @@ export class MemorySettings implements SettingsRepo {
     meetingAllowedRoleIds: [],
     maxParticipantsLive: 25,
     graceSeconds: 30,
+    liveChannelIds: [],
+    logChannelId: null,
+    mentionRoleId: null,
+    emptyLiveEndSeconds: null,
+    idleSessionMinutes: 10,
+    activationGraceMinutes: 3,
+    panelUsers: [],
   };
   /** Compatibilidade com testes antigos que mexiam em `config`. */
   get config(): RoleConfig {
     return this.settings;
   }
   async getRoleConfig() {
-    return { adminRoleIds: this.settings.adminRoleIds, modRoleIds: this.settings.modRoleIds };
+    const users = this.settings.panelUsers;
+    return {
+      adminRoleIds: this.settings.adminRoleIds,
+      modRoleIds: this.settings.modRoleIds,
+      adminUserIds: users.filter((p) => p.role === 'ADMIN').map((p) => p.userId),
+      modUserIds: users.filter((p) => p.role === 'MOD').map((p) => p.userId),
+    };
   }
   async get() {
     return structuredClone(this.settings);
@@ -194,12 +208,34 @@ export class MemorySettings implements SettingsRepo {
   }
   async removeReference(_guildId: string, id: string) {
     const s = this.settings;
-    for (const f of ['adminRoleIds', 'modRoleIds', 'meetingAllowedRoleIds'] as const) {
+    for (const f of [
+      'adminRoleIds',
+      'modRoleIds',
+      'meetingAllowedRoleIds',
+      'liveChannelIds',
+    ] as const) {
       s[f] = s[f].filter((r) => r !== id);
     }
-    for (const f of ['liveCategoryId', 'liveTextChannelId', 'announceChannelId'] as const) {
+    for (const f of [
+      'liveCategoryId',
+      'liveTextChannelId',
+      'announceChannelId',
+      'logChannelId',
+      'mentionRoleId',
+    ] as const) {
       if (s[f] === id) s[f] = null;
     }
+  }
+  async setPanelUser(_guildId: string, user: PanelUser) {
+    this.settings.panelUsers = [
+      ...this.settings.panelUsers.filter((p) => p.userId !== user.userId),
+      user,
+    ];
+    return structuredClone(this.settings);
+  }
+  async removePanelUser(_guildId: string, userId: string) {
+    this.settings.panelUsers = this.settings.panelUsers.filter((p) => p.userId !== userId);
+    return structuredClone(this.settings);
   }
 }
 

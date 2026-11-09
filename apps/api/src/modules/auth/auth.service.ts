@@ -93,6 +93,10 @@ export class AuthService {
     }
 
     if (!member) {
+      // Colaborador de fora do servidor adicionado no painel: entra, mas só com o acesso do painel.
+      member = await this.outsiderMember(tokens.accessToken);
+    }
+    if (!member) {
       throw new AppError('NOT_IN_GUILD', 403, 'Você precisa estar no servidor Acelera DEV.');
     }
 
@@ -221,6 +225,22 @@ export class AuthService {
     };
   }
 
+  /**
+   * Quem NÃO está no servidor só entra se foi adicionado ao painel (ver `panelUsers`).
+   * Devolve um "membro" sem cargos; o papel vem exclusivamente da lista do painel.
+   */
+  private async outsiderMember(accessToken: string): Promise<DiscordMember | null> {
+    const me = await this.deps.discord.fetchMe(accessToken).catch((err: unknown) => {
+      if (err instanceof DiscordAuthError) return null;
+      throw err;
+    });
+    if (!me) return null;
+    const config = await this.deps.settings.getRoleConfig(this.deps.env.DISCORD_GUILD_ID);
+    const listed =
+      (config.adminUserIds ?? []).includes(me.id) || (config.modUserIds ?? []).includes(me.id);
+    return listed ? { roles: [], nick: null, user: me } : null;
+  }
+
   private async getMember(session: SessionRecord): Promise<DiscordMember> {
     const now = this.now().getTime();
     const cached = this.memberCache.get(session.userId);
@@ -229,13 +249,14 @@ export class AuthService {
     try {
       const accessToken = await this.accessToken(session);
       const member = await this.deps.discord.fetchGuildMember(accessToken);
-      if (!member) {
+      const resolved = member ?? (await this.outsiderMember(accessToken));
+      if (!resolved) {
         // Saiu do servidor: perde o acesso.
         await this.revokeUser(session.userId);
         throw new AppError('NOT_IN_GUILD', 403, 'Você precisa estar no servidor Acelera DEV.');
       }
-      this.memberCache.set(session.userId, { until: now + MEMBER_CACHE_MS, member });
-      return member;
+      this.memberCache.set(session.userId, { until: now + MEMBER_CACHE_MS, member: resolved });
+      return resolved;
     } catch (err) {
       if (err instanceof AppError) throw err;
       if (err instanceof DiscordAuthError) {
