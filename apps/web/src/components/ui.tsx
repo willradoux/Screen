@@ -10,7 +10,7 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-brand-500 text-on-brand hover:bg-brand-400 active:bg-brand-600 disabled:bg-zinc-800 disabled:text-zinc-500',
+    'bg-zinc-50 text-zinc-950 hover:bg-zinc-200 active:bg-zinc-300 disabled:bg-zinc-800 disabled:text-zinc-500',
   secondary:
     'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 active:bg-zinc-700 disabled:text-zinc-500',
   danger:
@@ -58,9 +58,15 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md'; label?: st
       aria-label={label ?? 'Carregando'}
       className="inline-flex items-center gap-2.5"
     >
-      <span
-        className={`${dim} animate-spin rounded-full border-2 border-zinc-700 border-t-brand-400`}
-      />
+      <svg viewBox="0 0 24 24" className={`${dim} animate-spin`} fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" className="stroke-zinc-700" strokeWidth="2.5" />
+        <path
+          d="M21 12a9 9 0 0 0-9-9"
+          className="stroke-brand-400"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </svg>
       {label && <span className="text-sm text-zinc-400">{label}</span>}
     </span>
   );

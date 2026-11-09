@@ -104,7 +104,7 @@ export function CaptionsOverlay({ captions, now }: { captions: Caption[]; now: n
       {recent.map((c) => (
         <p
           key={c.userId}
-          className="inline-block rounded-xl bg-black/75 px-3 py-1.5 text-sm text-on-brand"
+          className="inline-block rounded-xl bg-black/75 px-3 py-1.5 text-sm text-white"
         >
           <strong className="mr-1 text-brand-300">{c.displayName}:</strong>
           {c.text}

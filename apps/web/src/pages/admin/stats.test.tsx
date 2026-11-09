@@ -74,7 +74,7 @@ describe('CallsSection', () => {
       </MemoryRouter>,
     );
 
-  it('lista as calls, quem está nelas e o link da sala', async () => {
+  it('mostra só as calls com gente; call vazia (mesmo habilitada) não aparece', async () => {
     vi.spyOn(api.calls, 'list').mockResolvedValue([
       {
         id: 'c1',
@@ -84,6 +84,7 @@ describe('CallsSection', () => {
         mediaState: 'IDLE',
       },
       { id: 'c2', name: 'Sala 2', members: [], roomId: null, mediaState: null },
+      { id: 'c3', name: 'Sala 3', members: [], roomId: null, mediaState: null },
     ]);
     inRouter();
     expect(await screen.findByText('Sala 1')).toBeInTheDocument();
@@ -91,8 +92,18 @@ describe('CallsSection', () => {
       'href',
       `/r/${'R'.repeat(22)}`,
     );
-    expect(screen.getByText('vazia')).toBeInTheDocument();
-    expect(screen.getByText(/Entre na call no Discord/)).toBeInTheDocument();
+    expect(screen.queryByText('Sala 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sala 3')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('call')).toHaveLength(1);
+  });
+
+  it('nenhuma call ativa: caixa simples avisando', async () => {
+    vi.spyOn(api.calls, 'list').mockResolvedValue([
+      { id: 'c2', name: 'Sala 2', members: [], roomId: null, mediaState: null },
+    ]);
+    inRouter();
+    expect(await screen.findByText('Não tem call ativa.')).toBeInTheDocument();
+    expect(screen.queryByText('Sala 2')).not.toBeInTheDocument();
   });
 
   it('sem calls ou com erro: não mostra nada', async () => {

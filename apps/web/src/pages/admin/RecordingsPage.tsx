@@ -82,7 +82,7 @@ function Row({ rec, onChanged }: { rec: Recording; onChanged: () => void }) {
         {rec.status === 'READY' && (
           <a
             href={api.recordings.downloadUrl(rec.id)}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-3 py-1.5 text-sm font-semibold text-on-brand hover:bg-brand-400"
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-50 px-3 py-1.5 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
           >
             <Icon name="download" /> Baixar
           </a>

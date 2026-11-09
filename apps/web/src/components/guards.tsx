@@ -2,14 +2,11 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { messageFor } from '../lib/errors';
 import { isAdmin, isStaff } from '../lib/moderation-rules';
-import { Alert, Button, Spinner } from './ui';
+import { Loader } from './Loader';
+import { Alert, Button } from './ui';
 
-export function FullPageSpinner({ label = 'Carregando…' }: { label?: string }) {
-  return (
-    <div className="flex h-full min-h-[50vh] items-center justify-center">
-      <Spinner label={label} />
-    </div>
-  );
+export function FullPageSpinner({ label = 'Carregando' }: { label?: string }) {
+  return <Loader label={label} />;
 }
 
 /** Só passa quem está logado. Anônimos vão para o login e voltam para onde estavam. */
@@ -50,7 +47,7 @@ function Restricted({ text }: { text: string }) {
       </Alert>
       <Link
         to="/"
-        className="inline-block rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-on-brand hover:bg-brand-400"
+        className="inline-block rounded-lg bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200"
       >
         Voltar para a página principal
       </Link>

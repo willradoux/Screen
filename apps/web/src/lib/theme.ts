@@ -8,18 +8,17 @@ export function readTheme(): Theme {
     const saved = localStorage.getItem(KEY);
     if (saved === 'light' || saved === 'dark') return saved;
   } catch {
-    // Armazenamento bloqueado (janela anônima, por exemplo): segue o sistema.
+    // Armazenamento bloqueado (janela anônima, por exemplo): vale o padrão.
   }
-  return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: light)').matches
-    ? 'light'
-    : 'dark';
+  // O tema padrão é o claro, sempre; o escuro é uma escolha da pessoa.
+  return 'light';
 }
 
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme === 'light' ? '#ffffff' : '#090b10');
+    ?.setAttribute('content', theme === 'light' ? '#ffffff' : '#000000');
 }
 
 export function saveTheme(theme: Theme): void {

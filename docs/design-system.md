@@ -4,51 +4,50 @@ Direção, tokens e regras de uso. O código está em `apps/web/src/index.css` (
 
 ## Direção
 
-**Sala de controle de transmissão.** O produto mostra o que está no ar e quem está dentro, então a interface se parece com um painel de operação: listas com réguas em vez de cartões iguais, um estado sempre visível ao lado de cada item e um único azul que significa "ativo". Pedido do projeto: preto, branco e azul claro, nos dois temas.
+**Preto e branco de verdade, com o azul só nos detalhes.**
 
-Escolhas deliberadas para fugir do visual de template:
-
-- **Listas e réguas, não cartões.** Salas, calls, reuniões e gravações são linhas separadas por uma régua de 1 px. Cartões só aparecem quando o conteúdo precisa mesmo de moldura (um formulário, um aviso). Nada de sombra decorativa.
-- **Um só elemento animado sem ação da pessoa:** o ponto vermelho que pulsa em quem está de fato ao vivo. Todo o resto só se move em resposta a um clique.
-- **Cor com função.** Azul = ativo, selecionado, ação principal. Vermelho = ao vivo, gravando, perigo. Âmbar = espera, atenção. Verde = aberto, sucesso. Cinza = tudo o mais.
-- **Sem emoji, sem seta decorativa, sem rótulos em caixa alta.** Rótulos em frase normal.
+- **Tema claro (padrão):** fundo branco real (`#ffffff`), texto e ícones pretos, detalhes em **azul escuro**.
+- **Tema escuro (escolha da pessoa, em Preferências):** fundo preto real (`#000000`), texto e ícones brancos, detalhes em **azul claro**.
+- **Azul é detalhe, nunca bloco:** o ponto do nome, o ponto do item ativo no menu, o anel de foco, links, uma borda de seleção, barras de gráfico, a barra de carregamento. Botões principais e estados ativos são "tinta" (preto no claro, branco no escuro).
+- **Vidro:** menus e folhas flutuam como vidro translúcido (`.glass`: desfoque, borda de luz fina e brilho interno), no computador (barra lateral flutuante), no celular (topo e barra de abas em forma de pílula) e nas folhas de ajustes.
+- **Listas e réguas, não cartões.** Salas, calls, reuniões e gravações são linhas separadas por uma régua de 1 px.
+- **Um só elemento animado sem ação da pessoa:** o ponto vermelho que pulsa em quem está ao vivo. A tela de carregamento é a marca com uma barra fina que corre.
+- **Cor com função.** Vermelho = ao vivo, gravando, perigo. Âmbar = espera, atenção. Verde = aberto, sucesso. Cinza = tudo o mais.
+- **Sem emoji, sem seta decorativa, sem rótulos em caixa alta.**
 
 ## Cor
 
-Os componentes usam a escala `zinc-*` (neutros) e `brand-*` (azul) do Tailwind, **redefinidas** em `index.css`. No tema claro a escala de neutros é invertida (`zinc-950` vira o branco do fundo, `zinc-50` vira o quase preto do texto), então um componente escrito uma vez serve aos dois temas.
+Os componentes usam a escala `zinc-*` (neutros, **cinza puro** sem tom azulado) e `brand-*` (o azul de detalhe), redefinidas em `index.css`. No tema claro a escala de neutros é invertida (`zinc-950` vira o branco do fundo, `zinc-50` vira o preto do texto), então um componente escrito uma vez serve aos dois temas.
 
-| Papel | Escuro | Claro |
+| Papel | Claro | Escuro |
 |---|---|---|
-| Fundo da página (`zinc-950`) | `#090b10` | `#fbfcfe` |
-| Superfície / painel (`zinc-900`) | `#10141c` | `#f3f6fb` |
-| Realce, hover, ativo (`zinc-800`) | `#1c2230` | `#e5eaf3` |
-| Borda (`zinc-700`) | `#2a3344` | `#d3dbe8` |
-| Texto fraco / dica (`zinc-500`) | `#667289` | `#7c8aa3` |
-| Texto secundário (`zinc-400`) | `#8f9bb0` | `#5b6a84` |
-| Texto (`zinc-200` a `zinc-50`) | `#cbd3e1` a `#f3f6fb` | `#26334a` a `#0b1220` |
-| Azul de sinal (`brand-500`) | `#6cb4ff` | `#1f6fe5` |
-| Texto sobre o azul (`on-brand`) | `#05101f` | `#ffffff` |
+| Fundo da página (`zinc-950`) | `#ffffff` | `#000000` |
+| Superfície / painel (`zinc-900`) | `#f6f6f6` | `#0d0d0d` |
+| Realce, hover, ativo (`zinc-800`) | `#ececec` | `#1a1a1a` |
+| Borda (`zinc-700`) | `#d9d9d9` | `#2e2e2e` |
+| Texto fraco / dica (`zinc-500`) | `#737373` | `#7a7a7a` |
+| Texto secundário (`zinc-400`) | `#4d4d4d` | `#a6a6a6` |
+| Texto (`zinc-50`) | `#000000` | `#ffffff` |
+| Azul de detalhe (`brand-500`) | `#0b3fa8` | `#6db1ff` |
 
-Semânticas: erro `red`, atenção `amber`, sucesso `emerald`, informação = o próprio azul. Cada uma tem uma variante legível em cada tema (nos avisos, o texto vermelho do tema claro é escuro para manter o contraste).
-
-Regras: não existe cor solta no código. Se precisar de uma cor nova, ela entra em `index.css`. Texto sobre o azul usa `text-on-brand`, nunca `text-white`.
+Regras: não existe cor solta no código; cor nova entra em `index.css`. Texto sobre o fundo usa a escala `zinc`; texto sobre vídeo (sempre escuro) usa `text-white`.
 
 ## Tipografia
 
 | Uso | Fonte | Por quê |
 |---|---|---|
-| Títulos e marca | **Bricolage Grotesque** (variável) | Grotesca com caráter e boa presença em títulos curtos; combina com o nome em minúsculas |
-| Interface e texto | **Instrument Sans** (variável) | Legível em tamanhos pequenos, levemente condensada (cabe mais em tabelas e no celular), com números de boa leitura |
+| Títulos e marca | **Sora** (variável) | Geométrica e tecnológica, boa presença em títulos e no nome |
+| Interface e texto | **Manrope** (variável) | Limpa, moderna e muito legível em tamanhos pequenos |
 
-Ambas são auto-hospedadas (`@fontsource-variable`), então não há pedido a servidores de fonte de terceiros.
+Ambas são auto-hospedadas (`@fontsource-variable`), sem pedido a servidores de fonte de terceiros.
 
-Escala: `xs` 12, `sm` 14 (padrão de controles e listas), `base` 16, `lg` 18, `xl` 22, `2xl` 28 (título de página), `3xl` 36, `4xl` 48 (só na tela de entrada). Títulos com `tracking` levemente negativo e `text-wrap: balance`; parágrafos com `text-wrap: pretty`; linhas de texto corrido limitadas a ~65 caracteres. Números em colunas usam a classe `tabular`.
+Escala: `xs` 12, `sm` 14 (padrão de controles e listas), `base` 16, `lg` 18, `xl` 22, `2xl` 28 (título de página), `3xl` 36, `4xl` 48. Títulos com `tracking` levemente negativo e `text-wrap: balance`. Números em colunas usam a classe `tabular`.
 
-**Marca:** `<Wordmark />` escreve "screem" em minúsculas, Bricolage extrapesada com espaçamento bem fechado e termina num ponto azul (o sinal de "no ar"). Sem símbolo, sem ícone.
+**Marca:** `<Wordmark />` escreve "screem" em minúsculas, Sora extrapesada com espaçamento fechado, terminando num ponto azul. Sem símbolo, sem ícone.
 
 ## Forma
 
-Raios: controles `lg` (10 px), painéis `xl` (14 px), barras flutuantes `2xl` (18 px). Bordas de 1 px. Alvos de toque de 40 px ou mais no celular. Foco: anel de 2 px em azul, visível em tudo que é interativo. Movimento: 120 a 150 ms, respeitando `prefers-reduced-motion`.
+Raios generosos: controles `lg` (14 px), painéis `xl` (18 px), menus e folhas de vidro `2xl` a `3xl` (24 a 32 px). Bordas de 1 px. Alvos de toque de 40 px ou mais no celular. Foco: anel de 2 px em azul, visível em tudo que é interativo. Movimento: 120 a 150 ms, respeitando `prefers-reduced-motion`.
 
 ## Componentes (`ui.tsx`)
 

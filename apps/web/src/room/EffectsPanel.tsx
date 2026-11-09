@@ -2,6 +2,7 @@ import type { LocalParticipant, LocalVideoTrack, LocalAudioTrack } from 'livekit
 import { Track } from 'livekit-client';
 import { useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
+import { Sheet } from '../components/Sheet';
 import { applyBackground, BACKGROUND_IMAGES, backgroundSupported } from '../lib/videoEffects';
 import { createVoiceProcessor, VOICE_PRESETS, type VoicePreset } from '../lib/voiceEffects';
 import { speechSupported } from './captions';
@@ -31,7 +32,7 @@ function Chip({
       aria-pressed={active}
       onClick={onClick}
       className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-        active ? 'bg-brand-500 text-on-brand' : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
+        active ? 'bg-zinc-50 text-zinc-950' : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
       }`}
     >
       {children}
@@ -92,7 +93,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
   }
 
   return (
-    <div className="relative">
+    <div>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -102,7 +103,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
       >
         <span
           className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-brand-300 ${
-            open ? 'bg-brand-500 text-on-brand' : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700'
+            open ? 'bg-zinc-50 text-zinc-950' : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700'
           }`}
         >
           <Icon name="palette" size="1.5rem" />
@@ -111,27 +112,9 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
       </button>
 
       {open && (
-        <div
-          role="dialog"
-          aria-label="Efeitos"
-          className="fixed inset-x-3 bottom-28 z-40 mx-auto max-h-[70vh] max-w-sm space-y-4 overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900 p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-full sm:left-1/2 sm:mb-3 sm:w-80 sm:-translate-x-1/2"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-base font-semibold text-zinc-50">Efeitos</h2>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Fechar"
-              className="rounded-full p-1 text-zinc-400 hover:bg-zinc-800"
-            >
-              <Icon name="close" />
-            </button>
-          </div>
-
+        <Sheet title="Efeitos" onClose={() => setOpen(false)}>
           <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Fundo da câmera
-            </legend>
+            <legend className="text-xs font-semibold text-zinc-500">Fundo da câmera</legend>
             <div className="flex flex-wrap gap-2">
               <Chip
                 active={bg === 'none'}
@@ -179,9 +162,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
           </fieldset>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Voz
-            </legend>
+            <legend className="text-xs font-semibold text-zinc-500">Voz</legend>
             <div className="flex flex-wrap gap-2">
               {VOICE_PRESETS.map((v) => (
                 <Chip
@@ -200,9 +181,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
           </fieldset>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Legendas ao vivo
-            </legend>
+            <legend className="text-xs font-semibold text-zinc-500">Legendas ao vivo</legend>
             <Chip active={captionsOn} onClick={onToggleCaptions}>
               {captionsOn ? 'Ligadas' : 'Desligadas'}
             </Chip>
@@ -212,7 +191,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
                 : 'Este navegador não transcreve voz, então você só vê as legendas dos outros. Use o Chrome ou o Edge para legendar a sua fala.'}
             </p>
           </fieldset>
-        </div>
+        </Sheet>
       )}
     </div>
   );

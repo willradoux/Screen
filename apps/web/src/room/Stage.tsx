@@ -82,12 +82,12 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
         </div>
       )}
       <figcaption className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-sm">
-        <span className="truncate font-medium text-on-brand">
+        <span className="truncate font-medium text-white">
           {tile.name}
           {tile.isLocal && ' (você)'}
         </span>
         {tile.role !== 'MEMBER' && (
-          <span className="rounded bg-brand-500/60 px-1.5 text-[10px] font-semibold uppercase text-on-brand">
+          <span className="rounded bg-brand-500/60 px-1.5 text-[10px] font-semibold uppercase text-white">
             {ROLE_LABEL[tile.role]}
           </span>
         )}
@@ -111,7 +111,7 @@ function ScreenTile({ tile }: { tile: Tile }) {
       className="relative aspect-video w-full overflow-hidden rounded-xl border border-brand-400/60 bg-black"
     >
       <Video pub={tile.screenPub} fit="contain" label={`Tela de ${tile.name}`} />
-      <figcaption className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-xs text-on-brand">
+      <figcaption className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
       </figcaption>

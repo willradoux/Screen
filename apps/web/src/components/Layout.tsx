@@ -16,9 +16,22 @@ interface NavItem {
 }
 
 const sideLink = ({ isActive }: { isActive: boolean }) =>
-  `flex h-9 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${
-    isActive ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
+  `flex h-10 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors ${
+    isActive ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-50'
   }`;
+
+/** Conteúdo de um item de menu: ícone, rótulo e, no item ativo, um ponto azul (o detalhe). */
+function NavContent({ item, isActive }: { item: NavItem; isActive: boolean }) {
+  return (
+    <>
+      <Icon name={item.icon} size="1.2rem" />
+      {item.label}
+      {isActive && (
+        <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
+      )}
+    </>
+  );
+}
 
 const tabLink = ({ isActive }: { isActive: boolean }) =>
   `flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[0.6875rem] font-medium transition-colors ${
@@ -62,8 +75,7 @@ function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
       {title && <p className="px-3 pb-1 pt-5 text-xs font-medium text-zinc-500">{title}</p>}
       {items.map((i) => (
         <NavLink key={i.to} to={i.to} end={i.end} className={sideLink}>
-          <Icon name={i.icon} size="1.15rem" />
-          {i.label}
+          {({ isActive }) => <NavContent item={i} isActive={isActive} />}
         </NavLink>
       ))}
     </div>
@@ -84,6 +96,7 @@ export function Layout() {
     { to: '/', label: 'Salas', icon: 'videocam', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
     { to: '/features', label: 'Guia', icon: 'info' },
+    { to: '/preferencias', label: 'Preferências', icon: 'settings' },
   ];
   const admin: NavItem[] = [];
   if (user && isStaff(user.role)) {
@@ -104,8 +117,8 @@ export function Layout() {
   const overflow = all.length <= 5 ? [] : all.slice(4);
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-zinc-800 bg-zinc-950 px-3 py-5 md:flex">
+    <div className="min-h-dvh md:grid md:grid-cols-[17.5rem_1fr]">
+      <aside className="glass sticky top-4 m-4 mr-0 hidden h-[calc(100dvh-2rem)] flex-col rounded-3xl px-3 py-5 md:flex">
         <div className="px-3 pb-4">
           <Wordmark />
         </div>
@@ -138,7 +151,7 @@ export function Layout() {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/90 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] backdrop-blur md:hidden">
+        <header className="glass sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-30 mx-3 mt-[calc(env(safe-area-inset-top)+0.75rem)] flex items-center justify-between rounded-full px-5 py-2.5 md:hidden">
           <Wordmark size="sm" />
           <div className="flex items-center gap-1">
             <ThemeToggle />
@@ -146,28 +159,27 @@ export function Layout() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 sm:px-6 md:px-10 md:pb-14 md:pt-10">
+        <main className="mx-auto w-full max-w-5xl px-4 pb-36 pt-6 sm:px-6 md:px-10 md:pb-14 md:pt-10">
           <SetupBanners />
           <Outlet />
         </main>
 
         <nav
           aria-label="Navegação"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800 bg-zinc-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+          className="glass fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 mx-auto max-w-md overflow-hidden rounded-[2rem] md:hidden"
         >
           {more && (
-            <div className="pop-in space-y-0.5 border-b border-zinc-800 p-2">
+            <div className="pop-in space-y-0.5 border-b border-zinc-800/60 p-2">
               {overflow.map((i) => (
                 <NavLink key={i.to} to={i.to} end={i.end} className={sideLink}>
-                  <Icon name={i.icon} size="1.15rem" />
-                  {i.label}
+                  {({ isActive }) => <NavContent item={i} isActive={isActive} />}
                 </NavLink>
               ))}
               <button
                 type="button"
                 onClick={() => void logout()}
                 aria-label="Sair"
-                className="flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-zinc-400 hover:bg-zinc-900"
+                className="flex h-10 w-full items-center gap-3 rounded-2xl px-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/60"
               >
                 <Icon name="logout" size="1.15rem" />
                 Sair

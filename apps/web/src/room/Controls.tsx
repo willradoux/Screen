@@ -1,7 +1,7 @@
 import type { LocalParticipant } from 'livekit-client';
 import { useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
-import { canShareScreen, mediaErrorMessage } from '../lib/media';
+import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
 import { EffectsPanel } from './EffectsPanel';
@@ -22,7 +22,7 @@ interface Props {
 }
 
 const SCREEN_UNSUPPORTED =
-  'Compartilhar tela só funciona no computador. Os navegadores de celular e tablet não permitem. Para mostrar a tela, entre pelo computador; no celular você pode transmitir a câmera.';
+  'Compartilhar tela só funciona no computador. Os navegadores de celular e tablet não permitem, nem instalando o Screem como app. Para mostrar a tela, entre pelo computador; no celular você pode transmitir a câmera.';
 
 /** Botão redondo de controle: ícone, rótulo curto e nome completo para leitores de tela. */
 function RoundButton({
@@ -47,9 +47,9 @@ function RoundButton({
   onClick: () => void;
 }) {
   const tone = danger
-    ? 'bg-red-600 text-on-brand hover:bg-red-500'
+    ? 'bg-red-600 text-zinc-950 hover:bg-red-500'
     : active
-      ? 'bg-brand-500 text-on-brand hover:bg-brand-400'
+      ? 'bg-zinc-50 text-zinc-950 hover:bg-zinc-200'
       : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700';
   return (
     <button
@@ -96,6 +96,7 @@ export function Controls({
 
   async function toggle(kind: 'microphone' | 'camera' | 'screen') {
     setBusy(kind);
+    const startedAt = Date.now();
     try {
       if (kind === 'microphone') await local.setMicrophoneEnabled(!local.isMicrophoneEnabled);
       else if (kind === 'camera') {
@@ -108,7 +109,17 @@ export function Controls({
         });
       }
     } catch (err) {
-      const message = mediaErrorMessage(err, kind);
+      let message = mediaErrorMessage(err, kind);
+      // Fechar a janela de escolha da tela não é erro; recusar na hora (sem janela) é.
+      if (
+        !message &&
+        kind === 'screen' &&
+        err instanceof Error &&
+        err.name === 'NotAllowedError' &&
+        Date.now() - startedAt < 500
+      ) {
+        message = SCREEN_REFUSED_AT_ONCE;
+      }
       if (message) onError(message);
     } finally {
       setBusy(null);

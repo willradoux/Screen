@@ -71,9 +71,7 @@ export function StatsPage() {
                 aria-pressed={days === p.days}
                 onClick={() => setDays(p.days)}
                 className={`rounded-full px-3 py-1 text-sm font-medium ${
-                  days === p.days
-                    ? 'bg-brand-500 text-on-brand'
-                    : 'text-zinc-400 hover:text-zinc-100'
+                  days === p.days ? 'bg-zinc-50 text-zinc-950' : 'text-zinc-400 hover:text-zinc-100'
                 }`}
               >
                 {p.label}

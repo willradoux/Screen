@@ -28,7 +28,28 @@ export function mediaErrorMessage(
   }
 }
 
-/** Compartilhar tela só existe em navegadores de computador. */
-export function canShareScreen(): boolean {
-  return typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getDisplayMedia);
+/**
+ * Celular ou tablet? Nesses aparelhos os navegadores NÃO conseguem compartilhar tela: no Chrome para
+ * Android a função existe mas sempre recusa, e no iPhone/iPad não existe. Nenhum ajuste no site muda isso.
+ */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+  if (nav.userAgentData?.mobile) return true;
+  if (/Android|iPhone|iPad|iPod/i.test(nav.userAgent)) return true;
+  // iPad que se apresenta como Mac.
+  return /Macintosh/.test(nav.userAgent) && nav.maxTouchPoints > 1;
 }
+
+/** Compartilhar tela: só em navegadores de computador. */
+export function canShareScreen(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    Boolean(navigator.mediaDevices?.getDisplayMedia) &&
+    !isMobileDevice()
+  );
+}
+
+/** Texto para quando a recusa da tela é imediata (sem a pessoa ter visto a janela de escolha). */
+export const SCREEN_REFUSED_AT_ONCE =
+  'O navegador recusou o compartilhamento de tela na hora. Em celular e tablet isso não é possível; no computador, confira se a permissão de tela do site não está bloqueada no cadeado da barra de endereço.';

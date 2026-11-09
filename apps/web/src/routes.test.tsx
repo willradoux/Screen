@@ -77,6 +77,7 @@ function open(path: string, role: 'MEMBER' | 'MOD' | 'ADMIN' = 'ADMIN') {
 const ROUTES: { path: string; expect: RegExp | string; level?: number }[] = [
   { path: '/', expect: 'Salas' },
   { path: '/reunioes', expect: 'Reuniões' },
+  { path: '/preferencias', expect: 'Preferências' },
   { path: '/features', expect: /Transmita tela/ },
   { path: '/admin', expect: 'Painel' },
   { path: '/admin/reunioes', expect: 'Gerenciar reuniões' },

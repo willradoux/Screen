@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
+import { PreferencesPage } from './pages/PreferencesPage';
 
 // A sala puxa o LiveKit e o Socket.IO (a maior parte do código) e a administração só
 // serve para admins: carregam sob demanda, para login e lista de salas abrirem rápido.
@@ -58,6 +59,7 @@ export function App() {
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="reunioes" element={<MeetingsPage />} />
+            <Route path="preferencias" element={<PreferencesPage />} />
             <Route path="r/:roomId" element={<RoomPage />} />
             <Route element={<RequireStaff />}>
               <Route path="admin" element={<AdminHomePage />} />

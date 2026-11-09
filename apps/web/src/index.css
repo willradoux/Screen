@@ -1,23 +1,22 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/instrument-sans';
-@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/manrope';
+@import '@fontsource-variable/sora';
 
 /*
  * Design system do Screem. Documentação: docs/design-system.md
  *
- * Direção: sala de controle de transmissão. Neutros frios quase pretos (e brancos azulados no
- * claro), um único azul claro como sinal de "ativo", listas e réguas no lugar de cartões.
+ * Regra de cor: o fundo é preto real (#000) no tema escuro e branco real (#fff) no claro. Texto e
+ * ícones são o oposto do fundo. O azul aparece só em detalhes pequenos (foco, pontos de estado, bordas
+ * de destaque, links): azul escuro no tema claro, azul claro no tema escuro. O tema padrão é o claro.
  *
- * Os componentes usam a escala `zinc-*` (neutros) e `brand-*` (azul) do Tailwind, redefinidas
- * aqui. No tema claro a escala de neutros é invertida (zinc-950 vira o fundo branco, zinc-50 vira
- * o texto quase preto), então um componente escrito uma vez serve aos dois temas.
+ * Os componentes usam a escala `zinc-*` (neutros, cinza puro sem tom azulado) e `brand-*` (o azul de
+ * detalhe). No tema claro a escala de neutros é invertida, então um componente escrito uma vez serve
+ * aos dois temas.
  */
 @theme {
   --font-sans:
-    'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    sans-serif;
-  --font-display:
-    'Bricolage Grotesque Variable', 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+    'Manrope Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Sora Variable', 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
 
   /* Escala tipográfica (tamanho / altura de linha) */
   --text-xs: 0.75rem;
@@ -37,37 +36,38 @@
   --text-4xl: 3rem;
   --text-4xl--line-height: 3.125rem;
 
-  /* Raios: controles menores, painéis maiores. Nada de tudo igualmente redondo. */
-  --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.875rem;
-  --radius-2xl: 1.125rem;
+  /* Raios: arredondado generoso (vidro), controles menores que painéis. */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 
-  /* Azul de sinal (tema escuro). */
-  --color-brand-200: #d3e8ff;
-  --color-brand-300: #a9d2ff;
-  --color-brand-400: #86bfff;
-  --color-brand-500: #6cb4ff;
-  --color-brand-600: #4a9bf2;
-  --color-on-brand: #05101f;
+  /* Azul de detalhe (tema escuro: azul claro). */
+  --color-brand-200: #d6e9ff;
+  --color-brand-300: #b3d6ff;
+  --color-brand-400: #8ec3ff;
+  --color-brand-500: #6db1ff;
+  --color-brand-600: #4f9bf2;
+  --color-on-brand: #000000;
 
-  /* Neutros frios (tema escuro). */
-  --color-zinc-50: #f3f6fb;
-  --color-zinc-100: #e4e9f2;
-  --color-zinc-200: #cbd3e1;
-  --color-zinc-300: #aeb8ca;
-  --color-zinc-400: #8f9bb0;
-  --color-zinc-500: #667289;
-  --color-zinc-600: #46526a;
-  --color-zinc-700: #2a3344;
-  --color-zinc-800: #1c2230;
-  --color-zinc-900: #10141c;
-  --color-zinc-950: #090b10;
+  /* Neutros puros (tema escuro): 950 = preto real. */
+  --color-zinc-50: #ffffff;
+  --color-zinc-100: #f5f5f5;
+  --color-zinc-200: #e8e8e8;
+  --color-zinc-300: #cfcfcf;
+  --color-zinc-400: #a6a6a6;
+  --color-zinc-500: #7a7a7a;
+  --color-zinc-600: #4a4a4a;
+  --color-zinc-700: #2e2e2e;
+  --color-zinc-800: #1a1a1a;
+  --color-zinc-900: #0d0d0d;
+  --color-zinc-950: #000000;
 
   /* Semânticas: cada cor tem uma função. */
   --color-red-200: #ffc9c3;
   --color-red-300: #ff9d94;
-  --color-red-500: #ff6b5e;
+  --color-red-500: #ff5a4d;
   --color-red-600: #e5483a;
   --color-amber-200: #fde2a8;
   --color-amber-300: #f8cb74;
@@ -76,39 +76,42 @@
 }
 
 :root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
   color-scheme: dark;
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
-
-  --color-brand-200: #0e3f8f;
-  --color-brand-300: #1a57bd;
-  --color-brand-400: #2368d6;
-  --color-brand-500: #1f6fe5;
-  --color-brand-600: #1859c0;
+/* Tema claro (padrão): branco real, texto preto, azul escuro nos detalhes. */
+:root:not([data-theme='dark']) {
+  --color-brand-200: #0a2a6b;
+  --color-brand-300: #0b3a99;
+  --color-brand-400: #0d47bd;
+  --color-brand-500: #0b3fa8;
+  --color-brand-600: #082f7e;
   --color-on-brand: #ffffff;
 
-  --color-zinc-50: #0b1220;
-  --color-zinc-100: #131d30;
-  --color-zinc-200: #26334a;
-  --color-zinc-300: #3d4b63;
-  --color-zinc-400: #5b6a84;
-  --color-zinc-500: #7c8aa3;
-  --color-zinc-600: #a9b5c9;
-  --color-zinc-700: #d3dbe8;
-  --color-zinc-800: #e5eaf3;
-  --color-zinc-900: #f3f6fb;
-  --color-zinc-950: #fbfcfe;
+  --color-zinc-50: #000000;
+  --color-zinc-100: #0a0a0a;
+  --color-zinc-200: #141414;
+  --color-zinc-300: #2b2b2b;
+  --color-zinc-400: #4d4d4d;
+  --color-zinc-500: #737373;
+  --color-zinc-600: #b3b3b3;
+  --color-zinc-700: #d9d9d9;
+  --color-zinc-800: #ececec;
+  --color-zinc-900: #f6f6f6;
+  --color-zinc-950: #ffffff;
 
-  --color-red-200: #9f1d12;
-  --color-red-300: #b42318;
+  --color-red-200: #8c1c12;
+  --color-red-300: #a8231a;
   --color-red-500: #d92d20;
   --color-red-600: #c0261a;
-  --color-amber-200: #7a4a00;
-  --color-amber-300: #92560a;
-  --color-emerald-200: #0f5a2e;
-  --color-emerald-300: #166534;
+  --color-amber-200: #6b4200;
+  --color-amber-300: #84500a;
+  --color-emerald-200: #0b4f27;
+  --color-emerald-300: #14602f;
 }
 
 html,
@@ -119,7 +122,7 @@ body,
 
 body {
   background: var(--color-zinc-950);
-  color: var(--color-zinc-200);
+  color: var(--color-zinc-50);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
   line-height: 1.5rem;
@@ -130,12 +133,11 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* Títulos: Bricolage Grotesque, firme e com espaçamento fechado. */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 600;
   text-wrap: balance;
 }
@@ -144,13 +146,12 @@ p {
   text-wrap: pretty;
 }
 
-/* Números alinhados em colunas (tabelas, contagens, durações). */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+  background: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
 }
 
 button,
@@ -160,10 +161,36 @@ summary {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Foco visível e consistente em tudo que é interativo. */
+/* Foco visível e consistente em tudo que é interativo (detalhe azul). */
 :focus-visible {
   outline: 2px solid var(--color-brand-400);
   outline-offset: 2px;
+}
+
+/*
+ * Vidro: superfície translúcida com desfoque do que está atrás, borda fina de luz e brilho interno.
+ * Usada nos menus flutuantes, folhas e popovers. Funciona nos dois temas porque parte dos tokens.
+ */
+.glass {
+  background-color: color-mix(in srgb, var(--color-zinc-950) 62%, transparent);
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-zinc-50) 8%, transparent),
+    transparent 55%
+  );
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--color-zinc-50) 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-zinc-50) 14%, transparent),
+    0 18px 50px -12px color-mix(in srgb, #000 35%, transparent);
+}
+
+/* Sem suporte a desfoque (navegadores antigos): fundo sólido, para o texto nunca perder contraste. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--color-zinc-900);
+  }
 }
 
 /* Pulso do sinal "ao vivo": só em quem está de fato no ar. */
@@ -180,15 +207,43 @@ summary {
   animation: screem-signal 1.8s ease-out infinite;
 }
 
-/* Popovers e diálogos: entram rápido, sem chamar atenção. */
 @keyframes screem-pop {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.98);
+    transform: translateY(6px) scale(0.98);
   }
 }
 .pop-in {
-  animation: screem-pop 120ms ease-out;
+  animation: screem-pop 160ms ease-out;
+}
+
+@keyframes screem-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+.sheet-in {
+  animation: screem-sheet 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Barra de carregamento indeterminada (tela de loading). */
+@keyframes screem-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+.loader-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 38%;
+  border-radius: 999px;
+  background: var(--color-brand-500);
+  animation: screem-bar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

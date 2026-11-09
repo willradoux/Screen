@@ -354,7 +354,7 @@ export function FeaturesPage() {
             <ThemeToggle />
             <Link
               to="/"
-              className="inline-flex h-9 items-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-400"
+              className="inline-flex h-9 items-center rounded-lg bg-zinc-50 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
             >
               Entrar
             </Link>
@@ -373,7 +373,7 @@ export function FeaturesPage() {
           </p>
           <Link
             to="/"
-            className="inline-flex h-11 items-center gap-2 rounded-lg bg-brand-500 px-5 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-400"
+            className="inline-flex h-11 items-center gap-2 rounded-lg bg-zinc-50 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
           >
             Entrar com Discord
             <Icon name="chevron_right" />

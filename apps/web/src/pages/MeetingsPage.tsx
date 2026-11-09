@@ -45,7 +45,7 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
         )}
         <Link
           to={`/r/${meeting.id}`}
-          className="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-on-brand transition-colors hover:bg-brand-400"
+          className="inline-flex h-10 items-center rounded-lg bg-zinc-50 px-4 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200"
         >
           Ver sala
         </Link>
