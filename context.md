@@ -1,6 +1,6 @@
 # Screem — contexto para agentes e colaboradores
 
-Atualizado em 09/11/2026, com base na `main` de `willradoux/Screen` até o commit `88fec16`. Leia o código e a documentação atuais antes de implementar: este arquivo é um ponto de partida, não substitui o contrato da API.
+Atualizado em 08/11/2026, com base na `main` de `willradoux/Screen` até o commit `0ab17f8`. Leia o código e a documentação atuais antes de implementar: este arquivo é um ponto de partida, não substitui o contrato da API.
 
 ## O projeto e as pessoas
 
@@ -33,7 +33,7 @@ O link identifica a sala, mas **não é credencial de acesso**. Lives admitem um
 | Estado e autenticação | MongoDB/Mongoose, login Discord OAuth2, sessão por cookie; bot acompanha cargos e voice state. |
 | Mídia | WebRTC via LiveKit (SFU) e Coturn para redes restritivas; ambos na VPS; Socket.IO transporta eventos de aplicação, não vídeo/áudio. |
 
-Há **duas receitas de infraestrutura** no repositório (`infra/docker-compose.yml` com Caddy e `infra/coolify/docker-compose.yml` com proxy do Coolify). A receita atual do Coolify inclui o frontend em nginx na mesma VPS; Render e Vercel foram removidos da configuração. Antes de publicar, conferir domínios, cabeçalhos/CSP e variáveis do front na configuração efetiva do Coolify.
+Há **duas receitas de infraestrutura** no repositório (`infra/docker-compose.yml` com Caddy e `infra/coolify/docker-compose.yml` com proxy do Coolify). Os documentos mais antigos e `apps/web/vercel.json` ainda apontam para **Vercel**. `render.yaml` propõe **API e web** no Render, mas a decisão relatada por Will é **web no Render, backend/bot/mídia/banco na VPS**. Antes de publicar, alinhar uma única configuração de produção, inclusive cabeçalhos/CSP e variáveis do front para o Render; não ativar o Blueprint completo do Render por engano.
 
 Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio pai** para o cookie de sessão (`app.*` e `api.*`, com `SESSION_COOKIE_DOMAIN` correto). `live.*` e `turn.*` apontam para a VPS; a mídia e o TURN precisam de portas apropriadas e não passam pelo proxy HTTP comum. MongoDB e métricas permanecem em rede interna. A documentação exata está em `docs/infra/deploy-coolify.md` e `docs/infra/README.md`.
 
@@ -42,12 +42,12 @@ Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio p
 - Monorepo npm workspaces, Node.js `>=22`: `apps/api`, `apps/web` e `packages/shared`. O backend concentra API REST, Socket.IO, bot e integração LiveKit. O front já tem login, sala, controles de mídia, grid, reuniões, moderação, configurações e auditoria.
 - Contratos em `docs/backend/` e OpenAPI em `/api/v1/docs`; documentação do front em `docs/frontend/README.md`; visão, arquitetura e roadmap em `docs/`. Seguir esses contratos ao mudar API ou UI e atualizar docs/testes quando houver alteração de comportamento.
 - Infra declarada em `infra/`, Dockerfiles (`apps/api`, `apps/web`) e `infra/coolify/docker-compose.yml`; CI do GitHub Actions executa lint, typecheck, testes e build. Existem testes automatizados, inclusive integração com substitutos de serviços externos; isso **não equivale a um teste real** de Discord, LiveKit e redes móveis.
-- `ADMIN_ROLE_IDS` permite cargos admin fixos via ambiente; consultar `docs/backend/permissoes.md` e a implementação atual antes de configurar privilégios. O bot já produz embeds de lives, reuniões e logs, sem emojis; o avatar para upload manual está em `apps/web/public/bot-avatar.png`.
+- O último commit incorporado antes deste arquivo, `0ab17f8`, adicionou `ADMIN_ROLE_IDS` para cargos admin fixos via ambiente; consultar `docs/backend/permissoes.md` e a implementação atual antes de configurar privilégios.
 - As fases 0–8 constam como implementadas no `docs/03-roadmap.md`; a fase 9 é parcial. **Não há comprovação aqui** de deploy operacional, webhook de deploy automático ativado, teste em VPS limpa, restauração de backup, teste real entre navegadores ou teste de carga na KVM1. Flazo está trabalhando no deploy; pedir/registrar evidência após executar cada etapa.
 
 ## Próximo trabalho e limites de capacidade
 
-**Will / frontend:** estabilizar fluxo de login e sala em dispositivos reais. O front agora tem preferências de enquadramento, formato automático de vídeo e escuta mudança de orientação da transmissão (`VideoSettings.tsx` e `Stage.tsx`); validar o mosaico em celulares reais, especialmente na rotação vertical/horizontal, e decidir se falta seleção explícita da resolução de publicação. Priorizar interação, estados de erro e acessibilidade antes de polimento visual.
+**Will / frontend:** estabilizar fluxo de login e sala em dispositivos reais; implementar seleção de qualidade/resolução de vídeo e tela com limites seguros; detectar mudança de orientação vertical/horizontal no celular; adaptar o mosaico à proporção real da câmera para evitar grandes áreas pretas, respeitando enquadramento/privacidade. Hoje `apps/web/src/room/Stage.tsx` fixa tiles em `aspect-video`, e `Controls.tsx` usa resolução fixa para compartilhamento. Essa melhoria foi pedida por Will e **ainda não está pronta**. Priorizar interação, estados de erro e acessibilidade antes de polimento visual.
 
 **Marujo / backend, após divisão com a equipe:** ajudar a revisar segurança do acesso, presença e capacidade, integração Discord/LiveKit, falhas e contratos que o front consome. Evitar desenvolver em paralelo com Flazo nas mesmas áreas sem combinar limites de responsabilidade.
 

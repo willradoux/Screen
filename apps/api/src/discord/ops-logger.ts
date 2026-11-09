@@ -30,7 +30,7 @@ export const AUDIT_LABELS: Record<string, string> = {
   SESSION_REVOKED: 'revogou a sessão de',
   USER_BLOCKED: 'bloqueou',
   SESSION_IDLE: 'sessão de vídeo em espera (ninguém usando)',
-  SESSION_ACTIVATED: 'sessão de vídeo ativada',
+  SESSION_ACTIVATED: '▶sessão de vídeo ativada',
 };
 
 export interface OpsLoggerDeps {
