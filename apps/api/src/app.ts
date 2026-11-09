@@ -80,7 +80,9 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
       methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     }),
   );
-  app.use(express.json({ limit: '100kb' }));
+  // inflate:false recusa corpos comprimidos (gzip, br...): ninguém precisa enviar assim e o decodificador
+  // Brotli do Node teve RCE (CVE-2026-111497, Node2Shell). Defesa extra além de usar Node corrigido.
+  app.use(express.json({ limit: '100kb', inflate: false }));
   app.use(
     rateLimit({
       windowMs: 60_000,

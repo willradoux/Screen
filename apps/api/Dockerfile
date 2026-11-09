@@ -1,6 +1,6 @@
 # Contexto de build: raiz do repositório
 #   docker build -f apps/api/Dockerfile -t screem-api .
-FROM node:22-alpine AS build
+FROM node:22.23.4-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared packages/shared
@@ -10,7 +10,7 @@ RUN npm ci --ignore-scripts \
  && npm run build -w @screem/shared \
  && npm run build -w @screem/api
 
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/package.json /app/package-lock.json ./

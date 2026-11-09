@@ -32,6 +32,11 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
       status = 400;
       code = 'INVALID_JSON';
       message = 'O corpo da requisição não é um JSON válido.';
+    } else if (http.type === 'encoding.unsupported') {
+      // Corpo comprimido (gzip, br...): recusado de propósito (CVE-2026-111497, Node2Shell).
+      status = 415;
+      code = 'UNSUPPORTED_ENCODING';
+      message = 'Envie o corpo da requisição sem compressão.';
     } else if (http.type === 'entity.too.large') {
       status = 413;
       code = 'PAYLOAD_TOO_LARGE';

@@ -383,3 +383,19 @@ describe('Socket.IO', () => {
     expect(socket.connected).toBe(false);
   });
 });
+
+describe('Node2Shell (CVE-2026-111497): corpos comprimidos', () => {
+  it('a API recusa corpo com Content-Encoding br ou gzip, sem tentar descomprimir', async () => {
+    const ctx = buildTestApp();
+    for (const enc of ['br', 'gzip', 'deflate']) {
+      const res = await request(ctx.app)
+        .post('/api/v1/auth/logout')
+        .set('Origin', WEB)
+        .set('Content-Type', 'application/json')
+        .set('Content-Encoding', enc)
+        .send(Buffer.from('{"a":1}'));
+      expect(res.status, enc).toBeGreaterThanOrEqual(400);
+      expect(res.status, enc).toBeLessThan(500);
+    }
+  });
+});
