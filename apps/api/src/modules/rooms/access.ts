@@ -37,6 +37,8 @@ export interface RoomPermissions {
  * palestra, tudo, a menos que sejam palestrantes.
  */
 export function computePermissions(input: {
+  /** Nas lives ninguém modera; o padrão é reunião. */
+  roomType?: 'LIVE' | 'MEETING';
   role: Role;
   userId: string;
   mutedSources: MediaSource[];
@@ -44,7 +46,12 @@ export function computePermissions(input: {
   speakerIds: string[];
 }): RoomPermissions {
   if (ROLE_RANK[input.role] >= ROLE_RANK.MOD) {
-    return { canPublish: true, canPublishSources: ALL_SOURCES, canModerate: true };
+    return {
+      canPublish: true,
+      canPublishSources: ALL_SOURCES,
+      // Só reuniões têm moderação; nas lives todo mundo é igual.
+      canModerate: input.roomType !== 'LIVE',
+    };
   }
   const allowed = ALL_SOURCES.filter((s) => !input.mutedSources.includes(s));
   const lectureBlocked = input.lectureMode && !input.speakerIds.includes(input.userId);
@@ -120,8 +127,9 @@ export class RoomAccess {
     }
 
     // Lives: só quem está AGORA no canal de voz (a checagem é no servidor, via bot).
-    // Moderação entra sem estar na call para poder moderar.
-    if (room.type === 'LIVE' && !isStaff) {
+    // Vale para todos, inclusive admins: nas lives não há moderação, então não há motivo
+    // para entrar sem estar na call.
+    if (room.type === 'LIVE') {
       const channelId = room.voiceChannelId;
       if (!channelId || !this.deps.cache.isInChannel(userId, channelId)) {
         const name = channelId ? (await this.deps.gateway.getChannel(channelId))?.name : undefined;
@@ -149,6 +157,7 @@ export class RoomAccess {
   /** O que a pessoa pode publicar nesta sala agora. */
   async permissionsFor(room: RoomRecord, identity: Identity): Promise<RoomPermissions> {
     return computePermissions({
+      roomType: room.type,
       role: identity.role,
       userId: identity.user.id,
       mutedSources: await this.deps.participations.getMutedSources(room.id, identity.user.id),

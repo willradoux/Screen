@@ -118,14 +118,20 @@ describe('POST /rooms/:id/join (lives)', () => {
     expect(again.body.error.code).toBe('NOT_IN_VOICE');
   });
 
-  it('MOD e ADMIN entram sem estar na call; só o ADMIN recebe roomAdmin', async () => {
+  it('na live, MOD e ADMIN também precisam estar na call e não moderam; só o ADMIN recebe roomAdmin', async () => {
     const ctx = buildRoomsApp();
     const room = await openLive(ctx, OTHER_ID);
 
     const mod = await loginAs(ctx, MOD_ID, [MOD_ROLE]);
+    const refused = await post(mod, ctx, `/rooms/${room.id}/join`);
+    expect(refused.status).toBe(403);
+    expect(refused.body.error.code).toBe('NOT_IN_VOICE');
+
+    await ctx.live.handle({ userId: MOD_ID, oldChannelId: null, newChannelId: VOICE_1 });
+    await ctx.live.handle({ userId: ADMIN_ID, oldChannelId: null, newChannelId: VOICE_1 });
     const modRes = await post(mod, ctx, `/rooms/${room.id}/join`);
     expect(modRes.status).toBe(200);
-    expect(modRes.body.data.permissions.canModerate).toBe(true);
+    expect(modRes.body.data.permissions.canModerate).toBe(false);
     expect(modRes.body.data.participant.role).toBe('MOD');
 
     const admin = await loginAs(ctx, ADMIN_ID, [ADMIN_ROLE]);
@@ -140,6 +146,7 @@ describe('POST /rooms/:id/join (lives)', () => {
   it('dono do servidor (permissão do Discord) entra como ADMIN', async () => {
     const ctx = buildRoomsApp();
     const room = await openLive(ctx, OTHER_ID);
+    await ctx.live.handle({ userId: ADMIN_ID, oldChannelId: null, newChannelId: VOICE_1 });
     ctx.gateway.permissions.set(ADMIN_ID, { isOwner: true, isAdmin: false, isMod: false });
     const agent = await loginAs(ctx, ADMIN_ID);
     const res = await post(agent, ctx, `/rooms/${room.id}/join`);
@@ -240,9 +247,9 @@ describe('POST /rooms/:id/join (lives)', () => {
     expect((await post(agent, ctx, `/rooms/${room.id}/join`)).status).toBe(200);
   });
 
-  it('modo palestra: membro não publica, palestrante e MOD publicam', async () => {
+  it('modo palestra (reunião): membro não publica, palestrante e MOD publicam', async () => {
     const ctx = buildRoomsApp();
-    const room = await openLive(ctx);
+    const room = await meeting(ctx);
     ctx.rooms.rooms.get(room.id)!.lectureMode = true;
 
     const member = await loginAs(ctx, MEMBER_ID);
@@ -525,9 +532,19 @@ describe('POST /rooms/:id/end', () => {
     expect(ctx.rooms.rooms.get(room.id)!.status).toBe('OPEN');
   });
 
-  it('MOD encerra: avisa os clientes, derruba o LiveKit, fecha participações e atualiza o embed', async () => {
+  it('live não é encerrada pela API: termina sozinha quando a call esvazia', async () => {
     const ctx = buildRoomsApp();
     const room = await openLive(ctx);
+    const mod = await loginAs(ctx, MOD_ID, [MOD_ROLE]);
+    const res = await post(mod, ctx, `/rooms/${room.id}/end`);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('MODERATION_ONLY_IN_MEETINGS');
+    expect(ctx.rooms.rooms.get(room.id)!.status).toBe('OPEN');
+  });
+
+  it('MOD encerra uma reunião: avisa os clientes, derruba o LiveKit, fecha participações e atualiza o embed', async () => {
+    const ctx = buildRoomsApp();
+    const room = await meeting(ctx);
     await ctx.participations.open({
       roomId: room.id,
       userId: MEMBER_ID,
@@ -551,7 +568,6 @@ describe('POST /rooms/:id/end', () => {
     expect(ctx.livekit.deleted).toEqual([room.id]);
     expect(await ctx.participations.countOpen(room.id)).toBe(0);
     expect(ctx.participations.rows[0]!.leaveReason).toBe('ROOM_ENDED');
-    expect(ctx.gateway.edits.at(-1)!.payload.embeds[0]!.title).toBe('⚫ Live encerrada');
   });
 
   it('ADMIN encerra com o motivo ENDED_BY_ADMIN', async () => {
@@ -564,7 +580,7 @@ describe('POST /rooms/:id/end', () => {
 
   it('encerrar de novo -> 409 ROOM_ALREADY_ENDED; reunião agendada -> 409 ROOM_NOT_OPEN', async () => {
     const ctx = buildRoomsApp();
-    const room = await openLive(ctx);
+    const room = await meeting(ctx);
     const scheduled = await meeting(ctx, { startsAt: new Date('2026-12-05T23:00:00Z') });
     const mod = await loginAs(ctx, MOD_ID, [MOD_ROLE]);
 
@@ -581,7 +597,7 @@ describe('POST /rooms/:id/end', () => {
 
   it('o LiveKit fora do ar não impede o encerramento', async () => {
     const ctx = buildRoomsApp();
-    const room = await openLive(ctx);
+    const room = await meeting(ctx);
     ctx.livekit.deleteRoom = async () => {
       throw new Error('fora do ar');
     };

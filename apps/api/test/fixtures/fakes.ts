@@ -20,6 +20,7 @@ import {
   DiscordUnavailableError,
   type DiscordApi,
   type DiscordMember,
+  type DiscordUser,
   type DiscordTokens,
 } from '../../src/modules/discord/discord-api.js';
 import { createLogger } from '../../src/shared/logger.js';
@@ -95,8 +96,18 @@ export class FakeDiscord implements DiscordApi {
     return owner;
   }
 
+  /** Conta do Discord que NÃO está no servidor (colaborador externo). */
+  addOutsider(id: string, username = `fora${id.slice(-4)}`) {
+    this.members.set(id, null);
+    this.outsiders.set(id, { id, username, global_name: null, avatar: null });
+  }
+  private outsiders = new Map<string, DiscordUser>();
+
   async fetchMe(accessToken: string) {
-    const member = this.members.get(this.ownerOf(accessToken));
+    const owner = this.ownerOf(accessToken);
+    const outsider = this.outsiders.get(owner);
+    if (outsider) return outsider;
+    const member = this.members.get(owner);
     if (!member) throw new DiscordAuthError('sem usuário');
     return member.user;
   }

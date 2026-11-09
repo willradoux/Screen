@@ -97,6 +97,18 @@ export function moderationRoutes(api: ModerationApi, auth: AuthService): Router 
     res.status(204).end();
   });
 
+  // Silenciar todos / desligar todas as câmeras (só reuniões).
+  const bulkParams = { params: z.object({ id: z.string().min(1) }) };
+  for (const [path, kind] of [
+    ['mute-all', 'MUTE_ALL'],
+    ['cameras-off', 'CAMERAS_OFF'],
+  ] as const) {
+    router.post(`/rooms/:id/${path}`, needAuth, limiter, validate(bulkParams), async (req, res) => {
+      const result = await api.moderation.muteEveryone(actorOf(req), roomId(req), kind);
+      res.json({ data: result });
+    });
+  }
+
   router.post(`${base}/unmute`, needAuth, limiter, validate(reasonSchemas), async (req, res) => {
     const { body, params } = getValidated(res, reasonSchemas);
     await api.moderation.unmute(actorOf(req), roomId(req), params.userId, body);

@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { ADMIN_ROLE, MOD_ROLE } from '../fixtures/fakes.js';
 import { VOICE_1 } from '../fixtures/bot-fakes.js';
-import { buildRoomsApp, type RoomsCtx } from '../fixtures/rooms-fakes.js';
+import { buildRoomsApp, openMeeting, type RoomsCtx } from '../fixtures/rooms-fakes.js';
 
 const MEMBER = '940000000000000001';
 const MEMBER2 = '940000000000000002';
@@ -23,13 +23,12 @@ async function loginAs(ctx: RoomsCtx, userId: string, roles: string[] = []) {
   return agent;
 }
 
-/** Sala de live aberta, com algumas pessoas já conectadas. */
+/** Reunião aberta (moderação só existe em reuniões), com algumas pessoas já conectadas. */
 async function setup(
   people: { id: string; role?: 'MEMBER' | 'MOD' | 'ADMIN'; roles?: string[] }[] = [],
 ) {
   const ctx = buildRoomsApp();
-  await ctx.live.handle({ userId: MEMBER, oldChannelId: null, newChannelId: VOICE_1 });
-  const room = [...ctx.rooms.rooms.values()][0]!;
+  const room = await openMeeting(ctx);
   for (const p of [{ id: MEMBER }, { id: MEMBER2 }, ...people]) {
     const role = (p as { role?: 'MEMBER' | 'MOD' | 'ADMIN' }).role ?? 'MEMBER';
     const roles = (p as { roles?: string[] }).roles ?? [];
@@ -44,6 +43,7 @@ async function setup(
     });
   }
   ctx.emitter.events.length = 0;
+  ctx.auditRepo.records.length = 0; // a criação da reunião não faz parte do cenário
   return { ctx, room };
 }
 
@@ -677,6 +677,8 @@ describe('GET /rooms/:id/participants', () => {
 
   it('de fora da call: negado; MOD vê mesmo fora; sem login: 401', async () => {
     const { ctx, room } = await setup();
+    // Reunião restrita a um cargo que o visitante não tem.
+    ctx.rooms.rooms.get(room.id)!.allowedRoleIds = ['650000000000000009'];
     const outsider = await loginAs(ctx, '940000000000000050');
     expect((await outsider.get(`/api/v1/rooms/${room.id}/participants`)).status).toBe(403);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);

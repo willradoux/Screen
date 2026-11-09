@@ -411,20 +411,16 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
       [ids.ana, ids.beto].sort(),
     );
 
-    // 6. Um moderador silencia o Beto: fica gravado no banco e vale se ele voltar.
+    // 6. Em live não há moderação: nem o moderador consegue silenciar (isso é coisa de reunião).
     const mod = await w.login(ids.mod, [MOD_ROLE], 'Moderadora');
-    const warning = new Promise<{ action: string }>((res) => socket.once('moderation:action', res));
+    const refused = await w.post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/mute`, {
+      reason: 'ruído',
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.code).toBe('MODERATION_ONLY_IN_MEETINGS');
     expect(
-      (
-        await w.post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/mute`, {
-          reason: 'ruído',
-        })
-      ).status,
-    ).toBe(204);
-    expect(await warning).toMatchObject({ action: 'MUTED' });
-    expect(
-      (await ParticipationModel.findOne({ roomId, userId: ids.beto }).lean())?.mutedSources,
-    ).toHaveLength(4);
+      (await ParticipationModel.findOne({ roomId, userId: ids.beto }).lean())?.mutedSources ?? [],
+    ).toHaveLength(0);
 
     // 7. Beto sai da call do Discord: aviso, tolerância de 30 s e remoção.
     await w.live.handle({ userId: ids.beto, oldChannelId: VOICE_1, newChannelId: null });
@@ -456,20 +452,34 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
     // 9. Tudo ficou na auditoria, que só o admin lê.
     const admin = await w.login(ids.admin, [ADMIN_ROLE], 'Admin');
     const audit = await admin.agent.get('/api/v1/audit').query({ roomId });
-    expect(audit.body.data.map((a: { action: string }) => a.action)).toContain('PARTICIPANT_MUTED');
+    expect(audit.status).toBe(200);
+    expect(audit.body.data.map((a: { action: string }) => a.action)).not.toContain(
+      'PARTICIPANT_MUTED',
+    );
     expect((await mod.agent.get('/api/v1/audit')).status).toBe(403);
   });
 
-  it('banido não volta, nem reconectando; desbanir libera', async () => {
+  it('reunião: silenciar, banir e desbanir (moderação só existe em reuniões)', async () => {
     const w = await configured();
-    await w.live.handle({ userId: ids.ana, oldChannelId: null, newChannelId: VOICE_1 });
-    await w.live.handle({ userId: ids.beto, oldChannelId: null, newChannelId: VOICE_1 });
-    const roomId = (await RoomModel.findOne({ status: 'OPEN' }).lean())!._id as string;
+    const admin = await w.login(ids.admin, [ADMIN_ROLE], 'Admin');
+    const created = await w.post(admin.agent, '/meetings', { title: 'Reunião mensal' });
+    expect(created.status).toBe(201);
+    const roomId = created.body.data.id as string;
+
     const beto = await w.login(ids.beto);
     const mod = await w.login(ids.mod, [MOD_ROLE]);
     await w.post(beto.agent, `/rooms/${roomId}/join`);
     await w.webhookCall(joined(roomId, ids.beto));
 
+    // Silenciar fica gravado no banco e vale se a pessoa voltar.
+    expect((await w.post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/mute`)).status).toBe(
+      204,
+    );
+    expect(
+      (await ParticipationModel.findOne({ roomId, userId: ids.beto }).lean())?.mutedSources,
+    ).toHaveLength(4);
+
+    // Banir impede de voltar, mesmo reconectando.
     await w.post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/ban`, {
       durationMinutes: 30,
     });
@@ -478,12 +488,15 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
       'BANNED_FROM_ROOM',
     );
 
+    // O banimento vence sozinho...
     w.clock.advance(31 * MIN);
     expect((await w.post(beto.agent, `/rooms/${roomId}/join`)).status).toBe(200);
 
-    await w
-      .post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/ban`, { durationMinutes: 30 })
-      .catch(() => undefined);
+    // ...ou é removido na mão.
+    await w.webhookCall(joined(roomId, ids.beto));
+    await w.post(mod.agent, `/rooms/${roomId}/participants/${ids.beto}/ban`, {
+      durationMinutes: 30,
+    });
     await mod.agent.delete(`/api/v1/rooms/${roomId}/bans/${ids.beto}`).set('Origin', ORIGIN);
     expect(await RoomBanModel.countDocuments({ roomId })).toBe(0);
   });

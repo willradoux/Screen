@@ -316,3 +316,13 @@ export function connectSocket(
     reconnection: false,
   });
 }
+
+/** Reunião aberta agora (moderação só existe em reuniões). */
+export async function openMeeting(ctx: RoomsCtx, title = 'Reunião mensal') {
+  ctx.configureLives();
+  const { room } = await ctx.meetings.create(
+    { id: '900000000000000000', via: 'api', role: 'ADMIN' },
+    { title, description: null, startsAt: null, announce: false },
+  );
+  return room;
+}

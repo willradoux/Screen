@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { MOD_ROLE } from '../fixtures/fakes.js';
 import { VOICE_1, VOICE_2 } from '../fixtures/bot-fakes.js';
-import { buildRoomsApp, type RoomsCtx } from '../fixtures/rooms-fakes.js';
+import { buildRoomsApp, type RoomsCtx, openMeeting } from '../fixtures/rooms-fakes.js';
 
 const USER = '920000000000000001';
 const FRIEND = '920000000000000002';
@@ -205,9 +205,9 @@ describe('encerramento da sala', () => {
     );
   });
 
-  it('moderador pode encerrar pela API mesmo fora da call', async () => {
+  it('moderador pode encerrar uma reunião pela API (live não: termina sozinha)', async () => {
     const ctx = buildRoomsApp();
-    const room = await connected(ctx);
+    const room = await openMeeting(ctx);
     ctx.discord.addMember(MOD, { roles: [MOD_ROLE] });
     const agent = request.agent(ctx.app);
     const start = await agent.get('/api/v1/auth/discord');

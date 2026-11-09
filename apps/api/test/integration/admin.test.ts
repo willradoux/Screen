@@ -10,7 +10,7 @@ import {
   buildBot,
   call,
 } from '../fixtures/bot-fakes.js';
-import { buildRoomsApp, type RoomsCtx } from '../fixtures/rooms-fakes.js';
+import { buildRoomsApp, type RoomsCtx, openMeeting } from '../fixtures/rooms-fakes.js';
 
 const ADMIN_ID = '950000000000000001';
 const MOD_ID = '950000000000000002';
@@ -356,8 +356,7 @@ describe('auditoria dos comandos do bot e da API de salas', () => {
 
   it('encerrar sala pela API é auditado com o papel de quem encerrou', async () => {
     const ctx = buildRoomsApp();
-    await ctx.live.handle({ userId: USER_ID, oldChannelId: null, newChannelId: VOICE_1 });
-    const room = [...ctx.rooms.rooms.values()][0]!;
+    const room = await openMeeting(ctx);
     const mod = await loginAs(ctx, MOD_ID, [MOD_ROLE]);
     await mod.post(`/api/v1/rooms/${room.id}/end`).set('Origin', ctx.origin);
     expect(ctx.auditRepo.of('ROOM_ENDED')).toMatchObject([

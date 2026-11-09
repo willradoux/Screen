@@ -41,6 +41,12 @@ export const MAX_BAN_MINUTES = 1440;
 
 const err = {
   notOpen: () => new AppError('ROOM_NOT_OPEN', 409, 'Esta sala não está aberta.'),
+  meetingOnly: () =>
+    new AppError(
+      'MODERATION_ONLY_IN_MEETINGS',
+      409,
+      'Moderação só existe em reuniões. Nas lives (calls) cada pessoa controla a própria transmissão; use as ferramentas do Discord para moderar a call.',
+    ),
   notFound: () => new AppError('ROOM_NOT_FOUND', 404, 'Sala não encontrada.'),
   notInRoom: () =>
     new AppError('PARTICIPANT_NOT_IN_ROOM', 404, 'Essa pessoa não está conectada à sala.'),
@@ -86,6 +92,8 @@ export class ModerationService {
 
   private async openRoom(roomId: string): Promise<RoomRecord> {
     const room = await this.loadRoom(roomId);
+    // Moderar (silenciar, expulsar, banir, palestrante) é coisa de reunião, não de live.
+    if (room.type !== 'MEETING') throw err.meetingOnly();
     if (room.status !== 'OPEN') throw err.notOpen();
     return room;
   }
@@ -366,6 +374,57 @@ export class ModerationService {
     });
   }
 
+  // ---------- ações em massa (reuniões) ----------
+
+  /**
+   * Silencia todo mundo de uma vez: `MUTE_ALL` desliga os microfones, `CAMERAS_OFF` as câmeras.
+   * É como o "silenciar todos" do Meet: desliga o que está no ar agora, mas cada pessoa pode
+   * ligar de novo. Para impedir de falar de verdade, use o modo palestra ou silencie uma pessoa.
+   * Nunca atinge quem tem papel igual ou superior ao de quem age, nem a si mesmo.
+   */
+  async muteEveryone(
+    actor: Actor,
+    roomId: string,
+    kind: 'MUTE_ALL' | 'CAMERAS_OFF',
+  ): Promise<{ affected: number }> {
+    this.act('moderation.mute', actor);
+    const room = await this.openRoom(roomId);
+    const sources: MediaSource[] =
+      kind === 'MUTE_ALL' ? ['microphone'] : ['camera', 'screen_share', 'screen_share_audio'];
+
+    const people = await this.deps.participations.listOpen(room.id);
+    let affected = 0;
+    for (const p of people) {
+      if (p.userId === actor.id) continue;
+      const fresh = await this.deps.roles.resolveUser(p.userId).catch(() => p.roleAtJoin);
+      const role = ROLE_RANK[fresh] > ROLE_RANK[p.roleAtJoin] ? fresh : p.roleAtJoin;
+      if (ROLE_RANK[actor.role] <= ROLE_RANK[role]) continue;
+      try {
+        await this.liveKit(() => this.deps.livekit.muteSources(room.id, p.userId, sources));
+        this.deps.realtime.toUser(p.userId, 'moderation:action', {
+          roomId: room.id,
+          action: kind === 'MUTE_ALL' ? 'MUTED' : 'CAMERA_OFF',
+          by: actor.id,
+          reason: null,
+          sources,
+        });
+        affected += 1;
+      } catch (e) {
+        this.deps.logger.warn(
+          { err: e, roomId: room.id, userId: p.userId },
+          'falha ao silenciar em massa',
+        );
+      }
+    }
+    await this.audit({
+      actorId: actor.id,
+      roomId: room.id,
+      action: kind === 'MUTE_ALL' ? 'MEETING_MUTE_ALL' : 'MEETING_CAMERAS_OFF',
+      meta: { affected },
+    });
+    return { affected };
+  }
+
   // ---------- editar a sala (inclui o modo palestra) ----------
 
   async updateRoom(actor: Actor, roomId: string, patch: RoomPatch): Promise<RoomRecord> {
@@ -378,6 +437,7 @@ export class ModerationService {
     if (changesDetails) this.act('room.edit', actor);
 
     const current = await this.loadRoom(roomId);
+    if (current.type !== 'MEETING') throw err.meetingOnly();
     if (current.status !== 'OPEN' && current.status !== 'SCHEDULED') throw err.notOpen();
 
     const room = await this.deps.rooms.update(current.id, patch);

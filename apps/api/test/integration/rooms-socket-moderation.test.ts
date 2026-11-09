@@ -3,7 +3,12 @@ import type { Socket } from 'socket.io-client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ADMIN_ROLE, MOD_ROLE } from '../fixtures/fakes.js';
 import { VOICE_1 } from '../fixtures/bot-fakes.js';
-import { buildRoomsApp, connectSocket, type RoomsCtx } from '../fixtures/rooms-fakes.js';
+import {
+  buildRoomsApp,
+  connectSocket,
+  type RoomsCtx,
+  openMeeting,
+} from '../fixtures/rooms-fakes.js';
 
 const USER = '960000000000000001';
 const OTHER = '960000000000000002';
@@ -35,8 +40,7 @@ async function start() {
   const ctx = buildRoomsApp();
   const server = await ctx.listen();
   closers.push(server.close);
-  await ctx.live.handle({ userId: USER, oldChannelId: null, newChannelId: VOICE_1 });
-  const room = [...ctx.rooms.rooms.values()][0]!;
+  const room = await openMeeting(ctx);
   return { ctx, server, room };
 }
 

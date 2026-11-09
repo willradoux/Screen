@@ -129,6 +129,13 @@ export function roomsRoutes(api: RoomsApi, auth: AuthService): Router {
   router.post('/rooms/:id/end', needAuth, requireCapability('room.end'), async (req, res) => {
     const identity = identityOf(req);
     const room = await loadRoom(req);
+    if (room.type !== 'MEETING') {
+      throw new AppError(
+        'MODERATION_ONLY_IN_MEETINGS',
+        409,
+        'Lives terminam sozinhas quando a call esvazia. Só reuniões são encerradas pelo painel.',
+      );
+    }
     const ended = await api.roomService.endRoom(
       room.id,
       identity.role === 'ADMIN' ? 'ENDED_BY_ADMIN' : 'ENDED_BY_MOD',
