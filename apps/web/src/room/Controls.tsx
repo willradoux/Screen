@@ -1,9 +1,10 @@
 import type { LocalParticipant } from 'livekit-client';
 import { useState } from 'react';
-import { Button } from '../components/ui';
+import { Icon, type IconName } from '../components/Icon';
 import { canShareScreen, mediaErrorMessage } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
+import { VideoSettings } from './VideoSettings';
 
 interface Props {
   local: LocalParticipant;
@@ -16,40 +17,65 @@ interface Props {
   onError: (message: string) => void;
 }
 
-function ToggleButton({
-  on,
-  label,
-  onLabel,
-  offLabel,
-  disabled,
+const SCREEN_UNSUPPORTED =
+  'Compartilhar tela só funciona no computador. Os navegadores de celular e tablet não permitem. Para mostrar a tela, entre pelo computador; no celular você pode transmitir a câmera.';
+
+/** Botão redondo de controle: ícone, rótulo curto e nome completo para leitores de tela. */
+function RoundButton({
+  icon,
+  short,
+  fullLabel,
+  active = false,
+  danger = false,
+  disabled = false,
+  busy = false,
   title,
   onClick,
-  busy,
 }: {
-  on: boolean;
-  label: string;
-  onLabel: string;
-  offLabel: string;
-  disabled: boolean;
+  icon: IconName;
+  short: string;
+  fullLabel: string;
+  active?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+  busy?: boolean;
   title?: string | undefined;
   onClick: () => void;
-  busy: boolean;
 }) {
+  const tone = danger
+    ? 'bg-red-600 text-on-brand hover:bg-red-500'
+    : active
+      ? 'bg-brand-500 text-on-brand hover:bg-brand-400'
+      : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700';
   return (
-    <Button
-      variant={on ? 'primary' : 'secondary'}
-      disabled={disabled}
-      loading={busy}
+    <button
+      type="button"
       onClick={onClick}
-      aria-pressed={on}
+      disabled={disabled || busy}
+      aria-label={fullLabel}
+      aria-pressed={danger ? undefined : active}
+      aria-busy={busy || undefined}
       title={title}
+      className="group flex min-w-16 flex-col items-center gap-1 text-[0.7rem] font-medium text-zinc-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-45"
     >
-      {label}: {on ? onLabel : offLabel}
-    </Button>
+      <span
+        className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-brand-300 sm:h-13 sm:w-13 ${tone}`}
+      >
+        <Icon
+          name={busy ? 'progress_activity' : icon}
+          size="1.5rem"
+          className={busy ? 'animate-spin' : ''}
+        />
+      </span>
+      <span aria-hidden="true">{short}</span>
+    </button>
   );
 }
 
-/** Barra de controles: microfone, câmera, tela, lista de pessoas e sair. */
+/**
+ * Barra de controles. Microfone, câmera e tela são independentes: dá para transmitir só a
+ * câmera, só a tela, ou as duas ao mesmo tempo. Tudo começa desligado.
+ */
 export function Controls({
   local,
   allowedSources,
@@ -60,13 +86,15 @@ export function Controls({
   onError,
 }: Props) {
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
+  const screenSupported = canShareScreen();
 
   async function toggle(kind: 'microphone' | 'camera' | 'screen') {
     setBusy(kind);
     try {
       if (kind === 'microphone') await local.setMicrophoneEnabled(!local.isMicrophoneEnabled);
-      else if (kind === 'camera') await local.setCameraEnabled(!local.isCameraEnabled);
-      else {
+      else if (kind === 'camera') {
+        await local.setCameraEnabled(!local.isCameraEnabled);
+      } else {
         await local.setScreenShareEnabled(!local.isScreenShareEnabled, {
           audio: true,
           contentHint: 'detail', // legibilidade do código acima de fluidez
@@ -83,57 +111,72 @@ export function Controls({
 
   const blocked = restriction !== null;
   const disabled = (source: MediaSource) => blocked || !canUseSource(allowedSources, source);
+  const mic = local.isMicrophoneEnabled;
+  const cam = local.isCameraEnabled;
+  const screen = local.isScreenShareEnabled;
 
   return (
     <div
       role="toolbar"
       aria-label="Controles da sala"
-      className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 p-3"
+      className="rounded-3xl border border-zinc-800 bg-zinc-900/80 px-3 py-3 backdrop-blur"
     >
-      <ToggleButton
-        label="Microfone"
-        on={local.isMicrophoneEnabled}
-        onLabel="ligado"
-        offLabel="desligado"
-        disabled={disabled('microphone')}
-        title={restriction ?? undefined}
-        busy={busy === 'microphone'}
-        onClick={() => void toggle('microphone')}
-      />
-      <ToggleButton
-        label="Câmera"
-        on={local.isCameraEnabled}
-        onLabel="ligada"
-        offLabel="desligada"
-        disabled={disabled('camera')}
-        title={restriction ?? undefined}
-        busy={busy === 'camera'}
-        onClick={() => void toggle('camera')}
-      />
-      {canShareScreen() && (
-        <ToggleButton
-          label="Tela"
-          on={local.isScreenShareEnabled}
-          onLabel="compartilhando"
-          offLabel="parada"
-          disabled={disabled('screen_share')}
+      <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3 sm:gap-x-5">
+        <RoundButton
+          icon={mic ? 'mic' : 'mic_off'}
+          short={mic ? 'Mic ligado' : 'Mic mudo'}
+          fullLabel={`Microfone: ${mic ? 'ligado' : 'desligado'}`}
+          active={mic}
+          disabled={disabled('microphone')}
           title={restriction ?? undefined}
+          busy={busy === 'microphone'}
+          onClick={() => void toggle('microphone')}
+        />
+        <RoundButton
+          icon={cam ? 'videocam' : 'videocam_off'}
+          short="Câmera"
+          fullLabel={`Câmera: ${cam ? 'ligada' : 'desligada'}`}
+          active={cam}
+          disabled={disabled('camera')}
+          title={restriction ?? undefined}
+          busy={busy === 'camera'}
+          onClick={() => void toggle('camera')}
+        />
+        <RoundButton
+          icon={screen ? 'stop_screen_share' : 'screen_share'}
+          short="Tela"
+          fullLabel={`Tela: ${screen ? 'compartilhando' : 'parada'}`}
+          active={screen}
+          disabled={!screenSupported || disabled('screen_share')}
+          title={screenSupported ? (restriction ?? undefined) : SCREEN_UNSUPPORTED}
           busy={busy === 'screen'}
           onClick={() => void toggle('screen')}
         />
+        <VideoSettings />
+        <RoundButton
+          icon="group"
+          short="Pessoas"
+          fullLabel="Pessoas"
+          active={panelOpen}
+          onClick={onTogglePanel}
+        />
+        <RoundButton
+          icon="call_end"
+          short="Sair"
+          fullLabel="Sair da sala"
+          danger
+          onClick={onLeave}
+        />
+      </div>
+
+      {!screenSupported && (
+        <p className="mt-3 text-center text-xs text-zinc-500" role="note">
+          <Icon name="info" size="1em" className="mr-1" />
+          {SCREEN_UNSUPPORTED}
+        </p>
       )}
-
-      <span className="mx-1 hidden h-6 w-px bg-zinc-700 sm:block" />
-
-      <Button onClick={onTogglePanel} aria-pressed={panelOpen}>
-        Pessoas
-      </Button>
-      <Button variant="danger" onClick={onLeave}>
-        Sair da sala
-      </Button>
-
       {restriction && (
-        <p className="w-full text-center text-xs text-amber-300" role="status">
+        <p className="mt-3 text-center text-xs text-amber-300" role="status">
           {restriction}
         </p>
       )}

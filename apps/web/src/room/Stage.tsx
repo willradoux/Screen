@@ -1,6 +1,8 @@
 import { Track, type RemoteParticipant, type TrackPublication } from 'livekit-client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
+import { POSITION_CLASS, aspectFor, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
 
@@ -9,23 +11,37 @@ function Video({
   mirror = false,
   fit = 'cover',
   label,
+  onNaturalAspect,
 }: {
   pub: TrackPublication;
   mirror?: boolean;
   fit?: 'cover' | 'contain';
   label: string;
+  /** Formato real da transmissão (largura/altura); muda se a pessoa deitar o celular. */
+  onNaturalAspect?: (ratio: number) => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const track = pub.track;
+  const prefs = useVideoPrefs();
 
   useEffect(() => {
     const el = ref.current;
     if (!track || !el) return;
     track.attach(el);
+    const report = () => {
+      if (el.videoWidth > 0 && el.videoHeight > 0) {
+        onNaturalAspect?.(el.videoWidth / el.videoHeight);
+      }
+    };
+    el.addEventListener('loadedmetadata', report);
+    el.addEventListener('resize', report);
+    report();
     return () => {
+      el.removeEventListener('loadedmetadata', report);
+      el.removeEventListener('resize', report);
       track.detach(el);
     };
-  }, [track]);
+  }, [track, onNaturalAspect]);
 
   return (
     <video
@@ -34,22 +50,32 @@ function Video({
       playsInline
       muted // o áudio é tocado à parte (RemoteAudio); aqui só a imagem
       aria-label={label}
-      className={`h-full w-full bg-black ${fit === 'contain' ? 'object-contain' : 'object-cover'} ${mirror ? '-scale-x-100' : ''}`}
+      className={`h-full w-full bg-black ${fit === 'contain' ? 'object-contain' : `object-cover ${POSITION_CLASS[prefs.position]}`} ${mirror ? '-scale-x-100' : ''}`}
     />
   );
 }
 
 function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | 'small' }) {
+  const prefs = useVideoPrefs();
+  const [natural, setNatural] = useState<number | null>(null);
+  const fit = prefs.fit;
   return (
     <figure
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
-      className={`relative aspect-video overflow-hidden rounded-xl border bg-zinc-900 ${
+      style={{ aspectRatio: aspectFor(prefs.shape, natural) }}
+      className={`relative overflow-hidden rounded-2xl border bg-zinc-900 ${
         tile.isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/60' : 'border-zinc-800'
-      } ${size === 'small' ? 'w-48 shrink-0' : ''}`}
+      } ${size === 'small' ? 'w-44 shrink-0' : 'mx-auto w-full'} ${natural && natural < 1 && prefs.shape === 'auto' ? 'max-h-[75vh] w-auto' : ''}`}
     >
       {tile.cameraPub ? (
-        <Video pub={tile.cameraPub} mirror={tile.isLocal} label={`Câmera de ${tile.name}`} />
+        <Video
+          pub={tile.cameraPub}
+          mirror={tile.isLocal}
+          fit={fit}
+          label={`Câmera de ${tile.name}`}
+          onNaturalAspect={setNatural}
+        />
       ) : (
         <div className="flex h-full items-center justify-center">
           <Avatar name={tile.name} url={tile.avatarUrl} size="lg" />
@@ -66,10 +92,10 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
           </span>
         )}
         <span
-          className={`ml-auto text-xs ${tile.micOn ? 'text-emerald-300' : 'text-red-300'}`}
+          className={`ml-auto ${tile.micOn ? 'text-emerald-300' : 'text-red-300'}`}
           title={tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}
         >
-          {tile.micOn ? '🎙' : '🔇'}
+          <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.1rem" />
           <span className="sr-only">{tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}</span>
         </span>
       </figcaption>

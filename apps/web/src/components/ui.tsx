@@ -29,7 +29,7 @@ export function Button({
       type="button"
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:cursor-not-allowed ${
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:cursor-not-allowed ${
         size === 'sm' ? 'px-2.5 py-1 text-sm' : 'px-4 py-2'
       } ${VARIANTS[variant]} ${className}`}
       {...rest}
@@ -85,7 +85,9 @@ export function Alert({
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 ${className}`}>
+    <section
+      className={`rounded-2xl border border-zinc-800 bg-zinc-900/70 shadow-sm p-5 ${className}`}
+    >
       {children}
     </section>
   );
