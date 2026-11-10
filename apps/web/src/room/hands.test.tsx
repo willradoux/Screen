@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { QrCode } from '../components/QrCode';
@@ -14,7 +14,10 @@ const hand = (id: string, name: string) => ({
 });
 
 describe('fila de pedir a palavra', () => {
-  function setup(role: 'MEMBER' | 'MOD', hands = [hand('222222222222222222', 'Beltrano')]) {
+  function setup(
+    role: 'MEMBER' | 'MOD' | 'ADMIN',
+    hands = [hand('222222222222222222', 'Beltrano')],
+  ) {
     vi.spyOn(api.rooms, 'participants').mockResolvedValue([makeParticipant()]);
     return render(
       <ParticipantsPanel
@@ -29,11 +32,19 @@ describe('fila de pedir a palavra', () => {
     );
   }
 
-  it('moderação vê a fila e dá a palavra', async () => {
-    const promote = vi.spyOn(api.moderation, 'promote').mockResolvedValue();
+  it('moderador vê a fila, mas só o admin sobe ao palco', async () => {
     setup('MOD');
     expect(await screen.findByText('Querem falar (1)')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Dar a palavra' }));
+    expect(screen.queryByRole('button', { name: 'Subir ao palco' })).not.toBeInTheDocument();
+  });
+
+  it('admin vê a fila e sobe a pessoa ao palco', async () => {
+    const promote = vi.spyOn(api.moderation, 'promote').mockResolvedValue();
+    setup('ADMIN');
+    expect(await screen.findByText('Querem falar (1)')).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByTestId('hand')).getByRole('button', { name: 'Subir ao palco' }),
+    );
     await waitFor(() =>
       expect(promote).toHaveBeenCalledWith(expect.any(String), '222222222222222222'),
     );

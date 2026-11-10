@@ -214,7 +214,7 @@ describe('publishRestriction', () => {
   });
 
   it('modo palestra: só palestrante transmite', () => {
-    expect(publishRestriction({ ...free, lectureMode: true }, 'MEMBER', [])).toMatch(/palestra/);
+    expect(publishRestriction({ ...free, lectureMode: true }, 'MEMBER', [])).toMatch(/palco/);
     expect(
       publishRestriction({ ...free, lectureMode: true, isSpeaker: true }, 'MEMBER', ['camera']),
     ).toBeNull();
@@ -225,9 +225,16 @@ describe('publishRestriction', () => {
   });
 
   it('moderação e admin nunca são restringidos', () => {
-    const worst = { lectureMode: true, isSpeaker: false, mutedByModeration: true };
+    const worst = { lectureMode: false, isSpeaker: false, mutedByModeration: true };
     expect(publishRestriction(worst, 'MOD', [])).toBeNull();
     expect(publishRestriction(worst, 'ADMIN', [])).toBeNull();
+  });
+
+  it('palco ligado: nem moderação nem admin transmitem até subirem ao palco', () => {
+    const stage = { lectureMode: true, isSpeaker: false, mutedByModeration: false };
+    expect(publishRestriction(stage, 'MOD', [])).toMatch(/palco/);
+    expect(publishRestriction(stage, 'ADMIN', [])).toMatch(/suba você mesmo/);
+    expect(publishRestriction({ ...stage, isSpeaker: true }, 'ADMIN', [])).toBeNull();
   });
 
   it('canUseSource', () => {

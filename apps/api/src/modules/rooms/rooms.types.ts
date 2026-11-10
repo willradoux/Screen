@@ -114,4 +114,4 @@ export interface RoomRepo {
 }
 
 export const DEFAULT_REMINDERS = [1440, 60, 5];
-export const DEFAULT_MEETING_CAPACITY = 100;
+export const DEFAULT_MEETING_CAPACITY = 500;

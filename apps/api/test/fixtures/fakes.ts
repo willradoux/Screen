@@ -177,7 +177,7 @@ export class MemorySettings implements SettingsRepo {
     adminRoleIds: [ADMIN_ROLE],
     modRoleIds: [MOD_ROLE],
     meetingAllowedRoleIds: [],
-    maxParticipantsLive: 25,
+    maxParticipantsLive: 500,
     graceSeconds: 30,
     liveChannelIds: [],
     logChannelId: null,

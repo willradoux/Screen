@@ -48,7 +48,7 @@ describe('GET /settings', () => {
       adminRoleIds: [ADMIN_ROLE],
       modRoleIds: [MOD_ROLE],
       meetingAllowedRoleIds: [],
-      maxParticipantsLive: 25,
+      maxParticipantsLive: 500,
       graceSeconds: 30,
       liveChannelIds: [],
       logChannelId: null,
@@ -94,7 +94,7 @@ describe('PATCH /settings', () => {
     expect(audit).toHaveLength(1);
     expect(audit[0]).toMatchObject({ actorId: ADMIN_ID });
     expect(audit[0]!.meta).toMatchObject({
-      changes: { maxParticipantsLive: { from: 25, to: 40 }, graceSeconds: { from: 30, to: 45 } },
+      changes: { maxParticipantsLive: { from: 500, to: 40 }, graceSeconds: { from: 30, to: 45 } },
     });
 
     const event = ctx.emitter.of('settings:updated');
@@ -166,7 +166,7 @@ describe('PATCH /settings', () => {
     [{ outraCoisa: 1 }],
     [{ liveCategoryId: 'abc' }],
     [{ maxParticipantsLive: 1 }],
-    [{ maxParticipantsLive: 101 }],
+    [{ maxParticipantsLive: 501 }],
     [{ maxParticipantsLive: 10.5 }],
     [{ graceSeconds: 4 }],
     [{ graceSeconds: 301 }],

@@ -28,7 +28,9 @@ import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
+import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
 import { useParticipants } from '../room/useParticipants';
+import { isBigRoom, profileFor, wantedVideo } from '../lib/bigRoom';
 
 /** Avisa que a pessoa saiu da call e será removida da live em instantes. */
 function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt: number } }) {
@@ -127,6 +129,18 @@ function ConnectedRoom({
     session.sendCaption,
     toast.error,
   );
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
+  const lastSpeaker = useRef<string | null>(null);
+  const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);
+  if (speaking) lastSpeaker.current = speaking.identity;
+  const audienceOfBigRoom =
+    Boolean(room && isBigRoom(room.maxParticipants)) && local?.permissions?.canPublish !== true;
+  useAudienceSubscriptions(
+    media,
+    audienceOfBigRoom,
+    audienceOfBigRoom ? wantedVideo(tiles, pinnedId, lastSpeaker.current) : null,
+  );
   const raised = session.hands.some((h) => h.userId === me.id);
 
   async function toggleHand() {
@@ -139,6 +153,15 @@ function ConnectedRoom({
       toast.error(describeError(err));
     } finally {
       setHandBusy(false);
+    }
+  }
+
+  async function stageSelf() {
+    if (!room) return;
+    try {
+      await api.moderation.promote(room.id, me.id);
+    } catch (err) {
+      toast.error(describeError(err));
     }
   }
 
@@ -157,6 +180,7 @@ function ConnectedRoom({
       }
       captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
       local={local}
+      profile={profileFor(room.maxParticipants)}
       allowedSources={permissions?.canPublishSources}
       restriction={restriction}
       panelOpen={side === 'people'}
@@ -200,7 +224,7 @@ function ConnectedRoom({
           <h1 className="sr-only">{room.title}</h1>
           {state.lectureMode && (
             <div className="mb-2 flex justify-end">
-              <Badge tone="warn">Modo palestra</Badge>
+              <Badge tone="warn">Palco ligado</Badge>
             </div>
           )}
 
@@ -225,7 +249,16 @@ function ConnectedRoom({
           </div>
 
           <div className="min-w-0 space-y-3 pt-1">
-            <Stage tiles={tiles} layout={layout} />
+            <Stage
+              tiles={tiles}
+              layout={layout}
+              pinnedId={pinnedId}
+              onPinnedChange={setPinnedId}
+              lectureMode={state.lectureMode}
+              {...(me.role === 'ADMIN' && room.type === 'MEETING'
+                ? { onStageSelf: () => void stageSelf() }
+                : {})}
+            />
             {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
           </div>
         </section>

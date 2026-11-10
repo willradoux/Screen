@@ -26,6 +26,9 @@ interface Props {
   onError: (message: string) => void;
 }
 
+/** Quantas pessoas a lista desenha por vez (salas de 500 não travam). */
+const PAGE = 60;
+
 type Pending = { userId: string; action: 'kick' | 'ban' } | null;
 
 /**
@@ -61,9 +64,21 @@ export function ParticipantsPanel({
     }
   }, [room.id]);
 
+  // A primeira carga é na hora; depois, com muita gente entrando e saindo, recarrega no máximo
+  // a cada 1,2 s (500 entradas seguidas não viram 500 pedidos).
+  const first = useRef(true);
   useEffect(() => {
-    void load();
+    if (first.current) {
+      first.current = false;
+      void load();
+      return;
+    }
+    const id = setTimeout(() => void load(), 1200);
+    return () => clearTimeout(id);
   }, [load, version]);
+
+  const [query, setQuery] = useState('');
+  const [shown, setShown] = useState(PAGE);
 
   async function run(key: string, fn: () => Promise<unknown>, done: string) {
     setBusy(key);
@@ -79,6 +94,11 @@ export function ParticipantsPanel({
     }
   }
 
+  const filtered = people?.filter(
+    (p) => !query.trim() || p.displayName.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  const canStage = isAdmin(me.role) && room.type === 'MEETING';
+
   // Moderação só existe em reuniões; nas lives todo mundo é igual.
   const staff = isStaff(me.role) && room.type === 'MEETING';
   const options = banOptions(me.role);
@@ -88,8 +108,8 @@ export function ParticipantsPanel({
       'lecture',
       () => api.rooms.update(room.id, { lectureMode: !lectureMode }),
       lectureMode
-        ? 'Modo palestra desligado.'
-        : 'Modo palestra ligado: só palestrantes transmitem.',
+        ? 'Palco desligado: todo mundo pode transmitir.'
+        : 'Palco ligado: ninguém transmite até um admin subir a pessoa.',
     );
   }
 
@@ -141,7 +161,7 @@ export function ParticipantsPanel({
             loading={busy === 'lecture'}
             onClick={() => void toggleLecture()}
           >
-            Modo palestra: {lectureMode ? 'ligado' : 'desligado'}
+            Palco: {lectureMode ? 'ligado' : 'desligado'}
           </Button>
           <Button
             size="sm"
@@ -191,20 +211,22 @@ export function ParticipantsPanel({
                 <span className="min-w-0 flex-1 truncate text-sm text-zinc-100">
                   {h.displayName}
                 </span>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  loading={busy === `hand-${h.userId}`}
-                  onClick={() =>
-                    void run(
-                      `hand-${h.userId}`,
-                      () => api.moderation.promote(room.id, h.userId),
-                      `${h.displayName} recebeu a palavra.`,
-                    )
-                  }
-                >
-                  Dar a palavra
-                </Button>
+                {isAdmin(me.role) && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    loading={busy === `hand-${h.userId}`}
+                    onClick={() =>
+                      void run(
+                        `hand-${h.userId}`,
+                        () => api.moderation.promote(room.id, h.userId),
+                        `${h.displayName} subiu ao palco.`,
+                      )
+                    }
+                  >
+                    Subir ao palco
+                  </Button>
+                )}
               </li>
             ))}
           </ol>
@@ -214,8 +236,22 @@ export function ParticipantsPanel({
       {people === null && !failed && <Spinner label="Carregando…" />}
       {failed && <Alert tone="error">{failed}</Alert>}
 
+      {people && people.length > PAGE && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setShown(PAGE);
+          }}
+          placeholder="Buscar pessoa"
+          aria-label="Buscar pessoa"
+          className="h-9 w-full rounded-lg border border-zinc-700 bg-transparent px-3 text-sm text-zinc-50 placeholder:text-zinc-500"
+        />
+      )}
+
       <ul className="space-y-2">
-        {people?.map((p) => {
+        {filtered?.slice(0, shown).map((p) => {
           const mayModerate = staff && canModerateTarget(me, { id: p.userId, role: p.role });
           const isPending = pending?.userId === p.userId;
           return (
@@ -227,9 +263,31 @@ export function ParticipantsPanel({
                   {p.userId === me.id && <span className="text-zinc-500"> (você)</span>}
                 </span>
                 {p.role !== 'MEMBER' && <Badge tone="scheduled">{ROLE_LABEL[p.role]}</Badge>}
-                {p.isSpeaker && <Badge tone="open">Palestrante</Badge>}
+                {p.isSpeaker && <Badge tone="open">No palco</Badge>}
                 {p.mutedByModeration && <Badge tone="warn">Silenciado</Badge>}
               </div>
+
+              {canStage && p.userId === me.id && (
+                <div className="mt-2 pl-9">
+                  <Button
+                    size="sm"
+                    variant={p.isSpeaker ? 'secondary' : 'primary'}
+                    loading={busy === `self-stage`}
+                    onClick={() =>
+                      void run(
+                        'self-stage',
+                        () =>
+                          p.isSpeaker
+                            ? api.moderation.demote(room.id, me.id)
+                            : api.moderation.promote(room.id, me.id),
+                        p.isSpeaker ? 'Você saiu do palco.' : 'Você subiu ao palco.',
+                      )
+                    }
+                  >
+                    {p.isSpeaker ? 'Sair do palco' : 'Subir ao palco'}
+                  </Button>
+                </div>
+              )}
 
               {p.mutedSources.length > 0 && (
                 <p className="mt-1 pl-9 text-xs text-zinc-500">
@@ -268,7 +326,7 @@ export function ParticipantsPanel({
                       Silenciar
                     </Button>
                   )}
-                  {p.isSpeaker ? (
+                  {!canStage ? null : p.isSpeaker ? (
                     <Button
                       size="sm"
                       loading={busy === `demote:${p.userId}`}
@@ -276,11 +334,11 @@ export function ParticipantsPanel({
                         void run(
                           `demote:${p.userId}`,
                           () => api.moderation.demote(room.id, p.userId),
-                          `${p.displayName} não é mais palestrante.`,
+                          `${p.displayName} saiu do palco.`,
                         )
                       }
                     >
-                      Tirar de palestrante
+                      Tirar do palco
                     </Button>
                   ) : (
                     <Button
@@ -290,11 +348,11 @@ export function ParticipantsPanel({
                         void run(
                           `promote:${p.userId}`,
                           () => api.moderation.promote(room.id, p.userId),
-                          `${p.displayName} agora é palestrante.`,
+                          `${p.displayName} subiu ao palco.`,
                         )
                       }
                     >
-                      Tornar palestrante
+                      Subir ao palco
                     </Button>
                   )}
                   <Button
@@ -375,6 +433,11 @@ export function ParticipantsPanel({
           );
         })}
       </ul>
+      {filtered && filtered.length > shown && (
+        <Button size="sm" variant="ghost" onClick={() => setShown((n) => n + PAGE)}>
+          Mostrar mais ({filtered.length - shown})
+        </Button>
+      )}
 
       {staff && isAdmin(me.role) === false && (
         <p className="text-xs text-zinc-500">

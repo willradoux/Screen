@@ -101,7 +101,7 @@ describe('SettingsRepo (MongoDB)', () => {
       adminRoleIds: [],
       modRoleIds: [],
       meetingAllowedRoleIds: [],
-      maxParticipantsLive: 25,
+      maxParticipantsLive: 500,
       graceSeconds: 30,
       liveChannelIds: [],
       logChannelId: null,

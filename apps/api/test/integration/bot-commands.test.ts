@@ -177,14 +177,14 @@ describe('/config', () => {
   it.each([
     [1, false],
     [2, true],
-    [100, true],
-    [101, false],
+    [500, true],
+    [501, false],
     [2.5, false],
   ])('limite-live %s -> aceito: %s', async (max, ok) => {
     const b = buildBot();
     const r = await b.router.handle(ADMIN, call('config', 'limite-live', { max }));
     expect(r.content.startsWith('✅')).toBe(ok);
-    expect(b.settings.settings.maxParticipantsLive).toBe(ok ? max : 25);
+    expect(b.settings.settings.maxParticipantsLive).toBe(ok ? max : 500);
   });
 
   it('ver mostra a configuração', async () => {

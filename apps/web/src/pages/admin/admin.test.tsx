@@ -399,7 +399,7 @@ describe('Configurações: buildSettingsPatch', () => {
     ['2', true],
     ['100', true],
     ['1', false],
-    ['101', false],
+    ['501', false],
     ['2.5', false],
     ['', false],
     ['abc', false],
@@ -491,7 +491,7 @@ describe('SettingsPage', () => {
     await userEvent.type(field, '1');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
     expect(
-      await screen.findByText(/Limite de pessoas por live: um número inteiro de 2 a 100/),
+      await screen.findByText(/Limite de pessoas por live: um número inteiro de 2 a 500/),
     ).toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
   });

@@ -34,8 +34,8 @@ export interface RoomPermissions {
 
 /**
  * O que a pessoa pode publicar. Regra única usada no `join` e na moderação:
- * moderadores sempre publicam tudo; membros perdem as fontes silenciadas e, no modo
- * palestra, tudo, a menos que sejam palestrantes.
+ * moderadores publicam tudo; membros perdem as fontes silenciadas. No palco (modo palestra)
+ * só publica quem está na lista de palestrantes, seja qual for o papel.
  */
 export function computePermissions(input: {
   /** Nas lives ninguém modera; o padrão é reunião. */
@@ -46,16 +46,19 @@ export function computePermissions(input: {
   lectureMode: boolean;
   speakerIds: string[];
 }): RoomPermissions {
-  if (ROLE_RANK[input.role] >= ROLE_RANK.MOD) {
+  const staff = ROLE_RANK[input.role] >= ROLE_RANK.MOD;
+  // Palco ligado: ninguém transmite por padrão, nem a moderação. Só sobe quem um admin colocou
+  // (o próprio admin sobe a si mesmo).
+  const lectureBlocked = input.lectureMode && !input.speakerIds.includes(input.userId);
+  if (staff) {
     return {
-      canPublish: true,
-      canPublishSources: ALL_SOURCES,
+      canPublish: !lectureBlocked,
+      canPublishSources: lectureBlocked ? [] : ALL_SOURCES,
       // Só reuniões têm moderação; nas lives todo mundo é igual.
       canModerate: input.roomType !== 'LIVE',
     };
   }
   const allowed = ALL_SOURCES.filter((s) => !input.mutedSources.includes(s));
-  const lectureBlocked = input.lectureMode && !input.speakerIds.includes(input.userId);
   if (lectureBlocked || allowed.length === 0) {
     return { canPublish: false, canPublishSources: [], canModerate: false };
   }

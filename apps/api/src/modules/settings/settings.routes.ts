@@ -22,7 +22,7 @@ const patchSchemas = {
       adminRoleIds: roleList.optional(),
       modRoleIds: roleList.optional(),
       meetingAllowedRoleIds: roleList.optional(),
-      maxParticipantsLive: z.number().int().min(2).max(100).optional(),
+      maxParticipantsLive: z.number().int().min(2).max(500).optional(),
       graceSeconds: z.number().int().min(5).max(300).optional(),
       liveChannelIds: z.array(snowflake).max(50).optional(),
       logChannelId: snowflake.nullable().optional(),

@@ -176,9 +176,11 @@ describe('Stage (layout dos vídeos)', () => {
     avatarUrl: null,
     isLocal: false,
     isSpeaking: false,
+    canPublish: false,
     micOn: true,
     cameraPub: undefined,
     screenPub: undefined,
+    screenPublished: false,
     ...over,
   });
 
@@ -236,6 +238,81 @@ describe('Stage (layout dos vídeos)', () => {
       />,
     );
     expect(screen.getAllByTestId('screen-tile')).toHaveLength(2);
+  });
+
+  it('palco ligado e vazio: avisa, mostra a plateia e o admin pode subir a si mesmo', async () => {
+    const onStageSelf = vi.fn();
+    render(
+      <Stage
+        lectureMode
+        onStageSelf={onStageSelf}
+        tiles={[tile({ identity: 'a' }), tile({ identity: 'b' }), tile({ identity: 'c' })]}
+      />,
+    );
+    expect(screen.getByTestId('empty-stage')).toHaveTextContent('O palco está vazio.');
+    expect(screen.getByTestId('audience-count')).toHaveTextContent('Na plateia: 3 pessoas');
+    await userEvent.click(screen.getByRole('button', { name: 'Subir ao palco' }));
+    expect(onStageSelf).toHaveBeenCalled();
+  });
+
+  it('palco ligado: só aparece quem está no palco; a plateia vira número', () => {
+    render(
+      <Stage
+        lectureMode
+        tiles={[
+          tile({ identity: 'a', name: 'Palestrante', canPublish: true }),
+          ...Array.from({ length: 200 }, (_, i) => tile({ identity: `p${i}`, name: `P${i}` })),
+        ]}
+      />,
+    );
+    expect(screen.getAllByTestId('tile')).toHaveLength(1);
+    expect(screen.getByTestId('audience-count')).toHaveTextContent('Na plateia: 200 pessoas');
+  });
+
+  it('sala grande sem palco: só quem transmite ou fala ganha quadrado', () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'cam', cameraPub: pub(), micOn: false }),
+          ...Array.from({ length: 40 }, (_, i) => tile({ identity: `q${i}`, micOn: false })),
+        ]}
+      />,
+    );
+    expect(screen.getAllByTestId('tile')).toHaveLength(1);
+    expect(screen.getByTestId('audience-count')).toHaveTextContent('Só ouvindo: 40 pessoas');
+  });
+
+  it('fixar põe a pessoa em destaque; fixar de novo solta', async () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub() }),
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar Beto' }));
+    expect(screen.getByRole('button', { name: 'Desafixar Beto' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getAllByTestId('tile')).toHaveLength(2); // Beto grande + Ana na faixa
+    await userEvent.click(screen.getByRole('button', { name: 'Desafixar Beto' }));
+    expect(screen.getByRole('button', { name: 'Fixar Beto' })).toBeInTheDocument();
+  });
+
+  it('fixar quem compartilha tela mostra a tela dele como destaque', async () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', screenPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', screenPub: pub() }),
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getAllByRole('button', { name: 'Fixar Beto' })[0]!);
+    expect(screen.getAllByTestId('screen-tile')).toHaveLength(1);
+    expect(screen.getByTestId('screen-tile')).toHaveTextContent('Tela de Beto');
   });
 
   it('solta o vídeo do elemento quando o componente sai da tela', () => {

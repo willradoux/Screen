@@ -23,7 +23,7 @@ const MATRIX: Record<Capability, { MEMBER: boolean; MOD: boolean; ADMIN: boolean
   'moderation.mute': { MEMBER: false, MOD: true, ADMIN: true },
   'moderation.kick': { MEMBER: false, MOD: true, ADMIN: true },
   'moderation.ban': { MEMBER: false, MOD: true, ADMIN: true },
-  'moderation.speaker': { MEMBER: false, MOD: true, ADMIN: true },
+  'moderation.speaker': { MEMBER: false, MOD: false, ADMIN: true },
   'meeting.manage': { MEMBER: false, MOD: false, ADMIN: true },
   'settings.manage': { MEMBER: false, MOD: false, ADMIN: true },
   'audit.read': { MEMBER: false, MOD: false, ADMIN: true },
@@ -89,11 +89,29 @@ describe('computePermissions', () => {
     ).toBe(false);
   });
 
-  it('MOD e ADMIN sempre publicam tudo, mesmo com modo palestra ou silenciamento antigo', () => {
+  it('MOD e ADMIN publicam tudo, mesmo com silenciamento antigo', () => {
     for (const role of ['MOD', 'ADMIN'] as const) {
-      expect(
-        computePermissions({ ...base, role, lectureMode: true, mutedSources: ALL_SOURCES }),
-      ).toEqual({ canPublish: true, canPublishSources: ALL_SOURCES, canModerate: true });
+      expect(computePermissions({ ...base, role, mutedSources: ALL_SOURCES })).toEqual({
+        canPublish: true,
+        canPublishSources: ALL_SOURCES,
+        canModerate: true,
+      });
+    }
+  });
+
+  it('com o palco ligado ninguém transmite por padrão, nem admin; só quem foi colocado no palco', () => {
+    for (const role of ['MOD', 'ADMIN'] as const) {
+      const stage = { ...base, role, lectureMode: true };
+      expect(computePermissions(stage)).toEqual({
+        canPublish: false,
+        canPublishSources: [],
+        canModerate: true,
+      });
+      expect(computePermissions({ ...stage, speakerIds: ['1'] })).toEqual({
+        canPublish: true,
+        canPublishSources: ALL_SOURCES,
+        canModerate: true,
+      });
     }
   });
 });

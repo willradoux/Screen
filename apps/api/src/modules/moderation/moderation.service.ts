@@ -474,24 +474,29 @@ export class ModerationService {
   /** Recalcula a permissão de todos que estão na sala (modo palestra ligado/desligado). */
   private async reapplyAll(room: RoomRecord): Promise<void> {
     const people = await this.deps.participations.listOpen(room.id);
-    for (const p of people) {
-      if (ROLE_RANK[p.roleAtJoin] >= ROLE_RANK.MOD) continue; // moderação sempre publica
-      const mutedSources = await this.deps.participations.getMutedSources(room.id, p.userId);
-      const perms = computePermissions({
-        role: p.roleAtJoin,
-        userId: p.userId,
-        mutedSources,
-        lectureMode: room.lectureMode,
-        speakerIds: room.speakerIds,
-      });
-      try {
-        await this.applyPermissions(room, p.userId, perms);
-      } catch (e) {
-        this.deps.logger.warn(
-          { err: e, roomId: room.id, userId: p.userId },
-          'falha ao aplicar modo palestra',
-        );
-      }
+    // Em blocos: com centenas de pessoas, uma a uma levaria minutos.
+    const BATCH = 25;
+    for (let i = 0; i < people.length; i += BATCH) {
+      await Promise.all(
+        people.slice(i, i + BATCH).map(async (p) => {
+          const mutedSources = await this.deps.participations.getMutedSources(room.id, p.userId);
+          const perms = computePermissions({
+            role: p.roleAtJoin,
+            userId: p.userId,
+            mutedSources,
+            lectureMode: room.lectureMode,
+            speakerIds: room.speakerIds,
+          });
+          try {
+            await this.applyPermissions(room, p.userId, perms);
+          } catch (e) {
+            this.deps.logger.warn(
+              { err: e, roomId: room.id, userId: p.userId },
+              'falha ao aplicar o palco',
+            );
+          }
+        }),
+      );
     }
   }
 

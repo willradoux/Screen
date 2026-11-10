@@ -94,7 +94,7 @@ export function buildSettingsPatch(
       errors.push(`${label}: um número inteiro de ${min} a ${max}.`);
     } else if (n !== original[key]) patch[key] = n;
   };
-  int('maxParticipantsLive', 'Limite de pessoas por live', 2, 100);
+  int('maxParticipantsLive', 'Limite de pessoas por live', 2, 500);
   int('graceSeconds', 'Tolerância ao sair da call (segundos)', 5, 300);
   int('idleSessionMinutes', 'Minutos sem transmissão até a sessão entrar em espera', 1, 240);
   int('activationGraceMinutes', 'Minutos para começar a transmitir depois de ativar', 1, 60);

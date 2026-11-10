@@ -61,7 +61,7 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
       screen.queryByRole('button', { name: /silenciar|expulsar|banir|palestrante/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /encerrar sala/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /modo palestra/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /palco:/i })).not.toBeInTheDocument();
   });
 
   it('moderador age sobre membros, mas não sobre moderadores nem admins nem sobre si', async () => {
@@ -82,18 +82,22 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
     ).toBeInTheDocument();
     expect(within(row('Membro Um')).getByRole('button', { name: 'Banir' })).toBeInTheDocument();
     expect(within(row('Admin Outro')).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(row('Eu mesmo')).queryByRole('button')).not.toBeInTheDocument();
+    // Em si mesmo o admin só tem o palco, nada de expulsar ou banir.
+    expect(
+      within(row('Eu mesmo')).queryByRole('button', { name: 'Banir' }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(row('Eu mesmo')).getByRole('button', { name: 'Subir ao palco' }),
+    ).toBeInTheDocument();
   });
 
   it('moderação vê os controles da sala; membro não', async () => {
     setup('MOD');
-    expect(
-      await screen.findByRole('button', { name: /modo palestra: desligado/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /palco: desligado/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /encerrar sala/i })).toBeInTheDocument();
   });
 
-  it('mostra papéis, palestrantes e silenciados', async () => {
+  it('mostra papéis, quem está no palco e silenciados', async () => {
     setup('MOD', [
       makeParticipant({ userId: '222222222222222222', displayName: 'Membro Um', isSpeaker: true }),
       makeParticipant({
@@ -104,7 +108,7 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
       }),
     ]);
     await screen.findByText('Membro Um');
-    expect(within(row('Membro Um')).getByText('Palestrante')).toBeInTheDocument();
+    expect(within(row('Membro Um')).getByText('No palco')).toBeInTheDocument();
     expect(within(row('Membro Dois')).getByText('Silenciado')).toBeInTheDocument();
     expect(
       within(row('Membro Dois')).getByText(/Bloqueado: microfone, câmera/),
@@ -141,17 +145,23 @@ describe('ParticipantsPanel: ações', () => {
     expect(unmute).toHaveBeenCalledWith(ROOM_ID, people.member.userId);
   });
 
-  it('promover e rebaixar palestrante', async () => {
+  it('moderador comum não sobe ninguém ao palco; só admin', async () => {
+    setup('MOD', [people.member]);
+    await screen.findByText('Membro Um');
+    expect(
+      within(row('Membro Um')).queryByRole('button', { name: 'Subir ao palco' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('promover e rebaixar palestrante (admin)', async () => {
     const promote = vi.spyOn(api.moderation, 'promote').mockResolvedValue(undefined);
     const demote = vi.spyOn(api.moderation, 'demote').mockResolvedValue(undefined);
-    setup('MOD', [people.member, makeParticipant({ ...people.member2, isSpeaker: true })]);
+    setup('ADMIN', [people.member, makeParticipant({ ...people.member2, isSpeaker: true })]);
     await screen.findByText('Membro Um');
-    await userEvent.click(
-      within(row('Membro Um')).getByRole('button', { name: 'Tornar palestrante' }),
-    );
+    await userEvent.click(within(row('Membro Um')).getByRole('button', { name: 'Subir ao palco' }));
     expect(promote).toHaveBeenCalledWith(ROOM_ID, people.member.userId);
     await userEvent.click(
-      within(row('Membro Dois')).getByRole('button', { name: 'Tirar de palestrante' }),
+      within(row('Membro Dois')).getByRole('button', { name: 'Tirar do palco' }),
     );
     expect(demote).toHaveBeenCalledWith(ROOM_ID, people.member2.userId);
   });
@@ -227,14 +237,14 @@ describe('ParticipantsPanel: ações', () => {
   it('modo palestra: liga e desliga pela API de edição da sala', async () => {
     const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member]);
-    await userEvent.click(await screen.findByRole('button', { name: /modo palestra: desligado/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /palco: desligado/i }));
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: true });
   });
 
   it('modo palestra já ligado oferece desligar', async () => {
     const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member], { lectureMode: true });
-    await userEvent.click(await screen.findByRole('button', { name: /modo palestra: ligado/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /palco: ligado/i }));
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: false });
   });
 
@@ -272,6 +282,6 @@ describe('ParticipantsPanel: ações', () => {
     const { rerender } = render(<ParticipantsPanel {...props} version={0} />);
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
     rerender(<ParticipantsPanel {...props} version={1} />);
-    await waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(2), { timeout: 4000 });
   });
 });

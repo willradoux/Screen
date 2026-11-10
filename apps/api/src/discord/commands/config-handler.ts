@@ -99,8 +99,8 @@ export class ConfigHandler {
 
       case 'limite-live': {
         const max = call.options.max;
-        if (typeof max !== 'number' || !Number.isInteger(max) || max < 2 || max > 100) {
-          throw new UserError('O limite deve ser um número inteiro entre 2 e 100.');
+        if (typeof max !== 'number' || !Number.isInteger(max) || max < 2 || max > 500) {
+          throw new UserError('O limite deve ser um número inteiro entre 2 e 500.');
         }
         await settings.update(guildId, { maxParticipantsLive: max }, ctx.userId);
         return {

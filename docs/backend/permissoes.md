@@ -31,7 +31,7 @@ O papel **não** é gravado de forma permanente na sessão. É recalculado, ent�
 
 ## Capacidades
 
-> Implementado em `modules/permissions/capabilities.ts` (papel mínimo de cada capacidade) e testado contra esta tabela em `test/unit/capabilities.test.ts`. Detalhe: **título, descrição e capacidade da sala** (`room.edit`) são só de ADMIN; o **modo palestra** (`room.lecture`) é de MOD ou ADMIN.
+> Implementado em `modules/permissions/capabilities.ts` (papel mínimo de cada capacidade) e testado contra esta tabela em `test/unit/capabilities.test.ts`. Detalhe: **título, descrição e capacidade da sala** (`room.edit`) são só de ADMIN; o **palco / modo palestra** (`room.lecture`) é de MOD ou ADMIN, mas **subir e tirar pessoas do palco** (`moderation.speaker`) é só de ADMIN, que também sobe a si mesmo.
 
 | Capacidade | MEMBER | MOD | ADMIN |
 |---|:-:|:-:|:-:|
@@ -44,8 +44,8 @@ O papel **não** é gravado de forma permanente na sessão. É recalculado, ent�
 | Expulsar da sala | não | sim | sim |
 | Banir temporariamente da sala | não | sim | sim |
 | Encerrar sala de live | não | sim | sim |
-| Ativar modo palestra (só palestrantes publicam) | não | sim | sim |
-| Promover participante a palestrante | não | sim | sim |
+| Ligar o palco (só quem está no palco transmite, **inclusive moderação e admin**) | não | sim | sim |
+| Subir/tirar pessoas do palco (e subir a si mesmo) | não | não | sim |
 | Criar reunião (comando e API) | não | não | sim |
 | Agendar, editar e cancelar reunião | não | não | sim |
 | Encerrar reunião | não | sim | sim |

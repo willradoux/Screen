@@ -69,7 +69,7 @@ describe('POST /rooms/:id/join (lives)', () => {
     });
 
     // O token é pedido ao LiveKit com a identidade do Discord e papel no metadata.
-    expect(ctx.livekit.ensured).toEqual([{ roomName: room.id, max: 25 }]);
+    expect(ctx.livekit.ensured).toEqual([{ roomName: room.id, max: 500 }]);
     expect(ctx.livekit.tokens[0]).toMatchObject({
       roomName: room.id,
       identity: MEMBER_ID,
@@ -249,7 +249,7 @@ describe('POST /rooms/:id/join (lives)', () => {
     expect((await post(agent, ctx, `/rooms/${room.id}/join`)).status).toBe(200);
   });
 
-  it('modo palestra (reunião): membro não publica, palestrante e MOD publicam', async () => {
+  it('palco (reunião): ninguém publica por padrão; só quem está no palco', async () => {
     const ctx = buildRoomsApp();
     const room = await meeting(ctx);
     ctx.rooms.rooms.get(room.id)!.lectureMode = true;
@@ -267,7 +267,12 @@ describe('POST /rooms/:id/join (lives)', () => {
     const speaker = await post(member, ctx, `/rooms/${room.id}/join`);
     expect(speaker.body.data.permissions.canPublish).toBe(true);
 
+    // Nem a moderação transmite por padrão: só quem foi colocado no palco.
     const mod = await loginAs(ctx, MOD_ID, [MOD_ROLE]);
+    expect((await post(mod, ctx, `/rooms/${room.id}/join`)).body.data.permissions.canPublish).toBe(
+      false,
+    );
+    ctx.rooms.rooms.get(room.id)!.speakerIds = [MEMBER_ID, MOD_ID];
     expect((await post(mod, ctx, `/rooms/${room.id}/join`)).body.data.permissions.canPublish).toBe(
       true,
     );

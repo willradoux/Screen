@@ -230,7 +230,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
                   properties: {
                     title: { type: 'string', minLength: 3, maxLength: 100 },
                     description: { type: ['string', 'null'], maxLength: 1000 },
-                    maxParticipants: { type: 'integer', minimum: 2, maximum: 300 },
+                    maxParticipants: { type: 'integer', minimum: 2, maximum: 500 },
                     lectureMode: { type: 'boolean' },
                   },
                 },
@@ -1074,7 +1074,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
               format: 'date-time',
               description: 'Ausente ou null: abre agora',
             },
-            maxParticipants: { type: 'integer', minimum: 2, maximum: 300, default: 100 },
+            maxParticipants: { type: 'integer', minimum: 2, maximum: 500, default: 100 },
             allowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
             announce: { type: 'boolean', default: true },
             reminders: {
@@ -1092,7 +1092,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
             title: { type: 'string', minLength: 3, maxLength: 100 },
             description: { type: ['string', 'null'], maxLength: 1000 },
             startsAt: { type: 'string', format: 'date-time' },
-            maxParticipants: { type: 'integer', minimum: 2, maximum: 300 },
+            maxParticipants: { type: 'integer', minimum: 2, maximum: 500 },
             allowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
             reminders: {
               type: 'array',
@@ -1150,7 +1150,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
             adminRoleIds: { type: 'array', items: { type: 'string' } },
             modRoleIds: { type: 'array', items: { type: 'string' } },
             meetingAllowedRoleIds: { type: 'array', items: { type: 'string' } },
-            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 100 },
+            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 500 },
             graceSeconds: { type: 'integer', minimum: 5, maximum: 300 },
             liveChannelIds: {
               type: 'array',
@@ -1195,7 +1195,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
             adminRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
             modRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
             meetingAllowedRoleIds: { type: 'array', maxItems: 25, items: { type: 'string' } },
-            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 100 },
+            maxParticipantsLive: { type: 'integer', minimum: 2, maximum: 500 },
             graceSeconds: { type: 'integer', minimum: 5, maximum: 300 },
             liveChannelIds: {
               type: 'array',

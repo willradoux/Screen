@@ -1,7 +1,14 @@
-import { Track, type RemoteParticipant, type TrackPublication } from 'livekit-client';
+import {
+  Track,
+  type RemoteParticipant,
+  type RemoteTrackPublication,
+  type TrackPublication,
+  type VideoQuality,
+} from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
+import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
@@ -12,8 +19,11 @@ function Video({
   fit = 'cover',
   label,
   onNaturalAspect,
+  quality,
 }: {
   pub: TrackPublication;
+  /** Salas grandes: pede uma camada de qualidade menor (menos banda no servidor). */
+  quality?: VideoQuality | undefined;
   mirror?: boolean;
   fit?: 'cover' | 'contain';
   label: string;
@@ -23,6 +33,12 @@ function Video({
   const ref = useRef<HTMLVideoElement>(null);
   const track = pub.track;
   const prefs = useVideoPrefs();
+
+  useEffect(() => {
+    if (quality !== undefined && 'setVideoQuality' in pub) {
+      (pub as RemoteTrackPublication).setVideoQuality(quality);
+    }
+  }, [pub, track, quality]);
 
   useEffect(() => {
     const el = ref.current;
@@ -58,7 +74,47 @@ function Video({
 /** Variáveis do quadro: a proporção real (número) que o CSS usa para caber sem faixas. */
 const fitStyle = (ratio: number) => ({ '--ar': ratio }) as React.CSSProperties;
 
-function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | 'small' }) {
+/**
+ * Botão de fixar no canto do vídeo: aparece ao passar o mouse ou com o foco do teclado; quando
+ * fixado, fica sempre à vista.
+ */
+function PinButton({
+  tile,
+  pinned,
+  onPin,
+}: {
+  tile: Tile;
+  pinned: boolean;
+  onPin: (identity: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPin(tile.identity)}
+      aria-pressed={pinned}
+      aria-label={`${pinned ? 'Desafixar' : 'Fixar'} ${tile.name}`}
+      title={pinned ? 'Desafixar' : 'Fixar em destaque'}
+      className="stage-pin"
+      data-pinned={pinned || undefined}
+    >
+      <Icon name={pinned ? 'keep_off' : 'keep'} size="1rem" />
+    </button>
+  );
+}
+
+interface TileExtras {
+  pinned?: boolean;
+  onPin?: (identity: string) => void;
+  quality?: VideoQuality | undefined;
+}
+
+function PersonTile({
+  tile,
+  size = 'normal',
+  pinned = false,
+  onPin,
+  quality,
+}: { tile: Tile; size?: 'normal' | 'small' } & TileExtras) {
   const prefs = useVideoPrefs();
   const [natural, setNatural] = useState<number | null>(null);
   const ratio = aspectRatioNumber(prefs.shape, tile.cameraPub ? natural : null);
@@ -79,12 +135,14 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
           fit={prefs.fit}
           label={`Câmera de ${tile.name}`}
           onNaturalAspect={setNatural}
+          quality={quality}
         />
       ) : (
         <div className="flex h-full items-center justify-center">
           <Avatar name={tile.name} url={tile.avatarUrl} size={size === 'small' ? 'md' : 'lg'} />
         </div>
       )}
+      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
       <figcaption className="stage-caption">
         <span className="truncate font-medium text-white">
           {tile.name}
@@ -107,7 +165,7 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
   );
 }
 
-function ScreenTile({ tile }: { tile: Tile }) {
+function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
   if (!tile.screenPub) return null;
   return (
@@ -121,7 +179,9 @@ function ScreenTile({ tile }: { tile: Tile }) {
         fit="contain"
         label={`Tela de ${tile.name}`}
         onNaturalAspect={setNatural}
+        quality={quality}
       />
+      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
       <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
@@ -137,7 +197,7 @@ function ScreenTile({ tile }: { tile: Tile }) {
  * - `focus`: um grande (tela, quem está falando ou a primeira pessoa) e o resto numa faixa.
  *
  * Em todos, cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé)
- * e cresce até onde couber, sem faixas pretas.
+ * e cresce até onde couber, sem faixas pretas. Fixar alguém sempre vira "destaque".
  */
 export type StageLayout = 'auto' | 'mosaic' | 'focus';
 
@@ -160,11 +220,38 @@ function pieces(tiles: Tile[]): Piece[] {
   return [...screens, ...people];
 }
 
-function PieceView({ piece, small = false }: { piece: Piece; small?: boolean }) {
+interface StageExtras {
+  pinnedId: string | null;
+  onPin: (identity: string) => void;
+  cameraQuality: VideoQuality | undefined;
+  screenQuality: VideoQuality | undefined;
+}
+
+function PieceView({
+  piece,
+  small = false,
+  extras,
+}: {
+  piece: Piece;
+  small?: boolean;
+  extras: StageExtras;
+}) {
+  const pinned = piece.tile.identity === extras.pinnedId;
   return piece.kind === 'screen' ? (
-    <ScreenTile tile={piece.tile} />
+    <ScreenTile
+      tile={piece.tile}
+      pinned={pinned}
+      onPin={extras.onPin}
+      quality={extras.screenQuality}
+    />
   ) : (
-    <PersonTile tile={piece.tile} size={small ? 'small' : 'normal'} />
+    <PersonTile
+      tile={piece.tile}
+      size={small ? 'small' : 'normal'}
+      pinned={pinned}
+      onPin={extras.onPin}
+      quality={extras.cameraQuality}
+    />
   );
 }
 
@@ -180,29 +267,109 @@ function featuredPiece(all: Piece[]): Piece | undefined {
 /** Colunas do mosaico: o mais perto de um quadrado (1, 2, 2, 2, 3, 3, ...). */
 const columnsFor = (count: number) => Math.max(1, Math.ceil(Math.sqrt(count)));
 
-export function Stage({ tiles, layout = 'auto' }: { tiles: Tile[]; layout?: StageLayout }) {
-  const all = pieces(tiles);
-  const mode = layout === 'auto' ? (screenSharers(tiles).length > 0 ? 'focus' : 'mosaic') : layout;
+/** Acima disto, quem está só ouvindo (sem câmera, tela ou voz) deixa de ter um quadrado. */
+const CROWD = 6;
+
+const isActive = (t: Tile) =>
+  t.isLocal || t.isSpeaking || t.micOn || Boolean(t.cameraPub) || Boolean(t.screenPub);
+
+/**
+ * O palco. Com o palco ligado (modo palestra) só aparece quem foi colocado nele e a plateia vira
+ * um número; salas grandes mostram só quem está transmitindo ou falando. Qualquer pessoa pode
+ * fixar uma câmera ou tela para vê-la grande.
+ */
+export function Stage({
+  tiles,
+  layout = 'auto',
+  lectureMode = false,
+  onStageSelf,
+  pinnedId: controlledPin,
+  onPinnedChange,
+}: {
+  tiles: Tile[];
+  layout?: StageLayout;
+  /** Fixado, quando quem usa o palco controla isso (a sala precisa saber para assinar o vídeo certo). */
+  pinnedId?: string | null;
+  onPinnedChange?: (identity: string | null) => void;
+  lectureMode?: boolean;
+  /** Admin: sobe a si mesmo ao palco (aparece no palco vazio). */
+  onStageSelf?: () => void;
+}) {
+  const [innerPin, setInnerPin] = useState<string | null>(null);
+  const pinnedId = onPinnedChange ? (controlledPin ?? null) : innerPin;
+  const setPinned = onPinnedChange ?? setInnerPin;
+  const extras: StageExtras = {
+    pinnedId,
+    onPin: (identity) => setPinned(pinnedId === identity ? null : identity),
+    cameraQuality: cameraQualityFor(tiles.length),
+    screenQuality: screenQualityFor(tiles.length),
+  };
+
+  const visible = lectureMode
+    ? tiles.filter((t) => t.canPublish)
+    : tiles.length > CROWD
+      ? tiles.filter(isActive)
+      : tiles;
+  const hidden = tiles.length - visible.length;
+  const pinnedTile = visible.find((t) => t.identity === pinnedId);
+
+  const audience =
+    hidden > 0 ? (
+      <p className="stage-audience tabular" data-testid="audience-count">
+        <Icon name="group" size="0.95rem" />
+        {lectureMode ? 'Na plateia' : 'Só ouvindo'}: {hidden} {hidden === 1 ? 'pessoa' : 'pessoas'}
+      </p>
+    ) : null;
+
+  if (lectureMode && visible.length === 0) {
+    return (
+      <div className="stage-empty" data-testid="empty-stage">
+        <Icon name="stadium" size="2.5rem" />
+        <p className="text-lg font-bold text-zinc-50">O palco está vazio.</p>
+        <p className="max-w-md text-sm text-zinc-400">
+          Ninguém transmite até um admin subir alguém ao palco, pela lista de pessoas.
+        </p>
+        {onStageSelf && (
+          <button type="button" onClick={onStageSelf} className="btn btn-primary">
+            <Icon name="person_add" size="1.1rem" />
+            Subir ao palco
+          </button>
+        )}
+        {audience}
+      </div>
+    );
+  }
+
+  const all = pieces(visible);
+  const autoMode = screenSharers(visible).length > 0 ? 'focus' : 'mosaic';
+  const mode = pinnedTile ? 'focus' : layout === 'auto' ? autoMode : layout;
 
   if (mode === 'focus') {
-    const main = featuredPiece(all);
-    const rest = all.filter((p) => p !== main);
+    // Fixado: a tela da pessoa (se compartilha) ou a câmera dela, grande; na faixa, as câmeras.
+    const pinnedKind = pinnedTile?.screenPub ? 'screen' : 'person';
+    const main = pinnedTile
+      ? all.find((p) => p.tile === pinnedTile && p.kind === pinnedKind)
+      : featuredPiece(all);
+    const rest = pinnedTile
+      ? all.filter((p) => p.kind === 'person' && p !== main)
+      : all.filter((p) => p !== main);
     return (
       <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
         {main && (
           <div className="stage-cell">
-            <PieceView piece={main} />
+            <PieceView piece={main} extras={extras} />
           </div>
         )}
         {rest.length > 0 && (
           <div className="stage-strip">
             {rest.map((p) => (
               <div key={p.key} className="stage-cell stage-thumb">
-                <PieceView piece={p} small />
+                <PieceView piece={p} small extras={extras} />
               </div>
             ))}
           </div>
         )}
+        {audience}
       </div>
     );
   }
@@ -221,9 +388,10 @@ export function Stage({ tiles, layout = 'auto' }: { tiles: Tile[]; layout?: Stag
     >
       {all.map((p) => (
         <div key={p.key} className="stage-cell">
-          <PieceView piece={p} />
+          <PieceView piece={p} extras={extras} />
         </div>
       ))}
+      {audience}
     </div>
   );
 }
