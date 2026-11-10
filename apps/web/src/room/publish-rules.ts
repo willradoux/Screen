@@ -1,5 +1,5 @@
 import type { Role } from '@screem/shared';
-import { isStaff } from '../lib/moderation-rules';
+import { isAdmin, isStaff } from '../lib/moderation-rules';
 import type { MediaSource } from '../lib/types';
 import type { SessionState } from './sessionReducer';
 
@@ -18,11 +18,14 @@ export function publishRestriction(
   role: Role,
   allowedSources: MediaSource[] | undefined,
 ): string | null {
-  if (isStaff(role)) return null; // moderação sempre publica
-  if (state.mutedByModeration) return 'A moderação silenciou você.';
+  // Palco ligado: ninguém transmite por padrão, nem a moderação, até um admin subir a pessoa.
   if (state.lectureMode && !state.isSpeaker) {
-    return 'Modo palestra: só palestrantes podem transmitir.';
+    return isAdmin(role)
+      ? 'Palco ligado: suba você mesmo ao palco (em Pessoas) para transmitir.'
+      : 'Palco ligado: só quem está no palco pode transmitir.';
   }
+  if (isStaff(role)) return null; // moderação publica fora do palco
+  if (state.mutedByModeration) return 'A moderação silenciou você.';
   if (allowedSources && allowedSources.length === 0)
     return 'Você não tem permissão para transmitir.';
   return null;

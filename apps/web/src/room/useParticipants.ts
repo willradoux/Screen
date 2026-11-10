@@ -19,6 +19,8 @@ export interface Tile {
   avatarUrl: string | null;
   isLocal: boolean;
   isSpeaking: boolean;
+  /** Pode transmitir agora. No palco ligado isto é exatamente "está no palco". */
+  canPublish: boolean;
   micOn: boolean;
   cameraPub: TrackPublication | undefined;
   screenPub: TrackPublication | undefined;
@@ -54,6 +56,7 @@ export function toTile(p: Participant): Tile {
     avatarUrl: meta.avatarUrl,
     isLocal: p.isLocal,
     isSpeaking: p.isSpeaking,
+    canPublish: p.permissions?.canPublish ?? false,
     micOn: p.isMicrophoneEnabled,
     cameraPub: hasVideo(camera) ? camera : undefined,
     screenPub: hasVideo(screen) ? screen : undefined,
@@ -90,13 +93,33 @@ export function useParticipants(room: Room | null): {
 
   useEffect(() => {
     if (!room) return;
-    const refresh = () => setVersion((v) => v + 1);
+    // Com centenas de pessoas chegam dezenas de eventos por segundo: o primeiro redesenha na hora
+    // e o resto é agrupado em um só redesenho a cada 250 ms.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let dirty = false;
+    const flush = () => {
+      timer = null;
+      if (dirty) {
+        dirty = false;
+        setVersion((v) => v + 1);
+        timer = setTimeout(flush, 250);
+      }
+    };
+    const refresh = () => {
+      if (timer) {
+        dirty = true;
+        return;
+      }
+      setVersion((v) => v + 1);
+      timer = setTimeout(flush, 250);
+    };
     for (const event of ROOM_EVENTS) room.on(event, refresh);
     // Mudanças no próprio participante local (mic ligado/desligado) também.
     room.localParticipant.on(ParticipantEvent.TrackMuted, refresh);
     room.localParticipant.on(ParticipantEvent.TrackUnmuted, refresh);
     refresh();
     return () => {
+      if (timer) clearTimeout(timer);
       for (const event of ROOM_EVENTS) room.off(event, refresh);
       room.localParticipant.off(ParticipantEvent.TrackMuted, refresh);
       room.localParticipant.off(ParticipantEvent.TrackUnmuted, refresh);

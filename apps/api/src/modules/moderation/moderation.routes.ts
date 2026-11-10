@@ -50,7 +50,7 @@ const patchSchemas = {
     .object({
       title: z.string().trim().min(3).max(100).optional(),
       description: z.string().trim().max(1000).nullable().optional(),
-      maxParticipants: z.number().int().min(2).max(300).optional(),
+      maxParticipants: z.number().int().min(2).max(500).optional(),
       lectureMode: z.boolean().optional(),
     })
     .strict()

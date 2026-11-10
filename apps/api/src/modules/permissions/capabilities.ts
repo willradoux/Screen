@@ -15,7 +15,7 @@ export const CAPABILITY_MIN_ROLE = {
   'moderation.mute': 'MOD',
   'moderation.kick': 'MOD',
   'moderation.ban': 'MOD',
-  'moderation.speaker': 'MOD',
+  'moderation.speaker': 'ADMIN',
   'meeting.manage': 'ADMIN',
   'settings.manage': 'ADMIN',
   /** Gravar reuniões, baixar e apagar as gravações. */

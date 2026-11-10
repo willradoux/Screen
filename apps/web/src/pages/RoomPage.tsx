@@ -55,7 +55,8 @@ function ConnectedRoom({
 }) {
   const { media, room, state, permissions, participantsVersion } = session;
   const { tiles, remote, local } = useParticipants(media);
-  const [panelOpen, setPanelOpen] = useState(true);
+  // Quem só assiste começa com a lista fechada: em salas grandes são centenas de recargas à toa.
+  const [panelOpen, setPanelOpen] = useState(me.role !== 'MEMBER');
   const [handBusy, setHandBusy] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(false);
   const now = useNow(1000);
@@ -77,6 +78,15 @@ function ConnectedRoom({
       toast.error(describeError(err));
     } finally {
       setHandBusy(false);
+    }
+  }
+
+  async function stageSelf() {
+    if (!room) return;
+    try {
+      await api.moderation.promote(room.id, me.id);
+    } catch (err) {
+      toast.error(describeError(err));
     }
   }
 
@@ -106,7 +116,14 @@ function ConnectedRoom({
 
       <div className={`grid gap-4 ${panelOpen ? 'lg:grid-cols-[1fr_20rem]' : ''}`}>
         <div className="min-w-0 space-y-4">
-          <Stage tiles={tiles} />
+          <Stage
+            tiles={tiles}
+            capCameras={tiles.length > 60}
+            lectureMode={state.lectureMode}
+            {...(me.role === 'ADMIN' && room.type === 'MEETING'
+              ? { onStageSelf: () => void stageSelf() }
+              : {})}
+          />
           {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
           <Controls
             hand={
@@ -233,7 +250,7 @@ function RoomPageInner({
         <header className="mb-4 flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-bold text-zinc-50">{room.title}</h1>
           <StatusBadge room={room} />
-          {state.lectureMode && <Badge tone="warn">Modo palestra</Badge>}
+          {state.lectureMode && <Badge tone="warn">Palco ligado</Badge>}
         </header>
       )}
       {body}

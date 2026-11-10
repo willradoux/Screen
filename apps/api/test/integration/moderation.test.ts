@@ -261,11 +261,12 @@ describe('hierarquia e validações', () => {
   });
 
   it('alvo que não está conectado -> 404 PARTICIPANT_NOT_IN_ROOM', async () => {
-    const { ctx, room } = await setup();
+    const { ctx, room } = await setup([staff.admin]);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
     for (const action of ['mute', 'kick', 'ban', 'promote']) {
       const res = await act(
-        mod,
+        action === 'promote' ? admin : mod,
         ctx,
         'post',
         `/rooms/${room.id}/participants/940000000000000099/${action}`,
@@ -471,11 +472,11 @@ describe('banir e desbanir', () => {
 
 describe('palestrantes e modo palestra', () => {
   it('promover e rebaixar atualizam a sala e auditam', async () => {
-    const { ctx, room } = await setup();
-    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    const { ctx, room } = await setup([staff.admin]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
 
     expect(
-      (await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`)).status,
+      (await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`)).status,
     ).toBe(204);
     expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([MEMBER]);
     expect(ctx.emitter.of('participant:updated')[0]!.payload).toMatchObject({
@@ -483,8 +484,9 @@ describe('palestrantes e modo palestra', () => {
       isSpeaker: true,
     });
     expect(ctx.auditRepo.of('SPEAKER_PROMOTED')).toHaveLength(1);
+    expect(ctx.auditRepo.of('SPEAKER_PROMOTED')[0]).toMatchObject({ actorId: ADMIN });
 
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/demote`);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/demote`);
     expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([]);
     expect(ctx.emitter.of('participant:updated').at(-1)!.payload).toMatchObject({
       isSpeaker: false,
@@ -493,15 +495,15 @@ describe('palestrantes e modo palestra', () => {
   });
 
   it('promover duas vezes não duplica', async () => {
-    const { ctx, room } = await setup();
-    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
+    const { ctx, room } = await setup([staff.admin]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
     expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([MEMBER]);
   });
 
   it('ligar o modo palestra tira a permissão de quem não é palestrante (e só deles)', async () => {
-    const { ctx, room } = await setup([staff.mod2]);
+    const { ctx, room } = await setup([staff.mod2, staff.admin]);
     await ctx.rooms.updateSpeakers(room.id, 'add', MEMBER2);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
 
@@ -514,7 +516,7 @@ describe('palestrantes e modo palestra', () => {
     );
     expect(byUser[MEMBER]).toBe(false);
     expect(byUser[MEMBER2]).toBe(true); // palestrante
-    expect(byUser[MOD2]).toBeUndefined(); // moderação não é tocada
+    expect(byUser[MOD2]).toBe(false); // nem a moderação transmite no palco por padrão
 
     expect(ctx.emitter.of('room:updated')[0]).toMatchObject({
       id: room.id,
@@ -527,7 +529,7 @@ describe('palestrantes e modo palestra', () => {
   });
 
   it('desligar o modo palestra devolve a permissão; repetir o mesmo valor não faz nada', async () => {
-    const { ctx, room } = await setup();
+    const { ctx, room } = await setup([staff.admin]);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
     await act(mod, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
     ctx.livekit.permissions.length = 0;
@@ -541,21 +543,39 @@ describe('palestrantes e modo palestra', () => {
   });
 
   it('no modo palestra, promover liga e rebaixar desliga na hora', async () => {
-    const { ctx, room } = await setup();
+    const { ctx, room } = await setup([staff.admin]);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
     await act(mod, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
     ctx.livekit.permissions.length = 0;
 
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
     expect(ctx.livekit.permissions.at(-1)).toMatchObject({ identity: MEMBER, canPublish: true });
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/demote`);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/demote`);
     expect(ctx.livekit.permissions.at(-1)).toMatchObject({ identity: MEMBER, canPublish: false });
   });
 
-  it('fora do modo palestra, promover não mexe nas permissões', async () => {
-    const { ctx, room } = await setup();
+  it('o admin sobe a si mesmo ao palco; moderador não consegue subir ninguém', async () => {
+    const { ctx, room } = await setup([staff.admin]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
-    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
+    await act(admin, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
+    ctx.livekit.permissions.length = 0;
+
+    expect(
+      (await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`)).status,
+    ).toBe(403);
+    expect(
+      (await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN}/promote`)).status,
+    ).toBe(204);
+    expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([ADMIN]);
+    expect(ctx.livekit.permissions.at(-1)).toMatchObject({ identity: ADMIN, canPublish: true });
+  });
+
+  it('fora do modo palestra, promover não mexe nas permissões', async () => {
+    const { ctx, room } = await setup([staff.admin]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
     expect(ctx.livekit.permissions).toHaveLength(0);
   });
 });
@@ -612,7 +632,7 @@ describe('PATCH /rooms/:id (edição)', () => {
       {},
       { title: 'ab' },
       { maxParticipants: 1 },
-      { maxParticipants: 301 },
+      { maxParticipants: 501 },
       { lectureMode: 'sim' },
       { outro: 1 },
     ]) {

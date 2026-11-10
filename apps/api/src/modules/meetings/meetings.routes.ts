@@ -20,7 +20,7 @@ const reminders = z
 const roleList = z.array(snowflake).max(25);
 const title = z.string().trim().min(3).max(100);
 const description = z.string().trim().max(1000).nullable();
-const maxParticipants = z.number().int().min(2).max(300);
+const maxParticipants = z.number().int().min(2).max(500);
 
 const id = z.object({ id: z.string() });
 

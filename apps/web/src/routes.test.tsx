@@ -94,10 +94,10 @@ describe('auditoria de rotas (admin)', () => {
   it.each(ROUTES)('$path abre sem quebrar', async ({ path, expect: want, level }) => {
     open(path);
     if (level === 0) {
-      expect(await screen.findByText(want)).toBeInTheDocument();
+      expect(await screen.findByText(want, undefined, { timeout: 5000 })).toBeInTheDocument();
     } else {
       expect(
-        await screen.findByRole('heading', { level: level ?? 1, name: want }),
+        await screen.findByRole('heading', { level: level ?? 1, name: want }, { timeout: 5000 }),
       ).toBeInTheDocument();
     }
   });

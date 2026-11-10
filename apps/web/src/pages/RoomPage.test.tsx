@@ -434,12 +434,12 @@ describe('RoomPage: eventos do servidor', () => {
     expect(screen.getByRole('button', { name: /microfone/i })).toBeEnabled();
   });
 
-  it('modo palestra: membro comum perde os botões; ser promovido devolve', async () => {
+  it('palco: membro comum perde os botões; ser colocado no palco devolve', async () => {
     await connectedRoom();
     socket.fire('room:updated', { roomId: ROOM_ID, changes: { lectureMode: true } });
-    expect(await screen.findByText(/Modo palestra: só palestrantes/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Palco ligado: só quem está no palco/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /microfone/i })).toBeDisabled();
-    expect(screen.getByText('Modo palestra', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('Palco ligado', { selector: 'span' })).toBeInTheDocument();
 
     socket.fire('participant:updated', {
       roomId: ROOM_ID,
@@ -451,11 +451,21 @@ describe('RoomPage: eventos do servidor', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /microfone/i })).toBeEnabled());
   });
 
-  it('moderador não é afetado pelo modo palestra', async () => {
-    const mod = makeUser({ id: ME.id, role: 'MOD' });
-    await connectedRoom(mod, { canModerate: true });
-    socket.fire('room:updated', { roomId: ROOM_ID, changes: { lectureMode: true } });
+  it('palco ligado: nem a moderação transmite até ser colocada no palco', async () => {
+    const admin = makeUser({ id: ME.id, role: 'ADMIN' });
+    await connectedRoom(admin, { canModerate: true });
     expect(screen.getByRole('button', { name: /microfone/i })).toBeEnabled();
+    socket.fire('room:updated', { roomId: ROOM_ID, changes: { lectureMode: true } });
+    await waitFor(() => expect(screen.getByRole('button', { name: /microfone/i })).toBeDisabled());
+
+    socket.fire('participant:updated', {
+      roomId: ROOM_ID,
+      userId: ME.id,
+      isSpeaker: true,
+      mutedByModeration: false,
+      mutedSources: [],
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: /microfone/i })).toBeEnabled());
   });
 
   it('aviso de saída da call: mostra a contagem e some quando a pessoa volta', async () => {
@@ -500,10 +510,14 @@ describe('RoomPage: eventos do servidor', () => {
 
   it('eventos de entrada e saída recarregam a lista de pessoas', async () => {
     await connectedRoom();
+    // Quem só assiste começa com a lista fechada; abre para acompanhar entradas e saídas.
+    await userEvent.click(screen.getByRole('button', { name: /pessoas/i }));
+    await screen.findByRole('complementary', { name: 'Pessoas na sala' });
     const before = vi.mocked(api.rooms.participants).mock.calls.length;
     socket.fire('participant:joined', { roomId: ROOM_ID });
-    await waitFor(() =>
-      expect(vi.mocked(api.rooms.participants).mock.calls.length).toBeGreaterThan(before),
+    await waitFor(
+      () => expect(vi.mocked(api.rooms.participants).mock.calls.length).toBeGreaterThan(before),
+      { timeout: 4000 },
     );
   });
 });

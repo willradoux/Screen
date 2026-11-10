@@ -82,7 +82,7 @@ export interface SettingsRepo {
 }
 
 export const SETTINGS_DEFAULTS = {
-  maxParticipantsLive: 25,
+  maxParticipantsLive: 500,
   graceSeconds: 30,
   idleSessionMinutes: 10,
   activationGraceMinutes: 3,

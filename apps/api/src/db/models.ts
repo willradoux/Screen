@@ -44,7 +44,7 @@ const guildSettingsSchema = new Schema(
     adminRoleIds: { type: [String], default: [] },
     modRoleIds: { type: [String], default: [] },
     meetingAllowedRoleIds: { type: [String], default: [] },
-    maxParticipantsLive: { type: Number, default: 25 },
+    maxParticipantsLive: { type: Number, default: 500 },
     graceSeconds: { type: Number, default: 30 },
     // Painel de administração (Fase 10)
     liveChannelIds: { type: [String], default: [] },

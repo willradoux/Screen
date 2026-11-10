@@ -467,7 +467,7 @@
                   "maxParticipants": {
                     "type": "integer",
                     "minimum": 2,
-                    "maximum": 300
+                    "maximum": 500
                   },
                   "lectureMode": {
                     "type": "boolean"
@@ -3445,7 +3445,7 @@
           "maxParticipants": {
             "type": "integer",
             "minimum": 2,
-            "maximum": 300,
+            "maximum": 500,
             "default": 100
           },
           "allowedRoleIds": {
@@ -3491,7 +3491,7 @@
           "maxParticipants": {
             "type": "integer",
             "minimum": 2,
-            "maximum": 300
+            "maximum": 500
           },
           "allowedRoleIds": {
             "type": "array",
@@ -3618,7 +3618,7 @@
           "maxParticipantsLive": {
             "type": "integer",
             "minimum": 2,
-            "maximum": 100
+            "maximum": 500
           },
           "graceSeconds": {
             "type": "integer",
@@ -3701,7 +3701,7 @@
           "maxParticipantsLive": {
             "type": "integer",
             "minimum": 2,
-            "maximum": 100
+            "maximum": 500
           },
           "graceSeconds": {
             "type": "integer",

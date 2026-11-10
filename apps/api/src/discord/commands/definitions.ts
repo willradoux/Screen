@@ -77,9 +77,9 @@ export function buildCommandDefinitions() {
         .addIntegerOption((o) =>
           o
             .setName('max')
-            .setDescription('Entre 2 e 100')
+            .setDescription('Entre 2 e 500')
             .setMinValue(2)
-            .setMaxValue(100)
+            .setMaxValue(500)
             .setRequired(true),
         ),
     )

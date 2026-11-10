@@ -21,13 +21,28 @@ const sideLink = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 /** Conteúdo de um item de menu: ícone, rótulo e, no item ativo, um ponto azul (o detalhe). */
-function NavContent({ item, isActive }: { item: NavItem; isActive: boolean }) {
+function NavContent({
+  item,
+  isActive,
+  compact = false,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  /** Barra estreita (dentro da sala): só o ícone, com o nome para leitores de tela. */
+  compact?: boolean;
+}) {
   return (
     <>
       <Icon name={item.icon} size="1.2rem" />
-      {item.label}
-      {isActive && (
-        <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
+      {compact ? (
+        <span className="sr-only">{item.label}</span>
+      ) : (
+        <>
+          {item.label}
+          {isActive && (
+            <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
+          )}
+        </>
       )}
     </>
   );
@@ -69,13 +84,30 @@ function InstallButton() {
   );
 }
 
-function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
+function NavGroup({
+  title,
+  items,
+  compact = false,
+}: {
+  title?: string;
+  items: NavItem[];
+  compact?: boolean;
+}) {
   return (
     <div className="space-y-0.5">
-      {title && <p className="px-3 pb-1 pt-5 text-xs font-medium text-zinc-500">{title}</p>}
+      {title && !compact && (
+        <p className="px-3 pb-1 pt-5 text-xs font-medium text-zinc-500">{title}</p>
+      )}
+      {compact && title && <div className="mx-3 my-2 border-t border-zinc-800" />}
       {items.map((i) => (
-        <NavLink key={i.to} to={i.to} end={i.end} className={sideLink}>
-          {({ isActive }) => <NavContent item={i} isActive={isActive} />}
+        <NavLink
+          key={i.to}
+          to={i.to}
+          end={i.end}
+          title={compact ? i.label : undefined}
+          className={(st) => `${sideLink(st)} ${compact ? 'justify-center px-0' : ''}`}
+        >
+          {({ isActive }) => <NavContent item={i} isActive={isActive} compact={compact} />}
         </NavLink>
       ))}
     </div>
@@ -91,6 +123,8 @@ export function Layout() {
   const [more, setMore] = useState(false);
   const location = useLocation();
   useEffect(() => setMore(false), [location.pathname]);
+  // Dentro da sala o menu encolhe para uma faixa de ícones e o palco ganha a largura.
+  const compact = location.pathname.startsWith('/r/');
 
   const main: NavItem[] = [
     { to: '/', label: 'Salas', icon: 'videocam', end: true },
@@ -117,18 +151,22 @@ export function Layout() {
   const overflow = all.length <= 5 ? [] : all.slice(4);
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[17.5rem_1fr]">
-      <aside className="glass sticky top-4 m-4 mr-0 hidden h-[calc(100dvh-2rem)] flex-col rounded-3xl px-3 py-5 md:flex">
-        <div className="px-3 pb-4">
-          <Wordmark />
+    <div
+      className={`min-h-dvh md:grid ${compact ? 'md:grid-cols-[4.75rem_1fr]' : 'md:grid-cols-[13.5rem_1fr]'}`}
+    >
+      <aside
+        className={`glass sticky top-4 m-4 mr-0 hidden h-[calc(100dvh-2rem)] flex-col rounded-3xl py-5 md:flex ${compact ? 'px-2' : 'px-3'}`}
+      >
+        <div className={compact ? 'flex justify-center pb-4' : 'px-3 pb-4'}>
+          <Wordmark size={compact ? 'sm' : undefined} />
         </div>
         <nav aria-label="Principal" className="flex-1 overflow-y-auto">
-          <NavGroup items={main} />
-          {admin.length > 0 && <NavGroup title="Administração" items={admin} />}
+          <NavGroup items={main} compact={compact} />
+          {admin.length > 0 && <NavGroup title="Administração" items={admin} compact={compact} />}
         </nav>
         <div className="space-y-1 border-t border-zinc-800 pt-3">
-          <InstallButton />
-          {user && (
+          {!compact && <InstallButton />}
+          {user && !compact && (
             <div className="flex items-center gap-3 px-3 py-2">
               <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />
               <div className="min-w-0 flex-1 leading-tight">
@@ -142,10 +180,11 @@ export function Layout() {
             type="button"
             onClick={() => void logout()}
             aria-label="Sair"
-            className="flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+            title={compact ? 'Sair' : undefined}
+            className={`flex h-9 w-full items-center rounded-lg text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100 ${compact ? 'justify-center' : 'gap-3 px-3'}`}
           >
             <Icon name="logout" size="1.15rem" />
-            Sair
+            {!compact && 'Sair'}
           </button>
         </div>
       </aside>
@@ -159,7 +198,9 @@ export function Layout() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-36 pt-6 sm:px-6 md:px-10 md:pb-14 md:pt-10">
+        <main
+          className={`mx-auto w-full px-4 ${compact ? 'max-w-[110rem]' : 'max-w-5xl'} pb-36 pt-6 sm:px-6 md:px-10 md:pb-14 md:pt-10`}
+        >
           <SetupBanners />
           <Outlet />
         </main>

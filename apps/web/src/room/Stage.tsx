@@ -1,5 +1,11 @@
-import { Track, type RemoteParticipant, type TrackPublication } from 'livekit-client';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Track,
+  VideoQuality,
+  type RemoteParticipant,
+  type RemoteTrackPublication,
+  type TrackPublication,
+} from 'livekit-client';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
 import { POSITION_CLASS, aspectFor, useVideoPrefs } from '../lib/videoPrefs';
@@ -12,8 +18,11 @@ function Video({
   fit = 'cover',
   label,
   onNaturalAspect,
+  capQuality = false,
 }: {
   pub: TrackPublication;
+  /** Salas grandes: pede a camada de qualidade média (menos banda no servidor). */
+  capQuality?: boolean;
   mirror?: boolean;
   fit?: 'cover' | 'contain';
   label: string;
@@ -23,6 +32,12 @@ function Video({
   const ref = useRef<HTMLVideoElement>(null);
   const track = pub.track;
   const prefs = useVideoPrefs();
+
+  useEffect(() => {
+    if (capQuality && 'setVideoQuality' in pub) {
+      (pub as RemoteTrackPublication).setVideoQuality(VideoQuality.MEDIUM);
+    }
+  }, [pub, track, capQuality]);
 
   useEffect(() => {
     const el = ref.current;
@@ -55,7 +70,46 @@ function Video({
   );
 }
 
-function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | 'small' }) {
+function PinButton({
+  tile,
+  pinned,
+  onPin,
+}: {
+  tile: Tile;
+  pinned: boolean;
+  onPin: (identity: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPin(tile.identity)}
+      aria-pressed={pinned}
+      aria-label={`${pinned ? 'Desafixar' : 'Fixar'} ${tile.name}`}
+      title={pinned ? 'Desafixar' : 'Fixar em destaque'}
+      className={`absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-white backdrop-blur transition-opacity focus-visible:opacity-100 ${
+        pinned
+          ? 'bg-brand-500/80 opacity-100'
+          : 'bg-black/55 opacity-0 hover:bg-black/75 group-hover:opacity-100'
+      }`}
+    >
+      <Icon name={pinned ? 'keep_off' : 'keep'} size="1rem" />
+    </button>
+  );
+}
+
+function PersonTile({
+  tile,
+  size = 'normal',
+  pinned = false,
+  onPin,
+  capCameras = false,
+}: {
+  tile: Tile;
+  capCameras?: boolean;
+  size?: 'normal' | 'small';
+  pinned?: boolean;
+  onPin?: (identity: string) => void;
+}) {
   const prefs = useVideoPrefs();
   const [natural, setNatural] = useState<number | null>(null);
   const fit = prefs.fit;
@@ -64,7 +118,7 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
       style={{ aspectRatio: aspectFor(prefs.shape, natural) }}
-      className={`relative overflow-hidden rounded-2xl border bg-zinc-900 ${
+      className={`group relative overflow-hidden rounded-2xl border bg-zinc-900 ${
         tile.isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/60' : 'border-zinc-800'
       } ${size === 'small' ? 'w-44 shrink-0' : 'mx-auto w-full'} ${natural && natural < 1 && prefs.shape === 'auto' ? 'max-h-[75vh] w-auto' : ''}`}
     >
@@ -74,6 +128,7 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
           mirror={tile.isLocal}
           fit={fit}
           label={`Câmera de ${tile.name}`}
+          capQuality={capCameras}
           onNaturalAspect={setNatural}
         />
       ) : (
@@ -81,6 +136,7 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
           <Avatar name={tile.name} url={tile.avatarUrl} size="lg" />
         </div>
       )}
+      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
       <figcaption className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-sm">
         <span className="truncate font-medium text-white">
           {tile.name}
@@ -103,14 +159,23 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
   );
 }
 
-function ScreenTile({ tile }: { tile: Tile }) {
+function ScreenTile({
+  tile,
+  pinned = false,
+  onPin,
+}: {
+  tile: Tile;
+  pinned?: boolean;
+  onPin?: (identity: string) => void;
+}) {
   if (!tile.screenPub) return null;
   return (
     <figure
       data-testid="screen-tile"
-      className="relative aspect-video w-full overflow-hidden rounded-xl border border-brand-400/60 bg-black"
+      className="group relative aspect-video w-full overflow-hidden rounded-xl border border-brand-400/60 bg-black"
     >
       <Video pub={tile.screenPub} fit="contain" label={`Tela de ${tile.name}`} />
+      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
       <figcaption className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
@@ -126,37 +191,133 @@ function gridColumns(count: number): string {
   return 'grid-cols-2 lg:grid-cols-4';
 }
 
-/**
- * Quem compartilha tela ganha destaque (a tela grande e o resto numa faixa ao lado);
- * sem compartilhamento, todos em grade.
- */
-export function Stage({ tiles }: { tiles: Tile[] }) {
-  const sharers = screenSharers(tiles);
-  const featured = sharers[0];
+/** Acima disto, quem está só ouvindo (sem câmera, tela ou voz) deixa de ter um quadrado. */
+const CROWD = 24;
 
-  if (featured) {
+const isActive = (t: Tile) =>
+  t.isLocal || t.isSpeaking || t.micOn || Boolean(t.cameraPub) || Boolean(t.screenPub);
+
+/**
+ * O palco. Com o palco ligado (modo palestra) só aparece quem foi colocado nele e a plateia vira
+ * um número; salas grandes mostram só quem está transmitindo ou falando. Quem compartilha tela
+ * ganha destaque, e qualquer pessoa pode fixar uma câmera ou tela para vê-la grande.
+ */
+export function Stage({
+  tiles,
+  lectureMode = false,
+  onStageSelf,
+  capCameras = false,
+}: {
+  tiles: Tile[];
+  /** Sala grande: câmeras na qualidade média. */
+  capCameras?: boolean;
+  lectureMode?: boolean;
+  /** Admin: sobe a si mesmo ao palco (aparece no palco vazio). */
+  onStageSelf?: () => void;
+}) {
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const togglePin = (identity: string) =>
+    setPinnedId((cur) => (cur === identity ? null : identity));
+
+  const visible = lectureMode
+    ? tiles.filter((t) => t.canPublish)
+    : tiles.length > CROWD
+      ? tiles.filter(isActive)
+      : tiles;
+  const hidden = tiles.length - visible.length;
+  const pinned = visible.find((t) => t.identity === pinnedId);
+  const sharers = screenSharers(visible);
+
+  const footer =
+    hidden > 0 ? (
+      <p className="tabular text-center text-sm text-zinc-500" data-testid="audience-count">
+        {lectureMode ? 'Na plateia' : 'Só ouvindo'}: {hidden} {hidden === 1 ? 'pessoa' : 'pessoas'}
+      </p>
+    ) : null;
+
+  if (lectureMode && visible.length === 0) {
     return (
-      <div className="flex flex-col gap-3 lg:flex-row">
-        <div className="min-w-0 flex-1 space-y-3">
-          <ScreenTile tile={featured} />
-          {sharers.slice(1).map((t) => (
-            <ScreenTile key={t.identity} tile={t} />
-          ))}
+      <div className="space-y-3">
+        <div
+          className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-zinc-700 px-6 py-16 text-center"
+          data-testid="empty-stage"
+        >
+          <Icon name="stadium" size="2.5rem" />
+          <p className="text-lg font-semibold text-zinc-50">O palco está vazio.</p>
+          <p className="max-w-md text-sm text-zinc-400">
+            Ninguém transmite até um admin subir alguém ao palco, pela lista de pessoas.
+          </p>
+          {onStageSelf && (
+            <button
+              type="button"
+              onClick={onStageSelf}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-zinc-50 px-4 text-sm font-semibold text-zinc-950 hover:bg-zinc-200"
+            >
+              <Icon name="person_add" size="1.1rem" />
+              Subir ao palco
+            </button>
+          )}
         </div>
-        <div className="flex gap-3 overflow-x-auto lg:w-56 lg:flex-col lg:overflow-y-auto">
-          {tiles.map((t) => (
-            <PersonTile key={t.identity} tile={t} size="small" />
-          ))}
+        {footer}
+      </div>
+    );
+  }
+
+  const spotlight: ReactNode[] = [];
+  if (pinned) {
+    spotlight.push(
+      pinned.screenPub ? (
+        <ScreenTile key={`s-${pinned.identity}`} tile={pinned} pinned onPin={togglePin} />
+      ) : (
+        <PersonTile
+          key={`p-${pinned.identity}`}
+          tile={pinned}
+          pinned
+          onPin={togglePin}
+          capCameras={capCameras}
+        />
+      ),
+    );
+  } else {
+    for (const t of sharers) {
+      spotlight.push(<ScreenTile key={`s-${t.identity}`} tile={t} onPin={togglePin} />);
+    }
+  }
+
+  if (spotlight.length > 0) {
+    const bigPerson = pinned && !pinned.screenPub ? pinned : null;
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <div className="min-w-0 flex-1 space-y-3">{spotlight}</div>
+          <div className="flex gap-3 overflow-x-auto lg:w-56 lg:flex-col lg:overflow-y-auto">
+            {visible
+              .filter((t) => t !== bigPerson)
+              .map((t) => (
+                <PersonTile
+                  key={t.identity}
+                  tile={t}
+                  size="small"
+                  pinned={t.identity === pinnedId}
+                  onPin={togglePin}
+                  capCameras={capCameras}
+                />
+              ))}
+          </div>
         </div>
+        {footer}
       </div>
     );
   }
 
   return (
-    <div className={`grid gap-3 ${gridColumns(tiles.length)}`}>
-      {tiles.map((t) => (
-        <PersonTile key={t.identity} tile={t} />
-      ))}
+    <div className="space-y-3">
+      <div className={`grid gap-3 ${gridColumns(visible.length)}`}>
+        {visible.map((t) => (
+          <PersonTile key={t.identity} tile={t} onPin={togglePin} capCameras={capCameras} />
+        ))}
+      </div>
+      {footer}
     </div>
   );
 }

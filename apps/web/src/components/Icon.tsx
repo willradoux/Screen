@@ -21,6 +21,10 @@ import barChart from '@material-symbols/svg-400/rounded/bar_chart.svg?url';
 import error from '@material-symbols/svg-400/rounded/error.svg?url';
 import group from '@material-symbols/svg-400/rounded/group.svg?url';
 import history from '@material-symbols/svg-400/rounded/history.svg?url';
+import keep from '@material-symbols/svg-400/rounded/keep.svg?url';
+import keepOff from '@material-symbols/svg-400/rounded/keep_off.svg?url';
+import personAdd from '@material-symbols/svg-400/rounded/person_add.svg?url';
+import stadium from '@material-symbols/svg-400/rounded/stadium.svg?url';
 import info from '@material-symbols/svg-400/rounded/info.svg?url';
 import light from '@material-symbols/svg-400/rounded/light_mode.svg?url';
 import lock from '@material-symbols/svg-400/rounded/lock.svg?url';
@@ -74,6 +78,10 @@ const ICONS = {
   group,
   history,
   info,
+  keep,
+  keep_off: keepOff,
+  person_add: personAdd,
+  stadium,
   light_mode: light,
   lock,
   logout,
