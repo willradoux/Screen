@@ -1,6 +1,6 @@
 import {
   Track,
-  VideoQuality,
+  type VideoQuality,
   type RemoteParticipant,
   type RemoteTrackPublication,
   type TrackPublication,
@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
+import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectFor, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
@@ -18,11 +19,11 @@ function Video({
   fit = 'cover',
   label,
   onNaturalAspect,
-  capQuality = false,
+  quality,
 }: {
   pub: TrackPublication;
-  /** Salas grandes: pede a camada de qualidade média (menos banda no servidor). */
-  capQuality?: boolean;
+  /** Salas grandes: pede uma camada de qualidade menor (menos banda no servidor). */
+  quality?: VideoQuality | undefined;
   mirror?: boolean;
   fit?: 'cover' | 'contain';
   label: string;
@@ -34,10 +35,10 @@ function Video({
   const prefs = useVideoPrefs();
 
   useEffect(() => {
-    if (capQuality && 'setVideoQuality' in pub) {
-      (pub as RemoteTrackPublication).setVideoQuality(VideoQuality.MEDIUM);
+    if (quality !== undefined && 'setVideoQuality' in pub) {
+      (pub as RemoteTrackPublication).setVideoQuality(quality);
     }
-  }, [pub, track, capQuality]);
+  }, [pub, track, quality]);
 
   useEffect(() => {
     const el = ref.current;
@@ -102,10 +103,10 @@ function PersonTile({
   size = 'normal',
   pinned = false,
   onPin,
-  capCameras = false,
+  quality,
 }: {
   tile: Tile;
-  capCameras?: boolean;
+  quality?: VideoQuality | undefined;
   size?: 'normal' | 'small';
   pinned?: boolean;
   onPin?: (identity: string) => void;
@@ -128,7 +129,7 @@ function PersonTile({
           mirror={tile.isLocal}
           fit={fit}
           label={`Câmera de ${tile.name}`}
-          capQuality={capCameras}
+          quality={quality}
           onNaturalAspect={setNatural}
         />
       ) : (
@@ -163,8 +164,10 @@ function ScreenTile({
   tile,
   pinned = false,
   onPin,
+  quality,
 }: {
   tile: Tile;
+  quality?: VideoQuality | undefined;
   pinned?: boolean;
   onPin?: (identity: string) => void;
 }) {
@@ -174,7 +177,7 @@ function ScreenTile({
       data-testid="screen-tile"
       className="group relative aspect-video w-full overflow-hidden rounded-xl border border-brand-400/60 bg-black"
     >
-      <Video pub={tile.screenPub} fit="contain" label={`Tela de ${tile.name}`} />
+      <Video pub={tile.screenPub} fit="contain" label={`Tela de ${tile.name}`} quality={quality} />
       {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
       <figcaption className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
         Tela de {tile.name}
@@ -206,18 +209,23 @@ export function Stage({
   tiles,
   lectureMode = false,
   onStageSelf,
-  capCameras = false,
+  pinnedId: controlledPin,
+  onPinnedChange,
 }: {
   tiles: Tile[];
-  /** Sala grande: câmeras na qualidade média. */
-  capCameras?: boolean;
+  /** Fixado, quando quem usa o palco controla isso (a sala precisa saber para assinar o vídeo certo). */
+  pinnedId?: string | null;
+  onPinnedChange?: (identity: string | null) => void;
   lectureMode?: boolean;
   /** Admin: sobe a si mesmo ao palco (aparece no palco vazio). */
   onStageSelf?: () => void;
 }) {
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
-  const togglePin = (identity: string) =>
-    setPinnedId((cur) => (cur === identity ? null : identity));
+  const [innerPin, setInnerPin] = useState<string | null>(null);
+  const pinnedId = onPinnedChange ? (controlledPin ?? null) : innerPin;
+  const setPinned = onPinnedChange ?? setInnerPin;
+  const togglePin = (identity: string) => setPinned(pinnedId === identity ? null : identity);
+  const cameraQuality = cameraQualityFor(tiles.length);
+  const screenQuality = screenQualityFor(tiles.length);
 
   const visible = lectureMode
     ? tiles.filter((t) => t.canPublish)
@@ -267,20 +275,28 @@ export function Stage({
   if (pinned) {
     spotlight.push(
       pinned.screenPub ? (
-        <ScreenTile key={`s-${pinned.identity}`} tile={pinned} pinned onPin={togglePin} />
+        <ScreenTile
+          key={`s-${pinned.identity}`}
+          tile={pinned}
+          pinned
+          onPin={togglePin}
+          quality={screenQuality}
+        />
       ) : (
         <PersonTile
           key={`p-${pinned.identity}`}
           tile={pinned}
           pinned
           onPin={togglePin}
-          capCameras={capCameras}
+          quality={cameraQuality}
         />
       ),
     );
   } else {
     for (const t of sharers) {
-      spotlight.push(<ScreenTile key={`s-${t.identity}`} tile={t} onPin={togglePin} />);
+      spotlight.push(
+        <ScreenTile key={`s-${t.identity}`} tile={t} onPin={togglePin} quality={screenQuality} />,
+      );
     }
   }
 
@@ -300,7 +316,7 @@ export function Stage({
                   size="small"
                   pinned={t.identity === pinnedId}
                   onPin={togglePin}
-                  capCameras={capCameras}
+                  quality={cameraQuality}
                 />
               ))}
           </div>
@@ -314,7 +330,7 @@ export function Stage({
     <div className="space-y-3">
       <div className={`grid gap-3 ${gridColumns(visible.length)}`}>
         {visible.map((t) => (
-          <PersonTile key={t.identity} tile={t} onPin={togglePin} capCameras={capCameras} />
+          <PersonTile key={t.identity} tile={t} onPin={togglePin} quality={cameraQuality} />
         ))}
       </div>
       {footer}

@@ -15,6 +15,9 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    # Servidor pequeno (4 GB): o cache padrão do Mongo (metade da RAM) tiraria memória do LiveKit.
+    command: ['mongod', '--wiredTigerCacheSizeGB', '0.5']
+    cpu_shares: 512
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-screem}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?defina MONGO_PASSWORD}
@@ -104,7 +107,7 @@ services:
     environment:
       LIVEKIT_CONFIG: |
         port: 7880
-        log_level: info
+        log_level: warn
         rtc:
           tcp_port: 7881
           udp_port: 7882
@@ -131,6 +134,8 @@ services:
     # Centenas de conexões simultâneas: o padrão do Docker (1024 arquivos abertos) é pouco.
     ulimits:
       nofile: { soft: 65536, hard: 65536 }
+    # Em uma VPS de 1 vCPU o LiveKit é o que mais precisa de CPU: ganha prioridade sobre o resto.
+    cpu_shares: 4096
     # Mídia não passa pelo Traefik: estas portas precisam estar abertas no firewall da VPS.
     ports:
       - '7881:7881/tcp'
@@ -146,6 +151,8 @@ services:
   egress:
     image: livekit/egress:v1.9
     restart: unless-stopped
+    # A gravação (Chrome + ffmpeg) é pesada: nunca deve tirar CPU do LiveKit durante um evento grande.
+    cpu_shares: 256
     cap_add:
       - SYS_ADMIN
     environment:

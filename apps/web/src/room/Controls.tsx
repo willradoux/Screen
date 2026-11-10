@@ -1,6 +1,7 @@
 import type { LocalParticipant } from 'livekit-client';
 import { useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
+import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
@@ -9,6 +10,8 @@ import { VideoSettings } from './VideoSettings';
 
 interface Props {
   local: LocalParticipant;
+  /** Qualidade de publicação (sala grande publica mais leve). */
+  profile?: PublishProfile;
   allowedSources: MediaSource[] | undefined;
   /** Texto de por que não dá para transmitir (modo palestra, silenciado...). */
   restriction: string | null;
@@ -90,6 +93,7 @@ export function Controls({
   onError,
   hand,
   captions,
+  profile = NORMAL_PROFILE,
 }: Props) {
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
   const screenSupported = canShareScreen();
@@ -98,15 +102,24 @@ export function Controls({
     setBusy(kind);
     const startedAt = Date.now();
     try {
-      if (kind === 'microphone') await local.setMicrophoneEnabled(!local.isMicrophoneEnabled);
+      if (kind === 'microphone')
+        await local.setMicrophoneEnabled(
+          !local.isMicrophoneEnabled,
+          profile.microphone.capture,
+          profile.microphone.publish,
+        );
       else if (kind === 'camera') {
-        await local.setCameraEnabled(!local.isCameraEnabled);
+        await local.setCameraEnabled(
+          !local.isCameraEnabled,
+          profile.camera.capture,
+          profile.camera.publish,
+        );
       } else {
-        await local.setScreenShareEnabled(!local.isScreenShareEnabled, {
-          audio: true,
-          contentHint: 'detail', // legibilidade do código acima de fluidez
-          resolution: { width: 1920, height: 1080, frameRate: 30 },
-        });
+        await local.setScreenShareEnabled(
+          !local.isScreenShareEnabled,
+          profile.screen.capture,
+          profile.screen.publish,
+        );
       }
     } catch (err) {
       let message = mediaErrorMessage(err, kind);

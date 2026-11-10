@@ -258,12 +258,12 @@ describe('RoomPage: entrar e usar a sala', () => {
     await enter();
 
     await userEvent.click(screen.getByRole('button', { name: /microfone: desligado/i }));
-    expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true);
+    expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true, {}, {});
     await userEvent.click(screen.getByRole('button', { name: /câmera: desligada/i }));
-    expect(lk.localParticipant.setCameraEnabled).toHaveBeenCalledWith(true);
+    expect(lk.localParticipant.setCameraEnabled).toHaveBeenCalledWith(true, {}, {});
 
     await userEvent.click(await screen.findByRole('button', { name: /microfone: ligado/i }));
-    expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false);
+    expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false, {}, {});
   });
 
   it('permissão negada pelo navegador vira aviso, sem quebrar', async () => {

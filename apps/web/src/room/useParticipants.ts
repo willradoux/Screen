@@ -24,6 +24,8 @@ export interface Tile {
   micOn: boolean;
   cameraPub: TrackPublication | undefined;
   screenPub: TrackPublication | undefined;
+  /** Há tela publicada (mesmo que este navegador não esteja recebendo o vídeo dela). */
+  screenPublished: boolean;
 }
 
 /** O metadata é colocado pelo servidor no token; o cliente só lê. */
@@ -60,6 +62,7 @@ export function toTile(p: Participant): Tile {
     micOn: p.isMicrophoneEnabled,
     cameraPub: hasVideo(camera) ? camera : undefined,
     screenPub: hasVideo(screen) ? screen : undefined,
+    screenPublished: Boolean(screen && !screen.isMuted),
   };
 }
 

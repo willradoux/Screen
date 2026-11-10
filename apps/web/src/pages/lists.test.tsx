@@ -163,6 +163,7 @@ describe('Stage (layout dos vídeos)', () => {
     micOn: true,
     cameraPub: undefined,
     screenPub: undefined,
+    screenPublished: false,
     ...over,
   });
 

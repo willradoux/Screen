@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
@@ -24,7 +24,9 @@ import {
 import { RemoteAudio, Stage } from '../room/Stage';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
+import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
 import { useParticipants } from '../room/useParticipants';
+import { isBigRoom, profileFor, wantedVideo } from '../lib/bigRoom';
 
 /** Avisa que a pessoa saiu da call e será removida da live em instantes. */
 function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt: number } }) {
@@ -65,6 +67,18 @@ function ConnectedRoom({
     captionsOn && local?.isMicrophoneEnabled === true,
     session.sendCaption,
     toast.error,
+  );
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
+  const lastSpeaker = useRef<string | null>(null);
+  const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);
+  if (speaking) lastSpeaker.current = speaking.identity;
+  const audienceOfBigRoom =
+    Boolean(room && isBigRoom(room.maxParticipants)) && local?.permissions?.canPublish !== true;
+  useAudienceSubscriptions(
+    media,
+    audienceOfBigRoom,
+    audienceOfBigRoom ? wantedVideo(tiles, pinnedId, lastSpeaker.current) : null,
   );
   const raised = session.hands.some((h) => h.userId === me.id);
 
@@ -118,7 +132,8 @@ function ConnectedRoom({
         <div className="min-w-0 space-y-4">
           <Stage
             tiles={tiles}
-            capCameras={tiles.length > 60}
+            pinnedId={pinnedId}
+            onPinnedChange={setPinnedId}
             lectureMode={state.lectureMode}
             {...(me.role === 'ADMIN' && room.type === 'MEETING'
               ? { onStageSelf: () => void stageSelf() }
@@ -137,6 +152,7 @@ function ConnectedRoom({
             }
             captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
             local={local}
+            profile={profileFor(room.maxParticipants)}
             allowedSources={permissions?.canPublishSources}
             restriction={restriction}
             panelOpen={panelOpen}

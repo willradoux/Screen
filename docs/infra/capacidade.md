@@ -7,7 +7,9 @@ Em uma reunião com 300 a 500 pessoas, quase todo mundo só **assiste**. O desen
 - **Palco.** Com o palco ligado (botão "Palco" em Pessoas), **ninguém transmite**, nem moderação, nem admin. Só **admin** sobe pessoas ao palco (e sobe a si mesmo). Quem está no palco transmite câmera, microfone e tela.
 - **Plateia só recebe.** Sem permissão de publicar, a plateia não gera vídeo para o servidor: o custo é o que o servidor **envia**.
 - **Quadrados só do palco.** A tela mostra apenas quem está no palco; a plateia vira um número. Em salas sem palco, acima de 24 pessoas, só quem tem câmera, tela ou voz ganha quadrado.
-- **Qualidade média nas câmeras** quando a sala passa de 60 pessoas (o LiveKit entrega a camada simulcast do meio, bem mais leve). Telas continuam na melhor qualidade.
+- **Plateia recebe um único vídeo.** Em sala de 100+ pessoas, quem só assiste é inscrito em **um** vídeo por vez: o fixado, senão a tela compartilhada, senão quem falou por último no palco. Os outros vídeos do palco ficam sem inscrição (não custam nada ao servidor). O áudio do palco continua para todos.
+- **Palco publica leve** (salas de 100+): câmera 360p a ~0,45 Mbps com camadas menores (simulcast), tela de slides em 720p a 10 quadros (~0,8 Mbps), voz de 24 kbps **sem RED** (a redundância dobraria a banda de áudio por espectador).
+- **Camada mais fraca para quem assiste.** Câmeras: camada média acima de 60 pessoas, baixa acima de 200. Telas só perdem qualidade acima de 300.
 - **Lista de pessoas** paginada (60 por vez), com busca, e recarregada no máximo a cada 1,2 s. Para quem só assiste ela começa fechada.
 - **Limite de pessoas**: até 500 por live e por reunião (Configurações, `/config limite-live`, criação da reunião). O valor já salvo nas configurações **não muda sozinho**: ajuste em Configurações > Limite de pessoas por live.
 
@@ -33,6 +35,17 @@ Cada espectador recebe, em tempo real, cada vídeo e cada áudio do palco. Conta
 4. O maior número que roda com folga (CPU abaixo de ~70%) é a sua capacidade. Coloque esse valor como limite de pessoas.
 
 O que o teste **não** cobre: login do Discord, API e MongoDB (esses carregam pouco: uma entrada por pessoa).
+
+## O que já foi ajustado no servidor (1 vCPU e 4 GB)
+
+- LiveKit com **prioridade de CPU** (`cpu_shares: 4096`) e o Egress de gravação com a mais baixa (`256`): **não grave durante um evento grande** nesta VPS.
+- MongoDB com cache limitado a 0,5 GB (o padrão é metade da RAM).
+- Limite de arquivos abertos do LiveKit em 65536 e log em `warn`.
+- Faça **Redeploy da stack inteira** no Coolify para estas opções valerem.
+
+## Contas por espectador (com as técnicas acima)
+
+Cada espectador recebe 1 vídeo (~0,15 a 0,45 Mbps na camada baixa/média) e o áudio de cada pessoa no palco (~24 kbps e 50 pacotes por segundo cada). Para 500 espectadores e 2 pessoas falando no palco: ~100 a 220 Mbps de vídeo e ~50 mil pacotes de áudio por segundo, mais os de vídeo. É a ordem de grandeza onde 1 vCPU **pode** chegar no limite; o teste de estresse é o que decide.
 
 ## Se a VPS atual não aguentar
 
