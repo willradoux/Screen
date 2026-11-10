@@ -1,72 +1,69 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/manrope';
-@import '@fontsource-variable/sora';
+@import '@fontsource-variable/geist';
 
 /*
  * Design system do Screem. Documentação: docs/design-system.md
  *
- * Regra de cor: o fundo é preto real (#000) no tema escuro e branco real (#fff) no claro. Texto e
- * ícones são o oposto do fundo. O azul aparece só em detalhes pequenos (foco, pontos de estado, bordas
- * de destaque, links): azul escuro no tema claro, azul claro no tema escuro. O tema padrão é o claro.
- *
- * Os componentes usam a escala `zinc-*` (neutros, cinza puro sem tom azulado) e `brand-*` (o azul de
- * detalhe). No tema claro a escala de neutros é invertida, então um componente escrito uma vez serve
- * aos dois temas.
+ * - Fundo (`data-theme`): degradê WebGL que deriva devagar + granulado, ou uma foto.
+ * - Modo (`data-mode`): escuro = componentes pretos (padrão); claro = componentes brancos.
+ *   No claro, `white`/`black` e a escala `zinc` se invertem, então um componente escrito uma
+ *   vez serve aos dois. A chamada é sempre escura.
+ * - Antes da chamada: peças soltas sobre o fundo. Na chamada: moldura preta, tela
+ *   transparente com desfoque e a barra embaixo.
+ * - Sem borda em componente: separação por fundo, espaço e sombra.
  */
 @theme {
   --font-sans:
-    'Manrope Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Sora Variable', 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+    'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: var(--font-sans);
 
-  /* Escala tipográfica (tamanho / altura de linha) */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1.125rem;
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.375rem;
   --text-base: 1rem;
-  --text-base--line-height: 1.625rem;
+  --text-base--line-height: 1.5rem;
   --text-lg: 1.125rem;
-  --text-lg--line-height: 1.75rem;
-  --text-xl: 1.375rem;
-  --text-xl--line-height: 1.875rem;
-  --text-2xl: 1.75rem;
-  --text-2xl--line-height: 2.125rem;
-  --text-3xl: 2.25rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 2.125rem;
   --text-3xl--line-height: 2.5rem;
-  --text-4xl: 3rem;
-  --text-4xl--line-height: 3.125rem;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 3rem;
 
-  /* Raios: arredondado generoso (vidro), controles menores que painéis. */
   --radius-md: 0.625rem;
-  --radius-lg: 0.875rem;
-  --radius-xl: 1.125rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
 
-  /* Azul de detalhe (tema escuro: azul claro). */
-  --color-brand-200: #d6e9ff;
-  --color-brand-300: #b3d6ff;
-  --color-brand-400: #8ec3ff;
-  --color-brand-500: #6db1ff;
-  --color-brand-600: #4f9bf2;
-  --color-on-brand: #000000;
+  /* Os valores reais vêm das variáveis abaixo (mudam com fundo e modo). */
+  --color-white: var(--c-white);
+  --color-black: var(--c-black);
+  --color-zinc-50: var(--z-50);
+  --color-zinc-100: var(--z-100);
+  --color-zinc-200: var(--z-200);
+  --color-zinc-300: var(--z-300);
+  --color-zinc-400: var(--z-400);
+  --color-zinc-500: var(--z-500);
+  --color-zinc-600: var(--z-600);
+  --color-zinc-700: var(--z-700);
+  --color-zinc-800: var(--z-800);
+  --color-zinc-900: var(--z-900);
+  --color-zinc-950: var(--z-950);
 
-  /* Neutros puros (tema escuro): 950 = preto real. */
-  --color-zinc-50: #ffffff;
-  --color-zinc-100: #f5f5f5;
-  --color-zinc-200: #e8e8e8;
-  --color-zinc-300: #cfcfcf;
-  --color-zinc-400: #a6a6a6;
-  --color-zinc-500: #7a7a7a;
-  --color-zinc-600: #4a4a4a;
-  --color-zinc-700: #2e2e2e;
-  --color-zinc-800: #1a1a1a;
-  --color-zinc-900: #0d0d0d;
-  --color-zinc-950: #000000;
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
 
-  /* Semânticas: cada cor tem uma função. */
   --color-red-200: #ffc9c3;
   --color-red-300: #ff9d94;
+  --color-red-400: #ff7b70;
   --color-red-500: #ff5a4d;
   --color-red-600: #e5483a;
   --color-amber-200: #fde2a8;
@@ -75,126 +72,2279 @@
   --color-emerald-300: #7fe3b0;
 }
 
-:root {
-  color-scheme: light;
-}
+/* ---------------------------------------------------------------------------------------
+ * Modo: escuro (padrão) e claro
+ * ------------------------------------------------------------------------------------- */
 
-:root[data-theme='dark'] {
+:root,
+.call-frame {
   color-scheme: dark;
+  --c-white: #ffffff;
+  --c-black: #000000;
+  --z-50: #ffffff;
+  --z-100: #f2f2f2;
+  --z-200: #dedede;
+  --z-300: #bdbdbd;
+  --z-400: #9c9c9c;
+  --z-500: #7c7c7c;
+  --z-600: #4b4b4b;
+  --z-700: #2d2d2d;
+  --z-800: #1c1c1c;
+  --z-900: #121212;
+  --z-950: #0a0a0a;
+  --focus-ring: var(--brand-400);
+  --focus-inner: #000000;
+  /* Componentes: preto puro, igual em qualquer fundo; os cartões dentro dele, cinza bem escuro. */
+  --panel: #000000;
+  --panel-strong: #000000;
+  --panel-nested: rgb(255 255 255 / 0.055);
+  --panel-nested-hover: rgb(255 255 255 / 0.085);
 }
 
-/* Tema claro (padrão): branco real, texto preto, azul escuro nos detalhes. */
-:root:not([data-theme='dark']) {
-  --color-brand-200: #0a2a6b;
-  --color-brand-300: #0b3a99;
-  --color-brand-400: #0d47bd;
-  --color-brand-500: #0b3fa8;
-  --color-brand-600: #082f7e;
-  --color-on-brand: #ffffff;
-
-  --color-zinc-50: #000000;
-  --color-zinc-100: #0a0a0a;
-  --color-zinc-200: #141414;
-  --color-zinc-300: #2b2b2b;
-  --color-zinc-400: #4d4d4d;
-  --color-zinc-500: #737373;
-  --color-zinc-600: #b3b3b3;
-  --color-zinc-700: #d9d9d9;
-  --color-zinc-800: #ececec;
-  --color-zinc-900: #f6f6f6;
-  --color-zinc-950: #ffffff;
-
-  --color-red-200: #8c1c12;
-  --color-red-300: #a8231a;
-  --color-red-500: #d92d20;
-  --color-red-600: #c0261a;
-  --color-amber-200: #6b4200;
-  --color-amber-300: #84500a;
-  --color-emerald-200: #0b4f27;
-  --color-emerald-300: #14602f;
+:root[data-mode='light'] {
+  color-scheme: light;
+  --c-white: #000000;
+  --c-black: #ffffff;
+  --z-50: #0a0a0a;
+  --z-100: #161616;
+  --z-200: #2a2a2a;
+  --z-300: #444444;
+  --z-400: #5c5c5c;
+  --z-500: #6e6e6e;
+  --z-600: #a3a3a3;
+  --z-700: #d4d4d4;
+  --z-800: #e8e8e8;
+  --z-900: #f2f2f2;
+  --z-950: #ffffff;
+  --panel: #fafafa;
+  --panel-strong: #ffffff;
+  --panel-nested: rgb(0 0 0 / 0.04);
+  --panel-nested-hover: rgb(0 0 0 / 0.07);
+  --focus-ring: #0a0a0a;
+  --focus-inner: #ffffff;
+  /* Cores de estado legíveis sobre branco (4,5:1). */
+  --color-red-200: #8f1d14;
+  --color-red-300: #b42318;
+  --color-red-400: #b42318;
+  --color-amber-200: #7a4b00;
+  --color-amber-300: #8a5a00;
+  --color-emerald-200: #05603a;
+  --color-emerald-300: #067647;
+  --color-brand-200: color-mix(in oklab, var(--brand-600) 70%, #000);
+  --color-brand-300: color-mix(in oklab, var(--brand-600) 80%, #000);
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
+/* ---------------------------------------------------------------------------------------
+ * Fundos (temas)
+ * ------------------------------------------------------------------------------------- */
+
+/* Screem (padrão): o logo. Pêssego lavado no alto, laranja no meio, rosa vivo embaixo. */
+:root,
+:root[data-theme='screem'] {
+  --bg-1: #fde6dc;
+  --bg-3: #ffaa7f;
+  --bg-2: #ff4f93;
+  --grain-opacity: 0.5;
+  --ink: #2a0d14;
+  --ink-soft: rgb(42 13 20 / 0.8);
+  --brand-200: #ffd9cf;
+  --brand-300: #ffb4a0;
+  --brand-400: #ff8a6b;
+  --brand-500: #ff6a5a;
+  --brand-600: #f0466e;
+}
+
+/* Acelera UI: menta e turquesa do site da comunidade. */
+:root[data-theme='acelera'] {
+  --bg-1: #dcefe8;
+  --bg-3: #00c8b2;
+  --bg-2: #00e0a4;
+  --grain-opacity: 0.5;
+  --ink: #00140e;
+  --ink-soft: rgb(0 20 14 / 0.8);
+  --brand-200: #c9f7e6;
+  --brand-300: #7ff0cd;
+  --brand-400: #00e0a4;
+  --brand-500: #00c896;
+  --brand-600: #00a06c;
+}
+
+/* Brasil: verde, amarelo e azul, suaves (bandeira lida como paisagem, não como cartaz). */
+:root[data-theme='brasil'] {
+  --bg-1: #f6ecc4;
+  --bg-3: #4fae7a;
+  --bg-2: #2f6db5;
+  --grain-opacity: 0.45;
+  --ink: #0c2418;
+  --ink-soft: rgb(12 36 24 / 0.8);
+  --brand-200: #fbeeb5;
+  --brand-300: #f6dc79;
+  --brand-400: #f2d36b;
+  --brand-500: #e6c14a;
+  --brand-600: #2f9e66;
+}
+
+/* Portugal: creme quente, verde e vermelho. */
+:root[data-theme='portugal'] {
+  --bg-1: #f3e6cf;
+  --bg-3: #5f9a6f;
+  --bg-2: #c4473f;
+  --grain-opacity: 0.45;
+  --ink: #2a1210;
+  --ink-soft: rgb(42 18 16 / 0.8);
+  --brand-200: #f7d3cd;
+  --brand-300: #f0a49a;
+  --brand-400: #e8786b;
+  --brand-500: #d65a4d;
+  --brand-600: #3a8a5c;
+}
+
+/* Alemanha: creme dourado, dourado e vermelho tijolo; o preto da bandeira fica no texto. */
+:root[data-theme='alemanha'] {
+  --bg-1: #f5e6bd;
+  --bg-3: #e2b04a;
+  --bg-2: #b8322f;
+  --grain-opacity: 0.45;
+  --ink: #140f0c;
+  --ink-soft: rgb(20 15 12 / 0.8);
+  --brand-200: #f8e6b4;
+  --brand-300: #f0d07a;
+  --brand-400: #e2b04a;
+  --brand-500: #cf9a2f;
+  --brand-600: #b8322f;
+}
+
+/* Preto e branco: só tons de cinza; o "ligado" dos botões fica branco. */
+:root[data-theme='mono'] {
+  --bg-1: #ececec;
+  --bg-3: #9b9b9b;
+  --bg-2: #2b2b2b;
+  --grain-opacity: 0.45;
+  --ink: #0a0a0a;
+  --ink-soft: rgb(10 10 10 / 0.78);
+  --brand-200: #f5f5f5;
+  --brand-300: #ffffff;
+  --brand-400: #e6e6e6;
+  --brand-500: #bdbdbd;
+  --brand-600: #3a3a3a;
+}
+
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring: linear(
+    0,
+    0.009,
+    0.035 2.1%,
+    0.141 4.4%,
+    0.723 12.9%,
+    0.938 16.7%,
+    1.017,
+    1.077,
+    1.121,
+    1.149 24.3%,
+    1.159,
+    1.163,
+    1.161,
+    1.154 29.9%,
+    1.129 32.8%,
+    1.051 39.6%,
+    1.017 43.1%,
+    0.991,
+    0.977 51%,
+    0.974 53.8%,
+    0.975 57.1%,
+    0.997 69.8%,
+    1.003 76.9%,
+    1
+  );
+  --gutter: 8px;
+  --frame-r: 26px;
+  --frame-pad: 5px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 14px;
+    --frame-r: 30px;
+    --frame-pad: 6px;
+  }
+}
+
+html {
+  background: var(--bg-3);
 }
 
 body {
-  background: var(--color-zinc-950);
-  color: var(--color-zinc-50);
+  margin: 0;
+  min-height: 100dvh;
+  background: transparent;
+  color: var(--color-zinc-100);
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  line-height: 1.5rem;
-  font-optical-sizing: auto;
+  font-size: var(--text-sm);
+  letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Hierarquia clara: títulos em negrito, para bater o olho e entender onde está. */
 h1,
 h2,
 h3 {
-  font-family: var(--font-display);
   letter-spacing: -0.025em;
-  font-weight: 600;
   text-wrap: balance;
 }
 
-p {
-  text-wrap: pretty;
+h1 {
+  font-weight: 700;
+}
+
+h2,
+h3 {
+  font-weight: 650;
+}
+
+label,
+legend,
+th {
+  font-weight: 600;
+}
+
+strong,
+b {
+  font-weight: 650;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand-400) 40%, transparent);
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-::selection {
-  background: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
-}
-
-button,
-a,
-select,
-summary {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Foco visível e consistente em tudo que é interativo (detalhe azul). */
+/*
+ * Foco sem borda: só aparece para quem navega pelo teclado, como um brilho suave na cor do
+ * tema (nunca um contorno duro). Campos de texto não ganham nada: o fundo clareia.
+ */
 :focus-visible {
-  outline: 2px solid var(--color-brand-400);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-/*
- * Vidro: superfície translúcida com desfoque do que está atrás, borda fina de luz e brilho interno.
- * Usada nos menus flutuantes, folhas e popovers. Funciona nos dois temas porque parte dos tokens.
- */
-.glass {
-  background-color: color-mix(in srgb, var(--color-zinc-950) 62%, transparent);
-  background-image: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--color-zinc-50) 8%, transparent),
-    transparent 55%
-  );
-  -webkit-backdrop-filter: blur(26px) saturate(180%);
-  backdrop-filter: blur(26px) saturate(180%);
-  border: 1px solid color-mix(in srgb, var(--color-zinc-50) 14%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-zinc-50) 14%, transparent),
-    0 18px 50px -12px color-mix(in srgb, #000 35%, transparent);
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  box-shadow: none;
 }
 
-/* Sem suporte a desfoque (navegadores antigos): fundo sólido, para o texto nunca perder contraste. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass {
-    background: var(--color-zinc-900);
+/* Caixas de seleção com alvo de pelo menos 18px (o rótulo em volta também clica). */
+input[type='checkbox'],
+input[type='radio'] {
+  height: 18px;
+  width: 18px;
+  flex: none;
+}
+
+@media (pointer: coarse) {
+  button,
+  a,
+  select,
+  input[type='checkbox'],
+  input[type='radio'],
+  summary {
+    min-height: 40px;
   }
 }
 
-/* Pulso do sinal "ao vivo": só em quem está de fato no ar. */
-@keyframes screem-signal {
+/* Texto direto sobre o fundo (fora dos componentes): cor do fundo escolhido. */
+.ink {
+  color: var(--ink);
+}
+
+.ink-soft {
+  color: var(--ink-soft);
+}
+
+/* Dentro de um componente, "ink" volta a ser a cor do componente. */
+:is(.glass, .surface, .sheet, .call-frame) .ink {
+  color: var(--color-zinc-50);
+}
+
+:is(.glass, .surface, .sheet, .call-frame) .ink-soft {
+  color: var(--color-zinc-400);
+}
+
+.link-ink {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Fundo
+ * ------------------------------------------------------------------------------------- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 80% at 100% 100%, var(--bg-2), transparent 70%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-3) 70%);
+}
+
+.backdrop-canvas,
+.backdrop-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.backdrop-canvas {
+  opacity: 0;
+  transition: opacity 0.8s var(--ease-out);
+}
+
+.backdrop-canvas[data-ready='true'] {
+  opacity: 1;
+}
+
+.backdrop-photo {
+  object-fit: cover;
+  animation: fade-in 600ms var(--ease-out) both;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2' intercept='-0.5'/%3E%3CfeFuncG type='linear' slope='2' intercept='-0.5'/%3E%3CfeFuncB type='linear' slope='2' intercept='-0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: overlay;
+  opacity: var(--grain-opacity);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Componentes: preto (ou branco no modo claro), sem borda
+ * ------------------------------------------------------------------------------------- */
+
+.glass,
+.surface {
+  border-radius: 22px;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 24px 48px -30px rgb(0 0 0 / 0.5);
+  color: var(--color-zinc-100);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .surface {
+    background: var(--panel-strong);
+  }
+}
+
+.glass-button {
+  transition:
+    background-color 160ms var(--ease-out),
+    transform 280ms var(--spring);
+}
+
+.glass-button:hover {
+  background: var(--panel-strong);
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+}
+
+.glass-selected {
+  background: color-mix(in srgb, var(--panel-strong) 70%, var(--c-white) 12%);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Antes da chamada: topo flutuante + página
+ * ------------------------------------------------------------------------------------- */
+
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 60;
+  transform: translateY(-200%);
+  border-radius: 999px;
+  background: var(--c-white);
+  color: var(--c-black);
+  padding: 8px 14px;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/*
+ * Hub (antes da chamada): a estrutura do Flazo — menu lateral e conteúdo largo — com a nossa
+ * UI. O menu é uma peça preta flutuando sobre o fundo; no celular vira uma gaveta.
+ */
+.hub {
+  --hub-gap: 14px;
+  --hub-w: 248px;
+  min-height: 100dvh;
+}
+
+.hub-sidebar {
+  position: fixed;
+  top: var(--hub-gap);
+  bottom: var(--hub-gap);
+  left: var(--hub-gap);
+  z-index: 30;
+  display: flex;
+  width: var(--hub-w);
+  flex-direction: column;
+  border-radius: 26px;
+  padding: 14px 10px 10px;
+  animation: hub-in 520ms var(--ease-glide) both;
+}
+
+@keyframes hub-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+.hub-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--c-white);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.hub-brand img {
+  transition: transform 320ms var(--spring);
+}
+
+.hub-brand:hover img {
+  transform: rotate(-6deg) scale(1.06);
+}
+
+.hub-brand-top {
+  align-self: flex-start;
+  border-radius: 14px;
+  padding: 4px 8px 18px;
+}
+
+.hub-nav {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.hub-link {
+  display: flex;
+  min-height: 40px;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  border-radius: 13px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-zinc-400);
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    transform 280ms var(--spring);
+}
+
+.hub-link:hover {
+  background: color-mix(in srgb, var(--c-white) 7%, transparent);
+  color: var(--c-white);
+}
+
+.hub-link:active {
+  transform: scale(0.98);
+}
+
+.hub-link[data-active='true'] {
+  background: color-mix(in srgb, var(--c-white) 11%, transparent);
+  color: var(--c-white);
+  font-weight: 650;
+}
+
+/* Item ativo: um ponto na cor do tema. */
+.hub-dot {
+  height: 6px;
+  width: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--brand-400);
+}
+
+.hub-group {
+  margin: 20px 12px 6px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--color-zinc-500);
+}
+
+.hub-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 12px;
+}
+
+.hub-account {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 6px 8px;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.hub-account:hover {
+  background: color-mix(in srgb, var(--c-white) 7%, transparent);
+}
+
+.hub-account[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--c-white) 9%, transparent);
+}
+
+/* Menu da conta: abre em cima da linha da pessoa. */
+.hub-account-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c-white) 5%, transparent);
+  padding: 6px;
+  animation: pop 200ms var(--ease-out);
+}
+
+.hub-logout:hover {
+  background: rgb(229 72 58 / 0.12);
+  color: var(--color-red-300);
+}
+
+/*
+ * Conteúdo: um painel preto grande à direita do menu (o fundo do tema aparece só nas bordas).
+ * Rola por dentro. Dentro dele, o texto "ink" é o do painel e as peças ficam um tom acima.
+ */
+.hub-main {
+  --ink: var(--color-zinc-50);
+  --ink-soft: var(--color-zinc-400);
+  position: fixed;
+  top: var(--hub-gap);
+  right: var(--hub-gap);
+  bottom: var(--hub-gap);
+  left: calc(var(--hub-w) + var(--hub-gap) * 2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 26px;
+  padding: 40px clamp(20px, 4vw, 56px) 56px;
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--c-white) 18%, transparent) transparent;
+  animation: hub-main-in 560ms var(--ease-glide) both;
+}
+
+@keyframes hub-main-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+}
+
+@layer components {
+  .hub-main > * {
+    margin-inline: auto;
+    max-width: 80rem;
+  }
+}
+
+/* Peças dentro do painel: um tom acima do preto (ou do branco, no modo claro), sem sombra. */
+.hub-main .surface,
+.hub-main .glass {
+  background: var(--panel-nested);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.hub-main .glass-button:hover {
+  background: var(--panel-nested-hover);
+}
+
+.hub-main .glass-selected {
+  background: color-mix(in srgb, var(--c-white) 12%, transparent);
+}
+
+/* Conteúdo centralizado na vertical (login). */
+.hub-main-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Topo do celular e o fundo escuro da gaveta: só no celular. */
+.hub-mobilebar,
+.hub-scrim {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .hub {
+    --hub-gap: 8px;
+  }
+
+  .hub-mobilebar {
+    position: sticky;
+    top: max(var(--hub-gap), env(safe-area-inset-top));
+    z-index: 20;
+    display: flex;
+    height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    margin: var(--hub-gap);
+    border-radius: 999px;
+    padding: 0 6px 0 12px;
+  }
+
+  .hub-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: block;
+    background: rgb(0 0 0 / 0.4);
+    animation: fade-in 200ms var(--ease-out) both;
+  }
+
+  .hub-sidebar {
+    top: max(var(--hub-gap), env(safe-area-inset-top));
+    bottom: max(var(--hub-gap), env(safe-area-inset-bottom));
+    width: min(84vw, 300px);
+    transform: translateX(calc(-100% - 20px));
+    transition: transform 420ms var(--ease-glide);
+    animation: none;
+  }
+
+  .hub-sidebar[data-open] {
+    transform: none;
+  }
+
+  .hub-static .hub-sidebar {
+    position: static;
+    width: auto;
+    margin: var(--hub-gap);
+    transform: none;
+  }
+
+  .hub-static .hub-sidebar .hub-nav {
+    flex: none;
+  }
+
+  .hub-main {
+    position: static;
+    min-height: calc(100dvh - 52px - var(--hub-gap) * 3);
+    margin: 0 var(--hub-gap) var(--hub-gap);
+    border-radius: 22px;
+    padding: 22px 16px 40px;
+  }
+}
+
+.bare {
+  min-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  outline: none;
+}
+
+/* Em camada: as classes utilitárias de cada página (max-w-*) podem sobrescrever. */
+@layer components {
+  .bare > * {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 64rem;
+  }
+}
+
+.bare-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Na chamada: moldura preta, tela transparente com desfoque e a barra embaixo
+ * ------------------------------------------------------------------------------------- */
+
+.call-frame {
+  --color-red-200: #ffc9c3;
+  --color-red-300: #ff9d94;
+  --color-red-400: #ff7b70;
+  --color-amber-200: #fde2a8;
+  --color-amber-300: #f8cb74;
+  --color-emerald-200: #b6f1d2;
+  --color-emerald-300: #7fe3b0;
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  /* Raio dos cantos de baixo da tela (igual aos de cima, agora que não há barra). */
+  --screen-br: calc(var(--frame-r) - var(--frame-pad));
+  --screen-r: calc(var(--frame-r) - var(--frame-pad));
+  position: fixed;
+  top: max(var(--gutter), env(safe-area-inset-top));
+  right: max(var(--gutter), env(safe-area-inset-right));
+  bottom: max(var(--gutter), env(safe-area-inset-bottom));
+  left: max(var(--gutter), env(safe-area-inset-left));
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
+  padding: var(--frame-pad);
+  border-radius: var(--frame-r);
+  color: var(--color-zinc-100);
+  box-shadow: 0 30px 80px -24px rgb(0 0 0 / 0.55);
+  overflow: hidden;
+  isolation: isolate;
+  transition: padding-bottom 360ms var(--ease-glide);
+}
+
+/* Parado: tela limpa, sem cursor. */
+.call-frame[data-idle] {
+  cursor: none;
+}
+
+/* A moldura é um anel preto: o meio fica vazado para o fundo aparecer pela tela. */
+.call-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 var(--frame-pad) #000;
+}
+
+/* Área da tela: a tela de vidro e, quando aberto, o painel (chat/pessoas) ao lado. */
+.call-main {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.call-screen {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  border-radius: var(--screen-r) var(--screen-r) var(--screen-br) var(--screen-br);
+  background: rgb(0 0 0 / 0.14);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+  backdrop-filter: blur(36px) saturate(160%);
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+  animation: screen-on 720ms var(--ease-glide) both;
+  transition: border-radius 360ms var(--ease-glide);
+}
+
+@media (min-width: 768px) {
+  .call-screen {
+    padding: 14px 16px;
+  }
+}
+
+/* Com o trilho aberto, o preto contorna os cantos da direita da tela. */
+.call-main {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.call-main::before,
+.call-main::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  z-index: 2;
+  display: none;
+  height: var(--screen-r);
+  width: var(--screen-r);
+  pointer-events: none;
+}
+
+.call-main::before {
+  top: 0;
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent calc(var(--screen-r) - 0.5px),
+    #000 var(--screen-r)
+  );
+}
+
+.call-main::after {
+  bottom: 0;
+  background: radial-gradient(
+    circle at 0 0,
+    transparent calc(var(--screen-r) - 0.5px),
+    #000 var(--screen-r)
+  );
+}
+
+.call-frame[data-rail] .call-main::before,
+.call-frame[data-rail] .call-main::after {
+  display: block;
+}
+
+/* Trilho de opções (direita): uma faixa estreita na borda da moldura; desliza abrindo. */
+.call-rail {
+  position: relative;
+  z-index: 4;
+  grid-column: 2;
+  grid-row: 1;
+  width: 0;
+  overflow: hidden;
+  background: #000;
+  transition: width 420ms var(--ease-glide);
+}
+
+.call-rail[data-open] {
+  width: calc(56px + var(--frame-pad));
+  overflow: visible;
+}
+
+/* Um tom acima do preto, separado da tela pelo preto da moldura. */
+.call-rail-inner {
+  display: flex;
+  height: 100%;
+  width: 56px;
+  margin-left: var(--frame-pad);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px calc(var(--frame-r) - var(--frame-pad))
+    calc(var(--frame-r) - var(--frame-pad)) 14px;
+  background: #121212;
+  padding: 8px 0 8px;
+}
+
+.call-rail[data-open] .call-rail-inner {
+  animation: rail-in 420ms 80ms var(--ease-glide) both;
+}
+
+@keyframes rail-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+.rail-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* No trilho, a dica do botão aparece à esquerda. */
+.call-rail .ctl-button[data-tip]::after {
+  bottom: auto;
+  left: auto;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translate(4px, -50%);
+}
+
+.call-rail .ctl-button[data-tip]:hover::after,
+.call-rail .ctl-button[data-tip]:focus-visible::after {
+  transform: translate(0, -50%);
+}
+
+.call-rail .ctl-button {
+  animation: ctl-in 420ms var(--ease-glide) both;
+}
+
+.rail-tools > :nth-child(2) {
+  animation-delay: 30ms;
+}
+.rail-tools > :nth-child(3) {
+  animation-delay: 60ms;
+}
+.rail-tools > :nth-child(4) {
+  animation-delay: 90ms;
+}
+.rail-tools > :nth-child(n + 5) {
+  animation-delay: 120ms;
+}
+
+/*
+ * Painel (chat ou pessoas). No computador é uma coluna preta da própria moldura, ao lado da
+ * tela, que encolhe para dar lugar. No celular cobre a tela.
+ */
+.call-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: var(--screen-r) var(--screen-r) var(--screen-br) var(--screen-br);
+  background: #000;
+  padding: 10px;
+  animation: panel-in 360ms var(--ease-glide) both;
+}
+
+/* No celular o painel cobre a tela: deixa espaço embaixo para a pílula de voz não tampar a
+   lista. */
+@media (max-width: 899px) {
+  .call-panel {
+    padding-bottom: 82px;
+  }
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (min-width: 900px) {
+  .call-main[data-panel='open'] {
+    grid-template-columns: minmax(0, 1fr) 21rem;
+  }
+
+  .call-panel {
+    position: relative;
+    inset: auto;
+    border-radius: 0;
+    padding: 6px 4px 8px calc(var(--frame-pad) + 10px);
+  }
+
+  /* Cantos da tela do lado do painel (em cima e embaixo, à direita). */
+  .call-panel::before,
+  .call-panel::after {
+    content: '';
+    position: absolute;
+    right: 100%;
+    pointer-events: none;
+  }
+
+  .call-panel::before {
+    top: 0;
+    height: var(--screen-r);
+    width: var(--screen-r);
+    background: radial-gradient(
+      circle at 0 100%,
+      transparent calc(var(--screen-r) - 0.5px),
+      #000 var(--screen-r)
+    );
+  }
+
+  .call-panel::after {
+    bottom: 0;
+    height: var(--screen-br);
+    width: var(--screen-br);
+    background: radial-gradient(
+      circle at 0 0,
+      transparent calc(var(--screen-br) - 0.5px),
+      #000 var(--screen-br)
+    );
+  }
+
+  /* Com o painel ao lado, o canto direito de baixo é dele, não da tela. */
+  .call-main[data-panel='open']::after {
+    display: none;
+  }
+}
+
+/*
+ * Controles minimizados: uma pílula preta flutuando sobre a tela, com o essencial
+ * (microfone, câmera, tela, chat, mais opções e sair). Some com o mouse parado.
+ */
+.call-float {
+  position: absolute;
+  bottom: calc(var(--frame-pad) + 14px);
+  left: 50%;
+  z-index: 6;
+  max-width: calc(100% - 24px);
+  border-radius: 28px;
+  background: rgb(0 0 0 / 0.86);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  padding: 6px;
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.65);
+  transform: translateX(-50%);
+  transition:
+    opacity 320ms var(--ease-out),
+    transform 420ms var(--ease-glide);
+  animation: float-in 420ms var(--ease-glide) both;
+}
+
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.96);
+  }
+}
+
+.call-float[data-idle] {
+  opacity: 0;
+  transform: translate(-50%, 14px);
+}
+
+/* Botão de opções no canto inferior direito da tela (antes do chat e da faixa, se abertos). */
+.call-corner {
+  --rail-w: 0px;
+  --panel-w: 0px;
+  position: absolute;
+  bottom: calc(var(--frame-pad) + 14px);
+  right: calc(var(--frame-pad) + 14px + var(--rail-w) + var(--panel-w));
+  z-index: 6;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.86);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  padding: 6px;
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.65);
+  transition:
+    opacity 320ms var(--ease-out),
+    transform 420ms var(--ease-glide),
+    right 420ms var(--ease-glide);
+  animation: rise 420ms var(--ease-glide) both;
+}
+
+.call-corner[data-idle] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.call-frame[data-rail] .call-corner {
+  --rail-w: calc(56px + var(--frame-pad));
+}
+
+@media (min-width: 900px) {
+  .call-frame[data-panel] .call-corner {
+    --panel-w: 21rem;
+  }
+}
+
+/* No canto, a dica abre para a esquerda, para não sair da tela. */
+.call-corner .ctl-button[data-tip]::after {
+  left: auto;
+  right: 0;
+  transform: translate(0, 4px) scale(0.96);
+}
+
+.call-corner .ctl-button[data-tip]:hover::after,
+.call-corner .ctl-button[data-tip]:focus-visible::after {
+  transform: translate(0, 0) scale(1);
+}
+
+/* A pílula fica no centro da tela (descontando o trilho e o painel, quando abertos). */
+.call-float {
+  --rail-w: 0px;
+  --panel-w: 0px;
+  left: calc(50% - (var(--rail-w) + var(--panel-w)) / 2);
+}
+
+.call-frame[data-rail] .call-float {
+  --rail-w: calc(56px + var(--frame-pad));
+}
+
+@media (min-width: 900px) {
+  .call-frame[data-panel] .call-float {
+    --panel-w: 21rem;
+  }
+}
+
+/* ---- Palco: cada vídeo no formato real da transmissão, cabendo na tela, sem faixas ---- */
+
+.call-screen {
+  container-type: size;
+}
+
+/* Mosaico: a grade ocupa a tela inteira; cada célula centra o seu vídeo. */
+.stage-mosaic {
+  display: grid;
+  height: calc(100cqh - 4px);
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
+}
+
+@container (max-width: 600px) {
+  .stage-mosaic {
+    grid-template-columns: repeat(var(--cols-sm), minmax(0, 1fr));
+  }
+}
+
+/* Destaque: a principal ocupa o que sobra e as outras vão numa faixa embaixo. */
+.stage-focus {
+  display: grid;
+  height: calc(100cqh - 4px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.stage-focus[data-strip] {
+  grid-template-rows: minmax(0, 1fr) clamp(72px, 18cqh, 132px);
+}
+
+.stage-strip {
+  display: flex;
+  min-height: 0;
+  justify-content: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* A célula é um container: o vídeo dentro dela calcula o maior tamanho que cabe. */
+.stage-cell {
+  container-type: size;
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  place-items: center;
+}
+
+.stage-thumb {
+  height: 100%;
+  width: clamp(120px, calc(18cqh * 1.78), 240px);
+  flex: none;
+}
+
+/*
+ * O quadro do vídeo: proporção real (--ar) e o maior tamanho que cabe na célula, sem esticar.
+ * Assim uma tela larga fica larga, um celular em pé fica em pé, e não sobra faixa preta.
+ */
+.stage-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  aspect-ratio: var(--ar, 16 / 9);
+  width: min(100cqw, calc(100cqh * var(--ar, 1.7778)));
+  max-height: 100cqh;
+}
+
+.stage-tile[data-size='small'] {
+  border-radius: 12px;
+}
+
+/* Sem câmera: um bloco preto com o avatar. */
+.stage-tile-empty {
+  background: #000;
+}
+
+.stage-caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
+  padding: 18px 12px 8px;
+  font-size: 13px;
+}
+
+.stage-tile[data-size='small'] .stage-caption {
+  padding: 12px 8px 5px;
+  font-size: 11px;
+}
+
+/* Janela de layout: cada opção é o desenho + o nome. */
+.layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-radius: 16px;
+  padding: 8px 8px 10px;
+  color: var(--color-zinc-300);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 280ms var(--spring);
+}
+
+.layout-option:hover {
+  background: color-mix(in srgb, var(--c-white) 7%, transparent);
+  color: var(--c-white);
+}
+
+.layout-option:active {
+  transform: scale(0.97);
+}
+
+.layout-option-on {
+  background: color-mix(in srgb, var(--c-white) 12%, transparent);
+  color: var(--c-white);
+}
+
+.layout-preview {
+  display: block;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.55);
+  padding: 6px;
+}
+
+/* Interruptor (liga/desliga): trilho com a cor do tema quando ligado. */
+.switch {
+  position: relative;
+  display: inline-flex;
+  height: 26px;
+  width: 46px;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-white) 16%, transparent);
+  transition: background-color 200ms var(--ease-out);
+}
+
+.switch[data-on] {
+  background: var(--brand-400);
+}
+
+.switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: 20px;
+  width: 20px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform 280ms var(--spring);
+}
+
+.switch[data-on] .switch-knob {
+  transform: translateX(20px);
+}
+
+/* ---- Widgets (salas, calls, entrada da sala) ---- */
+
+.widget-grid {
+  display: grid;
+  gap: 14px;
+  /* Uma grade só para todas as seções: as colunas têm a mesma largura e começam na mesma linha
+     à esquerda, então os cards de seções diferentes ficam alinhados entre si. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+/* Numa coluna estreita (ao lado de um formulário), o cartão ocupa a coluna toda. */
+.widget-grid-fill {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+.widget {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border-radius: 26px;
+  background: var(--panel-nested);
+  padding: 6px;
+  transition:
+    background-color 200ms var(--ease-out),
+    transform 320ms var(--spring);
+}
+
+.widget:hover {
+  background: var(--panel-nested-hover);
+  transform: translateY(-2px);
+}
+
+/* Capa: o degradê do tema com granulado. */
+.widget-cover {
+  position: relative;
+  height: 128px;
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 160% at 100% 100%, var(--bg-2), transparent 62%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-3));
+}
+
+.widget-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* A capa escurece embaixo, como uma foto que some no cartão. */
+.widget-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(to bottom, transparent 45%, rgb(0 0 0 / 0.45));
+  pointer-events: none;
+}
+
+.widget-cover[data-tone='idle'] {
+  filter: saturate(0.45) brightness(0.85);
+}
+
+.widget-cover[data-tone='off'] {
+  filter: grayscale(1) brightness(0.7);
+}
+
+.widget-chips {
+  position: absolute;
+  z-index: 1;
+  inset: 8px 8px auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cover-chip {
+  display: inline-flex;
+  flex: none;
+  white-space: nowrap;
+  height: 22px;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 650;
+  color: #fff;
+}
+
+/* Pessoas sobrepondo a capa, recortadas pela cor do widget. */
+.avatar-stack {
+  position: absolute;
+  z-index: 1;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+}
+
+.avatar-stack > li {
+  margin-left: -8px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px var(--panel);
+}
+
+.avatar-stack > li:first-child {
+  margin-left: 0;
+}
+
+.avatar-more {
+  display: inline-flex;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-zinc-700);
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-zinc-100);
+}
+
+.widget-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  /* Sempre com espaço para os avatares: o título começa no mesmo lugar em todos os cards. */
+  padding: 28px 10px 8px;
+}
+
+/* Os cards de uma fileira têm a mesma altura; números, aviso e botão ficam presos embaixo
+   (mt-auto), então se alinham mesmo com títulos de tamanhos diferentes. */
+.widget-head {
+  min-width: 0;
+}
+
+.widget-note {
+  min-height: 2.25rem;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---- Avisos (toasts) ---- */
+.toast-viewport {
+  pointer-events: none;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 60;
+  display: flex;
+  width: 22rem;
+  max-width: calc(100vw - 32px);
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .toast-viewport {
+    top: auto;
+    right: 12px;
+    bottom: max(96px, env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 18px;
+  background: #161616;
+  padding: 10px 10px 10px 10px;
+  box-shadow: 0 18px 40px -14px rgb(0 0 0 / 0.55);
+  animation: toast-in 380ms var(--spring) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+.toast-icon {
+  display: inline-flex;
+  height: 28px;
+  width: 28px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand-400) 18%, transparent);
+  color: var(--brand-300);
+}
+
+.toast-icon[data-tone='error'] {
+  background: rgb(229 72 58 / 0.18);
+  color: #ff9d94;
+}
+
+/* ---- Bichinho (o logo do Screen vivo enquanto carrega) ---- */
+.screen-logo .logo-glyph,
+.screen-logo .logo-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.creature .screen-logo {
+  animation: creature-hop 3.4s var(--ease-glide) infinite;
+}
+
+.creature .logo-glyph {
+  animation: creature-look 3.4s var(--ease-glide) infinite;
+}
+
+.creature .logo-eye {
+  animation: creature-blink 3.4s ease-in-out infinite;
+}
+
+@keyframes creature-blink {
+  0%,
+  17%,
+  23%,
+  85%,
+  91%,
+  100% {
+    transform: scaleY(1);
+  }
+  20%,
+  88% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes creature-look {
+  0%,
+  32%,
+  70%,
+  100% {
+    transform: translateX(0);
+  }
+  38%,
+  48% {
+    transform: translateX(-14px);
+  }
+  54%,
+  64% {
+    transform: translateX(14px);
+  }
+}
+
+@keyframes creature-hop {
+  0%,
+  72%,
+  82%,
+  100% {
+    transform: translateY(0);
+  }
+  77% {
+    transform: translateY(-8%);
+  }
+}
+
+/* Tela de estado: ícone grande na cor do caso, tudo centralizado. */
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: 28px;
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.status-icon {
+  display: inline-flex;
+  height: 64px;
+  width: 64px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--c-white) 8%, transparent);
+  color: var(--color-zinc-200);
+  margin-bottom: 4px;
+}
+
+.status-icon[data-tone='info'],
+.status-icon[data-tone='wait'] {
+  background: color-mix(in srgb, var(--brand-400) 16%, transparent);
+  color: var(--brand-300);
+}
+
+.status-icon[data-tone='warning'] {
+  background: rgb(248 203 116 / 0.14);
+  color: var(--color-amber-300);
+}
+
+.status-icon[data-tone='error'] {
+  background: rgb(229 72 58 / 0.15);
+  color: var(--color-red-300);
+}
+
+/* "Verificando…": o ícone respira devagar enquanto espera (desliga com animações). */
+.status-icon[data-tone='wait'] {
+  animation: status-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes status-breathe {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.8;
+  }
+}
+
+.status-waiting {
+  display: flex;
+  justify-content: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-white) 5%, transparent);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Desenhos da janela "Como ver o vídeo". */
+.video-preview {
+  display: block;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.55);
+  padding: 6px;
+}
+
+.video-frame {
+  position: relative;
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+/* A "imagem": o degradê do tema, como um pedaço do vídeo. */
+.video-image {
+  position: absolute;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--bg-1), var(--bg-3) 60%, var(--bg-2));
+  opacity: 0.85;
+}
+
+.video-person {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transition: transform 260ms var(--ease-out);
+}
+
+.video-person-head {
+  height: 28%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: #0a0a0a;
+}
+
+.video-person-body {
+  margin-top: 2px;
+  height: 30%;
+  width: 46%;
+  border-radius: 999px 999px 0 0;
+  background: #0a0a0a;
+}
+
+/* Quem está falando: sem brilho; o vídeo só marca com o ícone verde na legenda. */
+.speaking-glow {
+  outline: none;
+}
+
+/* ---- Controles da chamada ---- */
+
+/* Linha de controles: grupos lado a lado; no celular, rola de lado sem barra. */
+.ctl-row {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+}
+
+/* Grupo: os botões de uma mesma família juntos, num fundo um tom acima do preto. */
+.ctl-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.05);
+  padding: 4px;
+}
+
+.ctl-button {
+  position: relative;
+  flex: none;
+  border-radius: 999px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ctl {
+  display: inline-flex;
+  height: 42px;
+  width: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: transparent;
+  color: #e9e9e9;
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    transform 320ms var(--spring),
+    width 320ms var(--ease-glide);
+}
+
+.ctl-button:hover > .ctl {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+.ctl-button:active:not(:disabled) > .ctl {
+  transform: scale(0.88);
+}
+
+/* Ligado: a cor do tema (ícone escuro por cima, para ler bem). */
+.ctl[data-on='true'] {
+  background: var(--brand-400);
+  color: #120a08;
+}
+
+.ctl-button:hover > .ctl[data-on='true'] {
+  background: var(--brand-300);
+  color: #120a08;
+}
+
+/* Microfone/câmera desligados: vermelho suave. */
+.ctl[data-off='true'] {
+  background: rgb(229 72 58 / 0.16);
+  color: #ff9d94;
+}
+
+.ctl-button:hover > .ctl[data-off='true'] {
+  background: rgb(229 72 58 / 0.26);
+  color: #ffc9c3;
+}
+
+/* Sair: pílula vermelha mais larga. */
+.ctl[data-danger='true'],
+.ctl-button:hover > .ctl[data-danger='true'] {
+  width: 58px;
+  background: var(--color-red-600);
+  color: #fff;
+}
+
+.ctl-button:hover > .ctl[data-danger='true'] {
+  background: var(--color-red-500);
+}
+
+.ctl-button:disabled > .ctl {
+  opacity: 0.38;
+}
+
+/* Botão com setinha (microfone e câmera): os dois juntos, numa pílula. */
+.ctl-split {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.ctl-chevron {
+  display: inline-flex;
+  height: 42px;
+  width: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--color-zinc-400);
+  transition:
+    color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.ctl-chevron:hover,
+.ctl-chevron[data-open] {
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+
+/* "!" de permissão: amarelo, no canto do botão. */
+.perm-badge {
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: -3px;
+  display: inline-flex;
+  height: 16px;
+  width: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f8cb74;
+  color: #2a1a00;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Menu de aparelhos: abre em cima da pílula. */
+.device-menu {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  width: min(20rem, calc(100vw - 32px));
+  max-height: 50vh;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #0e0e0e;
+  padding: 10px;
+  box-shadow: 0 20px 50px -18px rgb(0 0 0 / 0.7);
+  transform: translateX(-50%);
+  animation: pop 200ms var(--ease-out);
+}
+
+.device-option {
+  display: flex;
+  min-height: 38px;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--color-zinc-300);
+  transition: background-color 160ms var(--ease-out);
+}
+
+.device-option:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: #fff;
+}
+
+.device-option[data-on] {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Dica com o nome, em cima do botão (mouse ou teclado). */
+.ctl-button[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 30;
+  max-width: 16rem;
+  white-space: nowrap;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.96);
+  transition:
+    opacity 140ms var(--ease-out),
+    transform 220ms var(--ease-out);
+}
+
+.ctl-button[data-tip]:hover::after,
+.ctl-button[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  transition-delay: 220ms;
+}
+
+/* Sem mouse (toque), a dica não aparece. */
+@media (hover: none) {
+  .ctl-button[data-tip]::after {
+    display: none;
+  }
+}
+
+/* Ao aparecer, os botões entram em cascata. */
+.call-float .ctl-button {
+  animation: ctl-in 420ms var(--ease-glide) both;
+}
+
+.ctl-group > :nth-child(2) {
+  animation-delay: 30ms;
+}
+.ctl-group > :nth-child(3) {
+  animation-delay: 60ms;
+}
+.ctl-group > :nth-child(4) {
+  animation-delay: 90ms;
+}
+.ctl-group > :nth-child(5) {
+  animation-delay: 120ms;
+}
+.ctl-group > :nth-child(n + 6) {
+  animation-delay: 150ms;
+}
+
+@keyframes ctl-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Peças
+ * ------------------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 280ms var(--spring);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.btn-sm {
+  height: 32px;
+  padding: 0 13px;
+  font-size: 13px;
+}
+
+.btn-lg {
+  height: 48px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+
+/* Primário: a cor oposta à do componente (branco no preto, preto no branco). */
+.btn-primary {
+  background: var(--c-white);
+  color: var(--c-black);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-white) 86%, var(--c-black));
+}
+
+.btn-secondary {
+  background: color-mix(in srgb, var(--c-white) 12%, transparent);
+  color: var(--c-white);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-white) 18%, transparent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-zinc-200);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-white) 8%, transparent);
+  color: var(--c-white);
+}
+
+/* Botões e links direto sobre o fundo (ao lado dos títulos): na cor do texto do fundo. */
+.ink-soft .btn-secondary {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: var(--ink);
+}
+
+.ink-soft .btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.ink-soft a:not(.btn) {
+  color: var(--ink);
+}
+
+/* Botão discreto direto sobre o fundo (cor do texto do fundo). */
+.ink-soft .btn-ghost {
+  color: inherit;
+}
+
+.ink-soft .btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+}
+
+/* Vermelho escuro o bastante para o texto branco passar de 4,5:1 (#c81e1e ≈ 6:1). */
+.btn-danger {
+  background: #c81e1e;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b01a1a;
+}
+
+.icon-button {
+  display: inline-flex;
+  height: 36px;
+  width: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--color-zinc-300);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 280ms var(--spring);
+}
+
+.icon-button:hover {
+  background: color-mix(in srgb, var(--c-white) 10%, transparent);
+  color: var(--c-white);
+}
+
+.icon-button:active {
+  transform: scale(0.9);
+}
+
+.link-quiet {
+  color: var(--color-zinc-300);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  transition: color 160ms var(--ease-out);
+}
+
+.link-quiet:hover {
+  color: var(--c-white);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-zinc-400);
+}
+
+/* Folha (conta, ajustes). */
+.sheet {
+  background: var(--panel-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+}
+
+.sheet:focus,
+.sheet:focus-visible {
+  outline: none;
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+}
+
+.sheet-backdrop {
+  animation: fade-in 200ms var(--ease-out) both;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Abertura e movimento
+ * ------------------------------------------------------------------------------------- */
+
+/* Abertura: a forma preta sobre o fundo do tema (o app espera escondido). */
+.intro-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  transition:
+    opacity 380ms var(--ease-out),
+    transform 380ms var(--ease-out);
+}
+
+.intro-stage[data-leaving] {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.intro-figure {
+  position: relative;
+  height: 104px;
+  width: calc(104px * 762 / 238);
+  max-width: 92vw;
+}
+
+.intro-svg {
+  height: 100%;
+  width: 100%;
+}
+
+/* Peças do logo animadas pela abertura (piscar e olhar). */
+.intro-glyph,
+.intro-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 260ms var(--ease-glide),
+    opacity 200ms var(--ease-out);
+}
+
+.intro-eye {
+  transition: transform 90ms ease-in-out;
+}
+
+.intro-mark-acelera {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.85);
+  filter: blur(6px);
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 520ms var(--spring),
+    filter 420ms var(--ease-out);
+}
+
+.intro-mark-acelera[data-show] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+html[data-intro='play'] .hub,
+html[data-intro='play'] .bare,
+html[data-intro='play'] .call-frame {
+  opacity: 0;
+}
+
+html[data-intro='play'] .rise {
+  animation: none;
+  opacity: 0;
+}
+
+html[data-intro='reveal'] .hub-sidebar {
+  animation: hub-in 560ms 120ms var(--ease-glide) both;
+}
+
+html[data-intro='reveal'] .hub-mobilebar {
+  animation: rise 560ms 120ms var(--ease-out) both;
+}
+
+html[data-intro='reveal'] .rise {
+  animation-delay: 200ms;
+}
+
+html[data-intro='reveal'] .rise-2 {
+  animation-delay: 270ms;
+}
+
+html[data-intro='reveal'] .rise-3 {
+  animation-delay: 340ms;
+}
+
+/* A tela da chamada acende: uma linha de luz que abre na vertical. */
+@keyframes screen-on {
+  0% {
+    clip-path: inset(49.6% 8% 49.6% 8% round 20px);
+    filter: brightness(2.2);
+  }
+  45% {
+    clip-path: inset(0 0 0 0);
+    filter: brightness(1.2);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+}
+
+.rise {
+  animation: rise 560ms var(--ease-out) both;
+}
+
+/* Troca de tela: a nova entra subindo de leve e saindo do desfoque. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+    filter: blur(8px);
+  }
+}
+
+.page-enter {
+  animation: page-in 520ms var(--ease-glide) both;
+}
+
+/* Na abertura, quem entra é a intro; a página espera. */
+html[data-intro='play'] .page-enter {
+  animation: none;
+}
+
+.rise-2 {
+  animation-delay: 70ms;
+}
+
+.rise-3 {
+  animation-delay: 140ms;
+}
+
+.rise-4 {
+  animation-delay: 210ms;
+}
+
+.stagger > * {
+  animation: rise 480ms var(--ease-out) both;
+}
+
+.stagger > :nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger > :nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger > :nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger > :nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > :nth-child(6) {
+  animation-delay: 200ms;
+}
+.stagger > :nth-child(7) {
+  animation-delay: 240ms;
+}
+.stagger > :nth-child(n + 8) {
+  animation-delay: 280ms;
+}
+
+@keyframes signal {
   0% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-red-500) 55%, transparent);
   }
@@ -203,32 +2353,47 @@ summary {
     box-shadow: 0 0 0 6px transparent;
   }
 }
+
+/* "Ao vivo": ponto vermelho parado (nada piscando ou brilhando). */
 .signal-live {
-  animation: screem-signal 1.8s ease-out infinite;
+  animation: none;
 }
 
-@keyframes screem-pop {
+@keyframes pop {
   from {
     opacity: 0;
     transform: translateY(6px) scale(0.98);
   }
 }
+
 .pop-in {
-  animation: screem-pop 160ms ease-out;
+  animation: pop 180ms var(--ease-out);
 }
 
-@keyframes screem-sheet {
+@keyframes sheet-up {
   from {
-    opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(100%);
   }
 }
-.sheet-in {
-  animation: screem-sheet 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+@keyframes sheet-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
 }
 
-/* Barra de carregamento indeterminada (tela de loading). */
-@keyframes screem-bar {
+.sheet-in {
+  animation: sheet-up 420ms var(--ease-glide);
+}
+
+@media (min-width: 768px) {
+  .sheet-in {
+    animation: sheet-pop 260ms var(--ease-out);
+  }
+}
+
+@keyframes bar {
   0% {
     transform: translateX(-100%);
   }
@@ -236,14 +2401,53 @@ summary {
     transform: translateX(260%);
   }
 }
+
 .loader-bar::after {
   content: '';
   display: block;
   height: 100%;
-  width: 38%;
+  width: 40%;
   border-radius: 999px;
-  background: var(--color-brand-500);
-  animation: screem-bar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  background: var(--brand-400);
+  animation: bar 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --panel: #000;
+    --panel-strong: #000;
+    --ink-soft: var(--ink);
+  }
+
+  :root[data-mode='light'] {
+    --panel: #fff;
+    --panel-strong: #fff;
+  }
+
+  .call-screen {
+    background: rgb(0 0 0 / 0.55);
+  }
+}
+
+/* Cores forçadas (Windows alto contraste): bordas reais para as peças não sumirem. */
+@media (forced-colors: active) {
+  .glass,
+  .surface,
+  .sheet,
+  .call-panel,
+  .ctl,
+  .btn {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Animações desligadas em Preferências: o mesmo que o sistema pedir menos movimento. */
+:root[data-motion='off'] *,
+:root[data-motion='off'] *::before,
+:root[data-motion='off'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -254,4 +2458,170 @@ summary {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Reuniões: a próxima em destaque, grande, à esquerda; a lista à direita. Empilha em telas
+   estreitas. */
+.meet-layout {
+  display: grid;
+  gap: 2rem 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .meet-layout[data-feature] {
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
+  }
+
+  .meet-layout[data-feature] .meet-feature {
+    position: sticky;
+    top: 0;
+  }
+}
+
+.meet-feature {
+  width: 100%;
+}
+
+.meet-feature .widget-cover {
+  height: clamp(160px, 22vw, 240px);
+}
+
+/* Contagem regressiva em blocos. */
+.countdown {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.countdown li {
+  display: flex;
+  min-width: 4.25rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-radius: 16px;
+  background: var(--panel-nested);
+  padding: 10px 12px 8px;
+}
+
+.countdown-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-zinc-50);
+}
+
+.countdown-unit {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-zinc-500);
+}
+
+/* Seções de uma página: cabeçalho à esquerda (título em negrito + contagem + para que serve),
+   na mesma linha da grade. Entre seções, bem mais espaço do que dentro delas (proximidade). */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-inline: 4px;
+}
+
+.section-count {
+  display: inline-flex;
+  min-width: 24px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--panel-nested);
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-zinc-300);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+}
+
+/* Salas: as seções lado a lado numa fileira, cada uma com a largura de --n cards. O bloco
+   (título da página junto) tem a largura da fileira (--board-w) e fica no meio. Sem espaço, a
+   seção desce para a linha de baixo; em telas estreitas, uma embaixo da outra. */
+.board {
+  --card: 18rem;
+  --board-gap: 2.5rem;
+  width: min(100%, var(--board-w, 100%));
+  margin-inline: auto;
+}
+
+.board-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2.75rem var(--board-gap);
+}
+
+.board-col {
+  width: min(100%, calc(var(--n) * var(--card) + (var(--n) - 1) * 14px));
+  min-width: 0;
+}
+
+.board-row > .board-col:empty {
+  display: none !important;
+}
+
+/* Carregando, erro e "nenhuma sala": ocupam a linha toda. */
+.board-row > :not(.board-col) {
+  width: 100%;
+}
+
+.board-col .widget-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+
+/* Todas numa linha só: os cards de todas as seções ficam da mesma altura. */
+.board-row[data-even] {
+  align-items: stretch;
+}
+
+.board-row[data-even] > .board-col,
+.board-row[data-even] > .board-col > .section {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-row[data-even] > .board-col > .section,
+.board-row[data-even] .section > .widget-grid {
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  .board-col {
+    width: 100%;
+  }
+}
+
+/* Título da página: nome e resumo à esquerda, ação (ex.: Atualizar) à direita, na mesma linha
+   da borda do conteúdo. Em telas estreitas a ação desce para baixo do título. */
+.page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 2rem;
+  padding-inline: 4px;
 }

@@ -6,7 +6,8 @@ import { describeError } from '../lib/errors';
 import { isAdmin } from '../lib/moderation-rules';
 import { formatDateTime } from '../lib/format';
 import type { Room } from '../lib/types';
-import { Badge, StatusDot } from './ui';
+import { Badge } from './ui';
+import { CoverChip, WidgetCover, WidgetStat, type Person } from './Widget';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
@@ -21,19 +22,20 @@ export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   return <Badge>Encerrada</Badge>;
 }
 
-function dotFor(room: Room) {
-  if (room.status === 'OPEN') {
-    if (room.type === 'LIVE') return room.mediaState === 'ACTIVE' ? 'live' : 'idle';
-    return 'open';
-  }
-  return room.status === 'SCHEDULED' ? 'scheduled' : 'off';
-}
-
 /**
- * Uma sala (live ou reunião) como linha de lista: estado, título, ocupação e a ação de entrar.
- * Listas de linhas com régua leem mais rápido que uma grade de cartões iguais.
+ * Uma sala (live ou reunião) como widget: capa com o degradê do tema, estado e tipo, quem está
+ * na call, título em negrito, ocupação e horário, e o botão de entrar ocupando a largura.
  */
-export function RoomCard({ room, onChanged }: { room: Room; onChanged?: () => void }) {
+export function RoomCard({
+  room,
+  onChanged,
+  members,
+}: {
+  room: Room;
+  onChanged?: () => void;
+  /** Quem está na call agora (lives), para mostrar na capa. */
+  members?: Person[];
+}) {
   const auth = useOptionalAuth();
   const canCancel = room.status === 'SCHEDULED' && !!auth?.user && isAdmin(auth.user.role);
   const [confirming, setConfirming] = useState(false);
@@ -65,59 +67,96 @@ export function RoomCard({ room, onChanged }: { room: Room; onChanged?: () => vo
         : 'Sessão em espera: ao entrar você a ativa.'
       : null;
 
+  const tone =
+    room.status === 'OPEN'
+      ? room.type === 'LIVE' && room.mediaState !== 'ACTIVE'
+        ? 'idle'
+        : 'live'
+      : room.status === 'SCHEDULED'
+        ? 'live'
+        : 'off';
+
   return (
-    <div className="flex items-center gap-4 py-4" data-testid="room-row">
-      <StatusDot tone={dotFor(room)} />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <h3 className="truncate text-base font-semibold text-zinc-50">{room.title}</h3>
-          <StatusBadge room={room} />
+    <article className="widget" data-testid="room-row">
+      <WidgetCover
+        tone={tone}
+        people={members}
+        left={<StatusBadge room={room} />}
+        right={
+          <CoverChip icon={room.type === 'LIVE' ? 'videocam' : 'calendar_month'}>
+            {room.type === 'LIVE' ? 'Live' : 'Reunião'}
+          </CoverChip>
+        }
+      />
+      <div className="widget-body">
+        <div className="widget-head">
+          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-zinc-50">
+            {room.title}
+          </h3>
+          {room.description && (
+            <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-zinc-400">
+              {room.description}
+            </p>
+          )}
         </div>
-        {room.description && (
-          <p className="mt-0.5 line-clamp-1 text-sm text-zinc-400">{room.description}</p>
-        )}
-        <p className="tabular mt-0.5 text-sm text-zinc-500">
-          {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {room.participantCount}/
-          {room.maxParticipants} {room.participantCount === 1 ? 'pessoa' : 'pessoas'}
-          {when && ` · ${when}`}
-        </p>
-        {session && <p className="text-xs text-zinc-500">{session}</p>}
-        {failure && <p className="text-xs text-red-400">{failure}</p>}
-      </div>
-      {canCancel &&
-        (confirming ? (
-          <span className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void cancel()}
-              className="inline-flex h-9 items-center rounded-lg bg-red-600 px-3 text-sm font-medium text-white disabled:opacity-60"
-            >
-              Cancelar mesmo
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="inline-flex h-9 items-center rounded-lg px-3 text-sm text-zinc-400 hover:text-zinc-50"
-            >
-              Voltar
-            </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="inline-flex h-9 shrink-0 items-center rounded-lg px-3 text-sm font-medium text-red-400 hover:bg-zinc-900"
+
+        <div className="mt-auto grid grid-cols-2 gap-3">
+          <WidgetStat
+            icon="group"
+            value={`${room.participantCount}/${room.maxParticipants} ${room.participantCount === 1 ? 'pessoa' : 'pessoas'}`}
+            label="na sala"
+          />
+          {when && (
+            <WidgetStat
+              icon="schedule"
+              value={formatDateTime(room.status === 'SCHEDULED' ? room.startsAt : room.openedAt)}
+              label={room.status === 'SCHEDULED' ? 'começa' : 'aberta desde'}
+            />
+          )}
+        </div>
+
+        <div className="widget-note">
+          {session && <p className="text-zinc-500">{session}</p>}
+          {failure && <p className="text-red-400">{failure}</p>}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+          {canCancel &&
+            (confirming ? (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void cancel()}
+                  className="btn btn-danger btn-sm"
+                >
+                  Cancelar mesmo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Voltar
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="btn btn-ghost btn-sm text-red-300!"
+              >
+                Cancelar
+              </button>
+            ))}
+          <Link
+            to={`/r/${room.id}`}
+            className={`btn ${room.status === 'OPEN' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Cancelar
-          </button>
-        ))}
-      <Link
-        to={`/r/${room.id}`}
-        className="inline-flex h-9 shrink-0 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-800"
-      >
-        {room.status === 'OPEN' ? 'Entrar' : 'Ver sala'}
-      </Link>
-    </div>
+            {room.status === 'OPEN' ? 'Entrar' : 'Ver sala'}
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import { ToastViewport, useToasts } from '../components/Toasts';
-import { Alert, Badge, Button } from '../components/ui';
-import { StatusBadge } from '../components/RoomCard';
+import { useImmersive } from '../components/immersive';
+import { Alert, Avatar, Badge, Button } from '../components/ui';
+import { ROLE_LABEL } from '../lib/moderation-rules';
 import { publishRestriction } from '../room/publish-rules';
 import { CaptionsOverlay, useSpeechCaptions } from '../room/captions';
 import { Controls } from '../room/Controls';
@@ -21,7 +22,10 @@ import {
   ReadyScreen,
   RemovedScreen,
 } from '../room/Screens';
-import { RemoteAudio, Stage } from '../room/Stage';
+import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Stage';
+import { useIdle } from '../room/useIdle';
+import { playSound } from '../lib/sounds';
+import { Icon } from '../components/Icon';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useParticipants } from '../room/useParticipants';
@@ -41,7 +45,28 @@ function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt:
   );
 }
 
-/** Sala conectada: palco com os vídeos, controles e painel de pessoas. */
+const LAYOUT_KEY = 'screem-stage-layout';
+
+function readPref(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Sem armazenamento: vale só nesta visita.
+  }
+}
+
+/**
+ * Dentro da chamada: a moldura preta, a tela transparente com desfoque (palco, avisos e
+ * pessoas) e a barra preta embaixo com você e os controles.
+ */
 function ConnectedRoom({
   session,
   me,
@@ -49,15 +74,52 @@ function ConnectedRoom({
   toast,
 }: {
   session: ReturnType<typeof useRoomSession>;
-  me: { id: string; role: 'MEMBER' | 'MOD' | 'ADMIN' };
+  me: {
+    id: string;
+    role: 'MEMBER' | 'MOD' | 'ADMIN';
+    displayName: string;
+    avatarUrl: string | null;
+  };
   onLeave: () => void;
   toast: ReturnType<typeof useToasts>;
 }) {
   const { media, room, state, permissions, participantsVersion } = session;
   const { tiles, remote, local } = useParticipants(media);
-  const [panelOpen, setPanelOpen] = useState(true);
+  // Sons: você entrou; alguém entrou ou saiu (um som só para várias pessoas juntas).
+  const remoteCount = remote.length;
+  const lastCount = useRef<number | null>(null);
+  useEffect(() => {
+    if (!media) return;
+    const before = lastCount.current;
+    if (before === null) playSound('join');
+    else if (remoteCount > before) playSound('join');
+    else if (remoteCount < before) playSound('leave');
+    lastCount.current = remoteCount;
+  }, [remoteCount, media]);
+  // Painel de pessoas: fechado por padrão, para o palco ficar limpo.
+  const [side, setSide] = useState<'people' | null>(null);
+  // Sempre começa minimizada (só o essencial, flutuando).
+  const [expanded, setExpanded] = useState(false);
+  const [layout, setLayout] = useState<StageLayout>(() => {
+    const saved = readPref(LAYOUT_KEY);
+    return STAGE_LAYOUTS.some((l) => l.value === saved) ? (saved as StageLayout) : 'auto';
+  });
   const [handBusy, setHandBusy] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(false);
+  // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 3 s.
+  // "Mais opções" abre a barra preta completa embaixo, que fica até a pessoa minimizar.
+  // Com o ponteiro ou o foco nos controles (ou um painel aberto), eles não somem.
+  const [holdBar, setHoldBar] = useState(false);
+  const idle = useIdle(3000, { hold: holdBar || side !== null });
+  const hideFloating = idle;
+  const holdHandlers = {
+    onPointerEnter: () => setHoldBar(true),
+    onPointerLeave: () => setHoldBar(false),
+    onFocus: () => setHoldBar(true),
+    onBlur: (e: React.FocusEvent<HTMLElement>) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHoldBar(false);
+    },
+  };
   const now = useNow(1000);
   // Transcreve a própria fala só com legendas ligadas e microfone aberto.
   useSpeechCaptions(
@@ -84,62 +146,139 @@ function ConnectedRoom({
 
   const restriction = publishRestriction(state, me.role, permissions?.canPublishSources);
 
-  return (
-    <div className="space-y-4">
-      {session.recording && (
-        <Alert tone="error" title="Esta reunião está sendo gravada">
-          Sua imagem e sua voz podem aparecer na gravação enquanto você estiver com câmera ou
-          microfone ligados.
-        </Alert>
-      )}
-      {state.voiceWarning && <VoiceWarning warning={state.voiceWarning} />}
-      {state.phase.kind === 'disconnected' && (
-        <Alert tone="warning" title="Conexão perdida">
-          <div className="flex flex-wrap items-center gap-3">
-            <span>Sua conexão de vídeo caiu.</span>
-            <Button size="sm" variant="primary" onClick={() => void session.join()}>
-              Reconectar
-            </Button>
-          </div>
-        </Alert>
-      )}
+  const controlsFor = (variant: 'media' | 'rail') => (
+    <Controls
+      variant={variant}
+      room={media}
+      hand={
+        room.type === 'MEETING'
+          ? { raised, busy: handBusy, onToggle: () => void toggleHand() }
+          : undefined
+      }
+      captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
+      local={local}
+      allowedSources={permissions?.canPublishSources}
+      restriction={restriction}
+      panelOpen={side === 'people'}
+      onTogglePanel={() => setSide((v) => (v === 'people' ? null : 'people'))}
+      layout={{
+        value: layout,
+        onChange: (next) => {
+          writePref(LAYOUT_KEY, next);
+          setLayout(next);
+        },
+      }}
+      onLeave={() => {
+        playSound('leave');
+        onLeave();
+      }}
+      onError={toast.error}
+    />
+  );
 
-      <div className={`grid gap-4 ${panelOpen ? 'lg:grid-cols-[1fr_20rem]' : ''}`}>
-        <div className="min-w-0 space-y-4">
-          <Stage tiles={tiles} />
-          {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
-          <Controls
-            hand={
-              room.type === 'MEETING'
-                ? {
-                    raised: session.hands.some((h) => h.userId === me.id),
-                    busy: handBusy,
-                    onToggle: () => void toggleHand(),
-                  }
-                : undefined
-            }
-            captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
-            local={local}
-            allowedSources={permissions?.canPublishSources}
-            restriction={restriction}
-            panelOpen={panelOpen}
-            onTogglePanel={() => setPanelOpen((v) => !v)}
-            onLeave={onLeave}
-            onError={toast.error}
-          />
-        </div>
-        {panelOpen && (
-          <ParticipantsPanel
-            room={room}
-            me={me}
-            version={participantsVersion}
-            lectureMode={state.lectureMode}
-            hands={session.hands}
-            recording={session.recording}
-            onInfo={toast.info}
-            onError={toast.error}
-          />
+  return (
+    <div
+      className="call-frame"
+      data-rail={expanded ? 'open' : undefined}
+      data-idle={hideFloating || undefined}
+      data-panel={side ? 'open' : undefined}
+    >
+      {/* Trilho de opções na borda direita ("Mais opções"): abre e fecha deslizando. */}
+      <div className="call-rail" data-open={expanded || undefined} inert={!expanded}>
+        {expanded && (
+          <div className="call-rail-inner" {...holdHandlers}>
+            {controlsFor('rail')}
+            <div className="mt-auto" title={`${me.displayName} · ${ROLE_LABEL[me.role]}`}>
+              <Avatar name={me.displayName} url={me.avatarUrl} size="sm" />
+            </div>
+          </div>
         )}
+      </div>
+
+      <div className="call-main" data-panel={side ? 'open' : undefined}>
+        <section aria-label="Chamada" className="call-screen">
+          <h1 className="sr-only">{room.title}</h1>
+          {state.lectureMode && (
+            <div className="mb-2 flex justify-end">
+              <Badge tone="warn">Modo palestra</Badge>
+            </div>
+          )}
+
+          <div className="space-y-2 empty:hidden">
+            {session.recording && (
+              <Alert tone="error" title="Esta reunião está sendo gravada">
+                Sua imagem e sua voz podem aparecer na gravação enquanto você estiver com câmera ou
+                microfone ligados.
+              </Alert>
+            )}
+            {state.voiceWarning && <VoiceWarning warning={state.voiceWarning} />}
+            {state.phase.kind === 'disconnected' && (
+              <Alert tone="warning" title="Conexão perdida">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>Sua conexão de vídeo caiu.</span>
+                  <Button size="sm" variant="primary" onClick={() => void session.join()}>
+                    Reconectar
+                  </Button>
+                </div>
+              </Alert>
+            )}
+          </div>
+
+          <div className="min-w-0 space-y-3 pt-1">
+            <Stage tiles={tiles} layout={layout} />
+            {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
+          </div>
+        </section>
+
+        {side && (
+          <aside aria-label="Pessoas" className="call-panel">
+            <div className="flex items-center justify-end gap-1 pb-1">
+              <button
+                type="button"
+                aria-label="Fechar painel"
+                onClick={() => setSide(null)}
+                className="icon-button h-8 w-8"
+              >
+                <Icon name="close" size="1.1rem" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ParticipantsPanel
+                room={room}
+                me={me}
+                version={participantsVersion}
+                lectureMode={state.lectureMode}
+                hands={session.hands}
+                recording={session.recording}
+                onInfo={toast.info}
+                onError={toast.error}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
+
+      <div className="call-float" data-idle={hideFloating || undefined} {...holdHandlers}>
+        {controlsFor('media')}
+      </div>
+
+      {/* Canto inferior direito: abre e fecha a faixa de opções. */}
+      <div className="call-corner" data-idle={hideFloating || undefined} {...holdHandlers}>
+        <button
+          type="button"
+          onClick={() => {
+            setHoldBar(false);
+            setExpanded((v) => !v);
+          }}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Fechar opções' : 'Mais opções'}
+          data-tip={expanded ? 'Fechar opções' : 'Mais opções'}
+          className="ctl-button"
+        >
+          <span className="ctl" data-on={expanded || undefined}>
+            <Icon name={expanded ? 'right_panel_close' : 'right_panel_open'} size="1.3rem" />
+          </span>
+        </button>
       </div>
       <RemoteAudio participants={remote} />
     </div>
@@ -171,7 +310,12 @@ function RoomPageInner({
   toast,
 }: {
   roomId: string;
-  user: { id: string; role: 'MEMBER' | 'MOD' | 'ADMIN' };
+  user: {
+    id: string;
+    role: 'MEMBER' | 'MOD' | 'ADMIN';
+    displayName: string;
+    avatarUrl: string | null;
+  };
   deps: SessionDeps;
   navigate: ReturnType<typeof useNavigate>;
   toast: ReturnType<typeof useToasts>;
@@ -225,17 +369,11 @@ function RoomPageInner({
       break;
   }
 
-  const inRoom = phase.kind === 'connected' || phase.kind === 'disconnected';
+  // Na chamada, a tela é só a chamada: o topo do site some.
+  useImmersive(phase.kind === 'connected' || phase.kind === 'disconnected');
 
   return (
     <>
-      {room && inRoom && (
-        <header className="mb-4 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold text-zinc-50">{room.title}</h1>
-          <StatusBadge room={room} />
-          {state.lectureMode && <Badge tone="warn">Modo palestra</Badge>}
-        </header>
-      )}
       {body}
       <ToastViewport toasts={toast.toasts} onDismiss={toast.dismiss} />
     </>

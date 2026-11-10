@@ -2,7 +2,7 @@ import { Track, type RemoteParticipant, type TrackPublication } from 'livekit-cl
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
-import { POSITION_CLASS, aspectFor, useVideoPrefs } from '../lib/videoPrefs';
+import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
 
@@ -50,44 +50,48 @@ function Video({
       playsInline
       muted // o áudio é tocado à parte (RemoteAudio); aqui só a imagem
       aria-label={label}
-      className={`h-full w-full bg-black ${fit === 'contain' ? 'object-contain' : `object-cover ${POSITION_CLASS[prefs.position]}`} ${mirror ? '-scale-x-100' : ''}`}
+      className={`h-full w-full ${fit === 'contain' ? 'object-contain' : `object-cover ${POSITION_CLASS[prefs.position]}`} ${mirror ? '-scale-x-100' : ''}`}
     />
   );
 }
 
+/** Variáveis do quadro: a proporção real (número) que o CSS usa para caber sem faixas. */
+const fitStyle = (ratio: number) => ({ '--ar': ratio }) as React.CSSProperties;
+
 function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | 'small' }) {
   const prefs = useVideoPrefs();
   const [natural, setNatural] = useState<number | null>(null);
-  const fit = prefs.fit;
+  const ratio = aspectRatioNumber(prefs.shape, tile.cameraPub ? natural : null);
   return (
     <figure
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
-      style={{ aspectRatio: aspectFor(prefs.shape, natural) }}
-      className={`relative overflow-hidden rounded-2xl border bg-zinc-900 ${
-        tile.isSpeaking ? 'border-emerald-400 ring-2 ring-emerald-400/60' : 'border-zinc-800'
-      } ${size === 'small' ? 'w-44 shrink-0' : 'mx-auto w-full'} ${natural && natural < 1 && prefs.shape === 'auto' ? 'max-h-[75vh] w-auto' : ''}`}
+      data-size={size}
+      style={fitStyle(ratio)}
+      className={`stage-tile ${tile.cameraPub ? '' : 'stage-tile-empty'} ${
+        tile.isSpeaking ? 'speaking-glow' : ''
+      }`}
     >
       {tile.cameraPub ? (
         <Video
           pub={tile.cameraPub}
           mirror={tile.isLocal}
-          fit={fit}
+          fit={prefs.fit}
           label={`Câmera de ${tile.name}`}
           onNaturalAspect={setNatural}
         />
       ) : (
         <div className="flex h-full items-center justify-center">
-          <Avatar name={tile.name} url={tile.avatarUrl} size="lg" />
+          <Avatar name={tile.name} url={tile.avatarUrl} size={size === 'small' ? 'md' : 'lg'} />
         </div>
       )}
-      <figcaption className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-sm">
+      <figcaption className="stage-caption">
         <span className="truncate font-medium text-white">
           {tile.name}
           {tile.isLocal && ' (você)'}
         </span>
-        {tile.role !== 'MEMBER' && (
-          <span className="rounded bg-brand-500/60 px-1.5 text-[10px] font-semibold uppercase text-white">
+        {tile.role !== 'MEMBER' && size !== 'small' && (
+          <span className="rounded-full bg-white/15 px-1.5 text-[10px] font-semibold text-white">
             {ROLE_LABEL[tile.role]}
           </span>
         )}
@@ -95,7 +99,7 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
           className={`ml-auto ${tile.micOn ? 'text-emerald-300' : 'text-red-300'}`}
           title={tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}
         >
-          <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.1rem" />
+          <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.05rem" />
           <span className="sr-only">{tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}</span>
         </span>
       </figcaption>
@@ -104,14 +108,21 @@ function PersonTile({ tile, size = 'normal' }: { tile: Tile; size?: 'normal' | '
 }
 
 function ScreenTile({ tile }: { tile: Tile }) {
+  const [natural, setNatural] = useState<number | null>(null);
   if (!tile.screenPub) return null;
   return (
     <figure
       data-testid="screen-tile"
-      className="relative aspect-video w-full overflow-hidden rounded-xl border border-brand-400/60 bg-black"
+      style={fitStyle(natural ?? 16 / 9)}
+      className="stage-tile stage-tile-screen"
     >
-      <Video pub={tile.screenPub} fit="contain" label={`Tela de ${tile.name}`} />
-      <figcaption className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-xs text-white">
+      <Video
+        pub={tile.screenPub}
+        fit="contain"
+        label={`Tela de ${tile.name}`}
+        onNaturalAspect={setNatural}
+      />
+      <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
       </figcaption>
@@ -119,43 +130,99 @@ function ScreenTile({ tile }: { tile: Tile }) {
   );
 }
 
-function gridColumns(count: number): string {
-  if (count <= 1) return 'grid-cols-1 max-w-3xl mx-auto';
-  if (count <= 4) return 'grid-cols-1 sm:grid-cols-2';
-  if (count <= 9) return 'grid-cols-2 lg:grid-cols-3';
-  return 'grid-cols-2 lg:grid-cols-4';
+/**
+ * Como organizar o palco:
+ * - `auto`: com tela compartilhada, ela em destaque; sem tela, todos em mosaico.
+ * - `mosaic`: tudo lado a lado, preenchendo a tela.
+ * - `focus`: um grande (tela, quem está falando ou a primeira pessoa) e o resto numa faixa.
+ *
+ * Em todos, cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé)
+ * e cresce até onde couber, sem faixas pretas.
+ */
+export type StageLayout = 'auto' | 'mosaic' | 'focus';
+
+export const STAGE_LAYOUTS: { value: StageLayout; label: string }[] = [
+  { value: 'auto', label: 'Automático' },
+  { value: 'mosaic', label: 'Mosaico' },
+  { value: 'focus', label: 'Destaque' },
+];
+
+/** Uma peça do palco: a tela de alguém ou a câmera de alguém. */
+type Piece = { kind: 'screen' | 'person'; tile: Tile; key: string };
+
+function pieces(tiles: Tile[]): Piece[] {
+  const screens = screenSharers(tiles).map((t) => ({
+    kind: 'screen' as const,
+    tile: t,
+    key: `s:${t.identity}`,
+  }));
+  const people = tiles.map((t) => ({ kind: 'person' as const, tile: t, key: `p:${t.identity}` }));
+  return [...screens, ...people];
 }
 
-/**
- * Quem compartilha tela ganha destaque (a tela grande e o resto numa faixa ao lado);
- * sem compartilhamento, todos em grade.
- */
-export function Stage({ tiles }: { tiles: Tile[] }) {
-  const sharers = screenSharers(tiles);
-  const featured = sharers[0];
+function PieceView({ piece, small = false }: { piece: Piece; small?: boolean }) {
+  return piece.kind === 'screen' ? (
+    <ScreenTile tile={piece.tile} />
+  ) : (
+    <PersonTile tile={piece.tile} size={small ? 'small' : 'normal'} />
+  );
+}
 
-  if (featured) {
+function featuredPiece(all: Piece[]): Piece | undefined {
+  return (
+    all.find((p) => p.kind === 'screen') ??
+    all.find((p) => p.kind === 'person' && p.tile.isSpeaking && !p.tile.isLocal) ??
+    all.find((p) => p.kind === 'person' && !p.tile.isLocal) ??
+    all[0]
+  );
+}
+
+/** Colunas do mosaico: o mais perto de um quadrado (1, 2, 2, 2, 3, 3, ...). */
+const columnsFor = (count: number) => Math.max(1, Math.ceil(Math.sqrt(count)));
+
+export function Stage({ tiles, layout = 'auto' }: { tiles: Tile[]; layout?: StageLayout }) {
+  const all = pieces(tiles);
+  const mode = layout === 'auto' ? (screenSharers(tiles).length > 0 ? 'focus' : 'mosaic') : layout;
+
+  if (mode === 'focus') {
+    const main = featuredPiece(all);
+    const rest = all.filter((p) => p !== main);
     return (
-      <div className="flex flex-col gap-3 lg:flex-row">
-        <div className="min-w-0 flex-1 space-y-3">
-          <ScreenTile tile={featured} />
-          {sharers.slice(1).map((t) => (
-            <ScreenTile key={t.identity} tile={t} />
-          ))}
-        </div>
-        <div className="flex gap-3 overflow-x-auto lg:w-56 lg:flex-col lg:overflow-y-auto">
-          {tiles.map((t) => (
-            <PersonTile key={t.identity} tile={t} size="small" />
-          ))}
-        </div>
+      <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
+        {main && (
+          <div className="stage-cell">
+            <PieceView piece={main} />
+          </div>
+        )}
+        {rest.length > 0 && (
+          <div className="stage-strip">
+            {rest.map((p) => (
+              <div key={p.key} className="stage-cell stage-thumb">
+                <PieceView piece={p} small />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
+  const cols = columnsFor(all.length);
   return (
-    <div className={`grid gap-3 ${gridColumns(tiles.length)}`}>
-      {tiles.map((t) => (
-        <PersonTile key={t.identity} tile={t} />
+    <div
+      className="stage-mosaic"
+      data-layout="mosaic"
+      style={
+        {
+          '--cols': cols,
+          '--cols-sm': all.length <= 2 ? 1 : 2,
+        } as React.CSSProperties
+      }
+    >
+      {all.map((p) => (
+        <div key={p.key} className="stage-cell">
+          <PieceView piece={p} />
+        </div>
       ))}
     </div>
   );

@@ -1,6 +1,22 @@
+/** O badge do Screen (a única peça quente da interface). Decorativo: o nome vem do texto ao lado. */
+export function LogoMark({ className = 'h-8' }: { className?: string }) {
+  return (
+    <img
+      src="/logo-mark.webp"
+      alt=""
+      aria-hidden="true"
+      width={120}
+      height={96}
+      decoding="async"
+      className={`w-auto shrink-0 select-none ${className}`}
+      draggable={false}
+    />
+  );
+}
+
 /**
- * Nome do produto como marca tipográfica: "screem" em minúsculas, Bricolage Grotesque pesada e com
- * o espaçamento fechado, terminando num ponto azul (o sinal de "no ar"). Sem símbolo nem ícone.
+ * Marca: badge + "screem" em minúsculas, peso firme e espaçamento fechado. A cor do texto é
+ * herdada.
  */
 export function Wordmark({
   size = 'md',
@@ -9,15 +25,14 @@ export function Wordmark({
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
-  const text = { sm: 'text-lg', md: 'text-xl', lg: 'text-4xl' }[size];
-  const dot = { sm: 'h-1.5 w-1.5', md: 'h-1.5 w-1.5', lg: 'h-2.5 w-2.5' }[size];
+  const mark = { sm: 'h-6', md: 'h-8', lg: 'h-11' }[size];
+  const text = { sm: 'text-base', md: 'text-lg', lg: 'text-3xl' }[size];
   return (
-    <span
-      className={`inline-flex items-baseline font-display font-extrabold leading-none tracking-[-0.045em] text-zinc-50 ${text} ${className}`}
-    >
-      screem
-      <span aria-hidden="true" className={`ml-0.5 inline-block rounded-full bg-brand-500 ${dot}`} />
-      <span className="sr-only">Screem</span>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <LogoMark className={mark} />
+      <span className={`font-semibold leading-none tracking-[-0.04em] text-current ${text}`}>
+        screen
+      </span>
     </span>
   );
 }

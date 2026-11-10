@@ -500,6 +500,10 @@ describe('RoomPage: eventos do servidor', () => {
 
   it('eventos de entrada e saída recarregam a lista de pessoas', async () => {
     await connectedRoom();
+    // A lista de pessoas fica num painel que abre pelo botão "Pessoas" (em "Mais opções").
+    await userEvent.click(screen.getByRole('button', { name: 'Mais opções' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Pessoas' }));
+    await waitFor(() => expect(api.rooms.participants).toHaveBeenCalled());
     const before = vi.mocked(api.rooms.participants).mock.calls.length;
     socket.fire('participant:joined', { roomId: ROOM_ID });
     await waitFor(() =>

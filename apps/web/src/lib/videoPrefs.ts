@@ -93,3 +93,20 @@ export function aspectFor(shape: VideoPrefs['shape'], natural: number | null): s
       return natural && Number.isFinite(natural) ? String(natural) : '16 / 9';
   }
 }
+
+/**
+ * A mesma escolha de `aspectFor`, como número (largura ÷ altura). O palco usa para dar a cada
+ * vídeo um quadro do formato real da transmissão, sem faixas pretas.
+ */
+export function aspectRatioNumber(shape: VideoPrefs['shape'], natural: number | null): number {
+  switch (shape) {
+    case 'landscape':
+      return 16 / 9;
+    case 'portrait':
+      return 9 / 16;
+    case 'square':
+      return 1;
+    default:
+      return natural && Number.isFinite(natural) && natural > 0 ? natural : 16 / 9;
+  }
+}

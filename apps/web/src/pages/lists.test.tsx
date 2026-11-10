@@ -138,10 +138,27 @@ describe('Toasts', () => {
     expect(screen.queryByText('deu ruim')).not.toBeInTheDocument();
   });
 
-  it('guarda no máximo 4 avisos de uma vez', async () => {
+  it('o mesmo aviso não aparece repetido', async () => {
     const user = userEvent.setup();
     render(<Demo />);
     for (let i = 0; i < 6; i++) await user.click(screen.getByText('info'));
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+  });
+
+  it('guarda no máximo 4 avisos diferentes de uma vez', async () => {
+    function Many() {
+      const t = useToasts(1000);
+      let n = 0;
+      return (
+        <>
+          <button onClick={() => t.info(`aviso ${++n}-${Math.random()}`)}>novo</button>
+          <ToastViewport toasts={t.toasts} onDismiss={t.dismiss} />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Many />);
+    for (let i = 0; i < 6; i++) await user.click(screen.getByText('novo'));
     expect(screen.getAllByRole('status')).toHaveLength(4);
   });
 });

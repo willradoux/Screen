@@ -176,7 +176,7 @@ function CheckList({
                 </p>
                 <button
                   type="button"
-                  className="text-xs text-brand-300 underline"
+                  className="inline-flex min-h-6 items-center text-xs text-brand-300 underline"
                   onClick={() =>
                     onChange(
                       allOn
@@ -191,7 +191,7 @@ function CheckList({
             )}
             <div className="grid gap-1 sm:grid-cols-2">
               {inGroup.map((i) => (
-                <label key={i.id} className="flex items-center gap-2 text-sm text-zinc-300">
+                <label key={i.id} className="flex min-h-8 items-center gap-2 text-sm text-zinc-300">
                   <input
                     type="checkbox"
                     checked={selected.includes(i.id)}
@@ -205,7 +205,7 @@ function CheckList({
         );
       })}
       {orphans.map((id) => (
-        <label key={id} className="flex items-center gap-2 text-sm text-amber-300">
+        <label key={id} className="flex min-h-8 items-center gap-2 text-sm text-amber-300">
           <input type="checkbox" checked onChange={() => toggle(id, false)} />
           Item removido do servidor ({id})
         </label>

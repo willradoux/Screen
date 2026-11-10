@@ -1,3 +1,17 @@
+import arrowDown from '@material-symbols/svg-400/rounded/keyboard_arrow_down.svg?url';
+import arrowUp from '@material-symbols/svg-400/rounded/keyboard_arrow_up.svg?url';
+import gridView from '@material-symbols/svg-400/rounded/grid_view.svg?url';
+import featuredVideo from '@material-symbols/svg-400/rounded/featured_video.svg?url';
+import autoMosaic from '@material-symbols/svg-400/rounded/auto_awesome_mosaic.svg?url';
+import moreHoriz from '@material-symbols/svg-400/rounded/more_horiz.svg?url';
+import closeFullscreen from '@material-symbols/svg-400/rounded/close_fullscreen.svg?url';
+import panelOpen from '@material-symbols/svg-400/rounded/right_panel_open.svg?url';
+import panelClose from '@material-symbols/svg-400/rounded/right_panel_close.svg?url';
+import tune from '@material-symbols/svg-400/rounded/tune.svg?url';
+import contrastIcon from '@material-symbols/svg-400/rounded/contrast.svg?url';
+import person from '@material-symbols/svg-400/rounded/person.svg?url';
+import refresh from '@material-symbols/svg-400/rounded/refresh.svg?url';
+import arrowForward from '@material-symbols/svg-400/rounded/arrow_forward.svg?url';
 import arrowBack from '@material-symbols/svg-400/rounded/arrow_back.svg?url';
 import bedtime from '@material-symbols/svg-400/rounded/bedtime.svg?url';
 import block from '@material-symbols/svg-400/rounded/block.svg?url';
@@ -96,6 +110,20 @@ const ICONS = {
   visibility,
   warning,
   wifi_off: wifiOff,
+  tune,
+  right_panel_open: panelOpen,
+  right_panel_close: panelClose,
+  keyboard_arrow_down: arrowDown,
+  keyboard_arrow_up: arrowUp,
+  grid_view: gridView,
+  featured_video: featuredVideo,
+  auto_awesome_mosaic: autoMosaic,
+  more_horiz: moreHoriz,
+  close_fullscreen: closeFullscreen,
+  contrast: contrastIcon,
+  person,
+  refresh,
+  arrow_forward: arrowForward,
 } as const;
 
 export type IconName = keyof typeof ICONS;

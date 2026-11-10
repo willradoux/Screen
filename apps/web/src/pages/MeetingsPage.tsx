@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, EmptyState, PageTitle, Section, Spinner } from '../components/ui';
+import { Loader } from '../components/Loader';
+import { Alert, EmptyState, PageTitle, Section } from '../components/ui';
 import { RoomCard } from '../components/RoomCard';
+import { CoverChip, WidgetCover, WidgetStat } from '../components/Widget';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import { formatDateTime, formatDuration, formatReminder, timeUntil } from '../lib/format';
@@ -18,37 +20,80 @@ export function useNow(intervalMs = 1000): number {
   return now;
 }
 
+/** Quebra o tempo que falta em blocos grandes (dias, horas, minutos, segundos). */
+function countdownParts(ms: number): { value: string; unit: string }[] {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(total / 86_400);
+  const h = Math.floor((total % 86_400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const parts = [
+    { value: pad(h), unit: h === 1 ? 'hora' : 'horas' },
+    { value: pad(m), unit: 'min' },
+    { value: pad(sec), unit: 'seg' },
+  ];
+  return d > 0 ? [{ value: String(d), unit: d === 1 ? 'dia' : 'dias' }, ...parts] : parts;
+}
+
+/**
+ * A próxima reunião em destaque, grande, à esquerda: capa, título, a contagem regressiva em
+ * blocos, data, lembretes e o botão da sala.
+ */
 function NextMeeting({ meeting }: { meeting: Meeting }) {
   const now = useNow();
   const left = timeUntil(meeting.startsAt, now);
   return (
-    <section
-      aria-label="Próxima reunião"
-      className="grid gap-6 border-y border-zinc-800 py-6 sm:grid-cols-[1fr_auto] sm:items-end"
-    >
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-brand-300">Próxima reunião</p>
-        <h2 className="text-2xl font-semibold text-zinc-50">{meeting.title}</h2>
-        <p className="text-zinc-300">{formatDateTime(meeting.startsAt)}</p>
+    <section aria-label="Próxima reunião" className="widget meet-feature rise">
+      <WidgetCover
+        left={<CoverChip icon="schedule">Próxima reunião</CoverChip>}
+        right={<CoverChip icon="calendar_month">Reunião</CoverChip>}
+      />
+      <div className="widget-body gap-4">
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-bold tracking-[-0.02em] text-zinc-50 sm:text-[1.75rem]">
+            {meeting.title}
+          </h2>
+          {meeting.description && (
+            <p className="mx-auto max-w-[44ch] text-sm text-zinc-400">{meeting.description}</p>
+          )}
+        </div>
+
+        {left !== null && (
+          <div>
+            <p className="sr-only">começa em {formatDuration(left)}</p>
+            <ol aria-hidden="true" className="countdown">
+              {countdownParts(left).map((p) => (
+                <li key={p.unit}>
+                  <span className="countdown-value tabular">{p.value}</span>
+                  <span className="countdown-unit">{p.unit}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
+          <WidgetStat icon="schedule" value={formatDateTime(meeting.startsAt)} label="começa" />
+          <WidgetStat
+            icon="group"
+            value={`${meeting.participantCount}/${meeting.maxParticipants}`}
+            label="vagas usadas"
+          />
+        </div>
+
         {meeting.reminders.length > 0 && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-xs text-zinc-500">
             Lembretes no Discord:{' '}
             {meeting.reminders.map((r) => formatReminder(r.minutesBefore)).join(', ')} antes.
           </p>
         )}
-      </div>
-      <div className="flex items-center gap-5 sm:flex-col sm:items-end sm:gap-3">
-        {left !== null && (
-          <p className="tabular font-display text-2xl font-semibold text-zinc-50">
-            começa em {formatDuration(left)}
-          </p>
-        )}
-        <Link
-          to={`/r/${meeting.id}`}
-          className="inline-flex h-10 items-center rounded-lg bg-zinc-50 px-4 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200"
-        >
-          Ver sala
-        </Link>
+
+        <div className="mt-auto flex justify-center pt-1">
+          <Link to={`/r/${meeting.id}`} className="btn btn-primary">
+            Ver sala
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -57,6 +102,8 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
 /** Reuniões abertas e agendadas, para qualquer membro. */
 export function MeetingsPage() {
   const { state, reload } = useAsync(() => api.meetings.list({ limit: 50 }));
+  const next =
+    state.status === 'ready' ? state.data.find((m) => m.status === 'SCHEDULED') : undefined;
 
   return (
     <>
@@ -64,7 +111,7 @@ export function MeetingsPage() {
         Reuniões
       </PageTitle>
 
-      {state.status === 'loading' && <Spinner label="Carregando reuniões…" />}
+      {state.status === 'loading' && <Loader label="Carregando reuniões…" />}
       {state.status === 'error' && (
         <Alert tone="error" title="Não foi possível carregar as reuniões">
           {describeError(state.error)}
@@ -78,14 +125,16 @@ export function MeetingsPage() {
       )}
 
       {state.status === 'ready' && state.data.length > 0 && (
-        <div className="space-y-10">
-          {state.data.find((m) => m.status === 'SCHEDULED') && (
-            <NextMeeting meeting={state.data.find((m) => m.status === 'SCHEDULED')!} />
-          )}
-          <Section title="Todas">
-            <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+        <div className="meet-layout" data-feature={next ? 'true' : undefined}>
+          {next && <NextMeeting meeting={next} />}
+          <Section
+            title="Todas"
+            count={state.data.length}
+            description="Reuniões abertas e agendadas da comunidade."
+          >
+            <ul className="widget-grid stagger">
               {state.data.map((m) => (
-                <li key={m.id}>
+                <li key={m.id} className="flex">
                   <RoomCard room={m} onChanged={reload} />
                 </li>
               ))}

@@ -1,4 +1,4 @@
-// Service worker do Screem. Faz o site ser instalável e abrir rápido.
+// Service worker do Screen. Faz o site ser instalável e abrir rápido.
 // Regras: NUNCA guarda respostas da API nem do Socket.IO (dados sempre frescos e privados);
 // guarda só os arquivos do próprio site, para abrir mesmo com internet ruim.
 const CACHE = 'screem-shell-v1';

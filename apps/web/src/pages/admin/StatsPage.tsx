@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Icon, type IconName } from '../../components/Icon';
 import { Alert, Avatar, Card, PageTitle, Spinner } from '../../components/ui';
+import { StatTile } from '../../components/Widget';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
 import type { ServerStats } from '../../lib/types';
@@ -20,32 +20,42 @@ export function formatMinutes(total: number): string {
   return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')} min`;
 }
 
-function Stat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
-  return (
-    <div className="border-t border-zinc-800 pt-4">
-      <p className="flex items-center gap-2 text-sm text-zinc-400">
-        <Icon name={icon} size="1.1rem" className="text-zinc-500" />
-        {label}
-      </p>
-      <p className="tabular mt-1 font-display text-3xl font-semibold text-zinc-50">{value}</p>
-    </div>
-  );
-}
-
 /** Barras por dia, em CSS puro (sem biblioteca de gráfico). */
 export function DayBars({ days }: { days: ServerStats['perDay'] }) {
   const max = Math.max(1, ...days.map((d) => d.minutes));
   return (
-    <div role="img" aria-label="Tempo conectado por dia" className="flex h-40 items-end gap-1">
-      {days.map((d) => (
-        <div
-          key={d.date}
-          title={`${d.date}: ${formatMinutes(d.minutes)} · ${d.participants} pessoas`}
-          className="min-w-0 flex-1 rounded-t bg-brand-500/70 transition-colors hover:bg-brand-400"
-          style={{ height: `${Math.max(2, (d.minutes / max) * 100)}%` }}
-        />
-      ))}
-    </div>
+    <>
+      <div role="img" aria-label="Tempo conectado por dia" className="flex h-40 items-end gap-1">
+        {days.map((d) => (
+          <div
+            key={d.date}
+            title={`${d.date}: ${formatMinutes(d.minutes)} · ${d.participants} pessoas`}
+            className="min-w-0 flex-1 rounded-t bg-brand-500/70 transition-colors hover:bg-brand-400"
+            style={{ height: `${Math.max(2, (d.minutes / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      {/* Os mesmos números em tabela, para leitores de tela (o gráfico só mostra no hover). */}
+      <table className="sr-only">
+        <caption>Tempo conectado por dia</caption>
+        <thead>
+          <tr>
+            <th scope="col">Dia</th>
+            <th scope="col">Tempo conectado</th>
+            <th scope="col">Pessoas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((d) => (
+            <tr key={d.date}>
+              <th scope="row">{d.date}</th>
+              <td>{formatMinutes(d.minutes)}</td>
+              <td>{d.participants}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
@@ -87,21 +97,29 @@ export function StatsPage() {
       {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
       {state.status === 'ready' && (
         <div className="space-y-6">
-          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Stat icon="videocam" label="Lives abertas" value={String(state.data.livesOpened)} />
-            <Stat icon="calendar_month" label="Reuniões" value={String(state.data.meetingsHeld)} />
-            <Stat
+          <div className="stagger grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <StatTile
+              icon="videocam"
+              label="Lives abertas"
+              value={String(state.data.livesOpened)}
+            />
+            <StatTile
+              icon="calendar_month"
+              label="Reuniões"
+              value={String(state.data.meetingsHeld)}
+            />
+            <StatTile
               icon="group"
               label="Pessoas diferentes"
               value={String(state.data.uniqueParticipants)}
             />
-            <Stat
+            <StatTile
               icon="schedule"
               label="Tempo total conectado"
               value={formatMinutes(state.data.participantMinutes)}
             />
-            <Stat icon="history" label="Entradas em sala" value={String(state.data.sessions)} />
-            <Stat
+            <StatTile icon="history" label="Entradas em sala" value={String(state.data.sessions)} />
+            <StatTile
               icon="bar_chart"
               label="Média por entrada"
               value={formatMinutes(state.data.avgSessionMinutes)}

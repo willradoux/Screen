@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
 /*
@@ -8,23 +8,13 @@ import { Icon, type IconName } from './Icon';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
-const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-zinc-50 text-zinc-950 hover:bg-zinc-200 active:bg-zinc-300 disabled:bg-zinc-800 disabled:text-zinc-500',
-  secondary:
-    'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 active:bg-zinc-700 disabled:text-zinc-500',
-  danger:
-    'bg-red-600 text-white hover:bg-red-500 active:bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500',
-  ghost:
-    'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 active:bg-zinc-700 disabled:text-zinc-600',
-};
-
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }
 
+/** Botão em pílula. Primário = branco (um por tela); o resto é discreto. */
 export function Button({
   variant = 'secondary',
   size = 'md',
@@ -39,9 +29,7 @@ export function Button({
       type="button"
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:cursor-not-allowed ${
-        size === 'sm' ? 'h-8 px-3 text-sm' : 'h-10 px-4 text-sm'
-      } ${VARIANTS[variant]} ${className}`}
+      className={`btn btn-${variant} ${size === 'md' ? '' : `btn-${size}`} ${className}`}
       {...rest}
     >
       {loading && <Spinner size="sm" />}
@@ -59,7 +47,7 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md'; label?: st
       className="inline-flex items-center gap-2.5"
     >
       <svg viewBox="0 0 24 24" className={`${dim} animate-spin`} fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" className="stroke-zinc-700" strokeWidth="2.5" />
+        <circle cx="12" cy="12" r="9" className="stroke-white/10" strokeWidth="2.5" />
         <path
           d="M21 12a9 9 0 0 0-9-9"
           className="stroke-brand-400"
@@ -73,19 +61,17 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md'; label?: st
 }
 
 const ALERTS = {
-  error: { box: 'border-red-500/30 bg-red-500/[0.07]', icon: 'error', color: 'text-red-300' },
+  error: { icon: 'error', color: 'text-red-300' },
   warning: {
-    box: 'border-amber-500/30 bg-amber-500/[0.07]',
     icon: 'warning',
     color: 'text-amber-300',
   },
-  info: { box: 'border-brand-500/30 bg-brand-500/[0.07]', icon: 'info', color: 'text-brand-300' },
+  info: { icon: 'info', color: 'text-brand-300' },
   success: {
-    box: 'border-emerald-500/30 bg-emerald-500/[0.07]',
     icon: 'check_circle',
     color: 'text-emerald-300',
   },
-} as const satisfies Record<string, { box: string; icon: IconName; color: string }>;
+} as const satisfies Record<string, { icon: IconName; color: string }>;
 
 /** Aviso em linha: ícone semântico, título curto e o que fazer. */
 export function Alert({
@@ -101,9 +87,9 @@ export function Alert({
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
-      className={`flex gap-3 rounded-xl border px-4 py-3 text-sm ${t.box}`}
+      className="surface pop-in flex gap-3 rounded-2xl px-3.5 py-3 text-sm"
     >
-      <Icon name={t.icon} size="1.25rem" className={`mt-0.5 ${t.color}`} />
+      <Icon name={t.icon} size="1.15rem" className={`mt-0.5 ${t.color}`} />
       <div className="min-w-0 text-zinc-200">
         {title && <p className="font-semibold text-zinc-50">{title}</p>}
         {children && <div className={title ? 'mt-0.5 text-zinc-300' : ''}>{children}</div>}
@@ -112,25 +98,25 @@ export function Alert({
   );
 }
 
-/** Painel: superfície com borda fina, sem sombra. Agrupa conteúdo que precisa de moldura. */
+/** Superfície discreta para formulários e blocos (vidro escuro, sem moldura pesada). */
 export function Card({
   children,
   className = '',
   ...rest
 }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLElement>) {
   return (
-    <section className={`rounded-xl border border-zinc-800 bg-zinc-900 p-5 ${className}`} {...rest}>
+    <section className={`surface p-4 sm:p-5 ${className}`} {...rest}>
       {children}
     </section>
   );
 }
 
 const BADGES = {
-  neutral: 'bg-zinc-800 text-zinc-300',
-  live: 'bg-red-500/15 text-red-300',
-  open: 'bg-emerald-500/15 text-emerald-300',
-  scheduled: 'bg-brand-500/15 text-brand-300',
-  warn: 'bg-amber-500/15 text-amber-300',
+  neutral: 'bg-white/10 text-zinc-300',
+  live: 'bg-[#c8352a] text-[#fff]', // 5:1 com o branco
+  open: 'bg-[#2fbf71] text-[#03140a]',
+  scheduled: 'bg-brand-400 text-[#1a0b0e]',
+  warn: 'bg-[#f8cb74] text-[#2a1a00]',
 } as const;
 
 export function Badge({
@@ -142,7 +128,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium ${BADGES[tone]}`}
+      className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium ${BADGES[tone]}`}
     >
       {children}
     </span>
@@ -176,7 +162,7 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-zinc-100">
+      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-zinc-200">
         {label}
       </label>
       {children}
@@ -187,9 +173,9 @@ export function Field({
 
 /** Classe única para input, select e textarea: mesma altura, borda e foco em todo o produto. */
 export const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 transition-colors hover:border-zinc-600 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed disabled:opacity-50';
+  'w-full rounded-xl bg-black/30 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 transition-colors focus:bg-black/45 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
-/** Cabeçalho de página: título à esquerda, ações à direita, descrição opcional embaixo. */
+/** Cabeçalho de página: título pequeno e firme à esquerda, ações à direita. */
 export function PageTitle({
   children,
   action,
@@ -200,36 +186,51 @@ export function PageTitle({
   description?: ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-zinc-800 pb-5">
+    <div className="page-title rise">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold text-zinc-50">{children}</h1>
-        {description && <p className="mt-1 max-w-prose text-sm text-zinc-400">{description}</p>}
+        <h1 className="ink text-2xl font-bold tracking-[-0.02em] sm:text-3xl">{children}</h1>
+        {description && <p className="ink-soft mt-1 max-w-prose text-sm">{description}</p>}
       </div>
-      {action}
+      {action && <div className="ink-soft shrink-0">{action}</div>}
     </div>
   );
 }
 
-/** Seção dentro de uma página: título pequeno e conteúdo, separados por régua e não por cartão. */
+/**
+ * Seção dentro de uma página: título em negrito (com a contagem, se tiver), uma linha dizendo
+ * para que serve e o conteúdo. O cabeçalho fica alinhado à esquerda, na mesma linha da grade
+ * de cards, para tudo começar no mesmo lugar. A seção é nomeada pelo título (leitores de tela).
+ */
 export function Section({
   title,
   description,
   action,
+  count,
   children,
 }: {
   title: string;
   description?: ReactNode;
   action?: ReactNode;
+  /** Quantos itens a seção tem; aparece ao lado do título. */
+  count?: number;
   children: ReactNode;
 }) {
+  const id = useId();
   return (
-    <section className="space-y-3">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-zinc-50">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-zinc-400">{description}</p>}
+    <section aria-labelledby={id} className="section rise rise-2">
+      <div className="section-head">
+        <div className="min-w-0">
+          <h2 id={id} className="ink flex items-center gap-2 text-lg font-bold tracking-[-0.01em]">
+            {title}
+            {count !== undefined && (
+              <span className="section-count tabular" aria-label={`${count} no total`}>
+                {count}
+              </span>
+            )}
+          </h2>
+          {description && <p className="ink-soft mt-0.5 text-[13px]">{description}</p>}
         </div>
-        {action}
+        {action && <div className="ink-soft shrink-0">{action}</div>}
       </div>
       {children}
     </section>
@@ -247,9 +248,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-700 px-6 py-10 text-center">
-      <p className="font-medium text-zinc-100">{title}</p>
-      {children && <div className="mx-auto mt-1 max-w-md text-sm text-zinc-400">{children}</div>}
+    <div className="surface px-5 py-8 text-center">
+      <p className="text-sm font-medium text-zinc-200">{title}</p>
+      {children && (
+        <div className="mx-auto mt-1 max-w-sm text-[13px] text-zinc-500">{children}</div>
+      )}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -264,9 +267,16 @@ export function Avatar({
   url: string | null;
   size?: 'sm' | 'md' | 'lg';
 }) {
-  const dim = { sm: 'h-7 w-7 text-xs', md: 'h-9 w-9 text-sm', lg: 'h-16 w-16 text-xl' }[size];
+  const dim = { sm: 'h-7 w-7 text-[11px]', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-base' }[size];
   if (url) {
-    return <img src={url} alt="" className={`${dim} rounded-full object-cover`} />;
+    return (
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        className={`${dim} shrink-0 rounded-full object-cover`}
+      />
+    );
   }
   const letters = name
     .trim()
@@ -278,7 +288,7 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-800 font-semibold text-zinc-200`}
+      className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-700 font-semibold text-zinc-200`}
     >
       {letters || '?'}
     </span>

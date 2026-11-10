@@ -137,7 +137,7 @@ function PersonRow({
 
   const name = person.displayName ?? person.username ?? person.userId;
   return (
-    <li className="py-4" data-testid="panel-user">
+    <li className="surface px-4 py-3.5" data-testid="panel-user">
       <div className="flex flex-wrap items-center gap-3">
         <Avatar name={name} url={person.avatarUrl} size="sm" />
         <div className="min-w-0">
@@ -231,10 +231,10 @@ export function PeoplePage() {
           {state.status === 'loading' && <Spinner label="Carregando…" />}
           {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
           {state.status === 'ready' && state.data.length === 0 && (
-            <p className="text-sm text-zinc-500">Ninguém foi adicionado manualmente.</p>
+            <p className="ink-soft px-1 text-sm">Ninguém foi adicionado manualmente.</p>
           )}
           {state.status === 'ready' && state.data.length > 0 && (
-            <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+            <ul className="stagger space-y-2">
               {state.data.map((p) => (
                 <PersonRow
                   key={p.userId}

@@ -7,10 +7,12 @@ import {
   Card,
   Field,
   PageTitle,
+  Section,
   Spinner,
   inputClass,
 } from '../../components/ui';
 import { Icon } from '../../components/Icon';
+import { CoverChip, WidgetCover } from '../../components/Widget';
 import { StatusBadge } from '../../components/RoomCard';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -150,7 +152,10 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
             <legend className="text-sm font-medium text-zinc-200">Lembretes no Discord</legend>
             <div className="flex flex-wrap gap-4">
               {REMINDER_CHOICES.map((r) => (
-                <label key={r.minutes} className="flex items-center gap-2 text-sm text-zinc-300">
+                <label
+                  key={r.minutes}
+                  className="flex min-h-8 items-center gap-2 text-sm text-zinc-300"
+                >
                   <input
                     type="checkbox"
                     checked={values.reminders.includes(r.minutes)}
@@ -170,7 +175,7 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
           </fieldset>
         )}
 
-        <label className="flex items-center gap-2 text-sm text-zinc-300">
+        <label className="flex min-h-8 items-center gap-2 text-sm text-zinc-300">
           <input
             type="checkbox"
             checked={values.announce}
@@ -212,7 +217,7 @@ function ReportView({ report }: { report: MeetingReport }) {
         </thead>
         <tbody>
           {report.attendees.map((a) => (
-            <tr key={a.userId} className="border-t border-zinc-800">
+            <tr key={a.userId} className="">
               <td className="py-1 text-zinc-100">{a.displayName}</td>
               <td className="text-zinc-400">{formatDateTime(a.joinedAt)}</td>
               <td className="text-zinc-400">{formatDateTime(a.leftAt)}</td>
@@ -260,157 +265,168 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
   }
 
   return (
-    <li className="py-4" data-testid="meeting-row">
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold text-zinc-50">{meeting.title}</h3>
-        <StatusBadge room={meeting} />
-        <span className="ml-auto text-sm text-zinc-400">
-          {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
-        </span>
-      </div>
+    <li className="widget" data-testid="meeting-row">
+      <WidgetCover
+        tone={meeting.status === 'ENDED' || meeting.status === 'CANCELED' ? 'off' : 'live'}
+        left={
+          <>
+            <StatusBadge room={meeting} />
+            {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') &&
+              (meeting.announced ? (
+                <Badge tone="open">Divulgada no Discord</Badge>
+              ) : (
+                <Badge tone="warn">Ainda não divulgada</Badge>
+              ))}
+          </>
+        }
+        right={
+          <CoverChip icon="schedule">
+            {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
+          </CoverChip>
+        }
+      />
+      <div className="widget-body">
+        <h3 className="text-[15px] font-bold leading-snug text-zinc-50">{meeting.title}</h3>
 
-      {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
-        <p className="mt-1 text-xs">
-          {meeting.announced ? (
-            <Badge tone="open">Divulgada no Discord</Badge>
-          ) : (
-            <Badge tone="warn">Ainda não divulgada</Badge>
+        {!meeting.announced &&
+          meeting.reminders.length > 0 &&
+          (meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
+            <p className="text-xs text-zinc-500">Os lembretes só começam depois de divulgar.</p>
           )}
-          {!meeting.announced && meeting.reminders.length > 0 && (
-            <span className="ml-2 text-zinc-500">Os lembretes só começam depois de divulgar.</span>
-          )}
-        </p>
-      )}
 
-      {meeting.reminders.length > 0 && meeting.status === 'SCHEDULED' && (
-        <p className="mt-1 text-xs text-zinc-500">
-          Lembretes:{' '}
-          {meeting.reminders.map((r) => (
-            <Badge key={r.minutesBefore} tone={r.sent ? 'open' : 'neutral'}>
-              {formatReminder(r.minutesBefore)}
-              {r.sent ? (
-                <Icon name="check" size="0.9rem" className="ml-0.5" label="enviado" />
-              ) : null}
-            </Badge>
-          ))}
-        </p>
-      )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Link
-          to={`/r/${meeting.id}`}
-          className="rounded-lg bg-zinc-800 px-3 py-1 text-sm text-zinc-100 hover:bg-zinc-700"
-        >
-          Abrir página da sala
-        </Link>
-
-        {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
-          <Button
-            size="sm"
-            variant={meeting.announced ? 'secondary' : 'primary'}
-            loading={busy === 'announce'}
-            onClick={() =>
-              void run('announce', () => api.meetings.announce(meeting.id, meeting.announced))
-            }
-          >
-            {meeting.announced ? 'Enviar de novo' : 'Enviar aviso'}
-          </Button>
+        {meeting.reminders.length > 0 && meeting.status === 'SCHEDULED' && (
+          <p className="flex flex-wrap items-center justify-center gap-1 text-xs text-zinc-500">
+            Lembretes:{' '}
+            {meeting.reminders.map((r) => (
+              <Badge key={r.minutesBefore} tone={r.sent ? 'open' : 'neutral'}>
+                {formatReminder(r.minutesBefore)}
+                {r.sent ? (
+                  <Icon name="check" size="0.9rem" className="ml-0.5" label="enviado" />
+                ) : null}
+              </Badge>
+            ))}
+          </p>
         )}
 
-        {meeting.status === 'SCHEDULED' && (
-          <>
+        <div className="mt-auto flex flex-wrap justify-center gap-2 pt-1">
+          <Link to={`/r/${meeting.id}`} className="btn btn-secondary btn-sm">
+            Abrir página da sala
+          </Link>
+
+          {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
             <Button
               size="sm"
-              loading={busy === 'open'}
-              onClick={() => void run('open', () => api.meetings.open(meeting.id))}
+              variant={meeting.announced ? 'secondary' : 'primary'}
+              loading={busy === 'announce'}
+              onClick={() =>
+                void run('announce', () => api.meetings.announce(meeting.id, meeting.announced))
+              }
             >
-              Abrir agora
+              {meeting.announced ? 'Enviar de novo' : 'Enviar aviso'}
             </Button>
-            <Button size="sm" onClick={() => setEditing((v) => !v)}>
-              Reagendar
+          )}
+
+          {meeting.status === 'SCHEDULED' && (
+            <>
+              <Button
+                size="sm"
+                loading={busy === 'open'}
+                onClick={() => void run('open', () => api.meetings.open(meeting.id))}
+              >
+                Abrir agora
+              </Button>
+              <Button size="sm" onClick={() => setEditing((v) => !v)}>
+                Reagendar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-red-300!"
+                onClick={() => setConfirmCancel(true)}
+              >
+                Cancelar
+              </Button>
+            </>
+          )}
+          {meeting.status === 'OPEN' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-300!"
+              loading={busy === 'end'}
+              onClick={() => void run('end', () => api.rooms.end(meeting.id))}
+            >
+              Encerrar
             </Button>
-            <Button size="sm" variant="danger" onClick={() => setConfirmCancel(true)}>
-              Cancelar
+          )}
+          {meeting.status === 'ENDED' && (
+            <Button
+              size="sm"
+              loading={busy === 'report'}
+              onClick={() =>
+                void run('report', async () => setReport(await api.meetings.report(meeting.id)))
+              }
+            >
+              Ver relatório
             </Button>
-          </>
+          )}
+        </div>
+
+        {editing && (
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <Field label="Novo horário" htmlFor={`w-${meeting.id}`}>
+              <input
+                id={`w-${meeting.id}`}
+                type="datetime-local"
+                className={inputClass}
+                value={when}
+                onChange={(e) => setWhen(e.target.value)}
+              />
+            </Field>
+            <Button
+              size="sm"
+              variant="primary"
+              loading={busy === 'reschedule'}
+              onClick={() => void reschedule()}
+            >
+              Salvar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+              Fechar
+            </Button>
+          </div>
         )}
-        {meeting.status === 'OPEN' && (
-          <Button
-            size="sm"
-            variant="danger"
-            loading={busy === 'end'}
-            onClick={() => void run('end', () => api.rooms.end(meeting.id))}
+
+        {confirmCancel && (
+          <div
+            className="mt-3 flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label="Confirmar cancelamento"
           >
-            Encerrar
-          </Button>
+            <span className="text-sm text-amber-200">
+              Cancelar “{meeting.title}”? O canal será avisado.
+            </span>
+            <Button
+              size="sm"
+              variant="danger"
+              loading={busy === 'cancel'}
+              onClick={() => void run('cancel', () => api.meetings.cancel(meeting.id))}
+            >
+              Sim, cancelar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setConfirmCancel(false)}>
+              Voltar
+            </Button>
+          </div>
         )}
-        {meeting.status === 'ENDED' && (
-          <Button
-            size="sm"
-            loading={busy === 'report'}
-            onClick={() =>
-              void run('report', async () => setReport(await api.meetings.report(meeting.id)))
-            }
-          >
-            Ver relatório
-          </Button>
+
+        {error && (
+          <div className="mt-3">
+            <Alert tone="error">{error}</Alert>
+          </div>
         )}
+        {report && <ReportView report={report} />}
       </div>
-
-      {editing && (
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <Field label="Novo horário" htmlFor={`w-${meeting.id}`}>
-            <input
-              id={`w-${meeting.id}`}
-              type="datetime-local"
-              className={inputClass}
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-            />
-          </Field>
-          <Button
-            size="sm"
-            variant="primary"
-            loading={busy === 'reschedule'}
-            onClick={() => void reschedule()}
-          >
-            Salvar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-            Fechar
-          </Button>
-        </div>
-      )}
-
-      {confirmCancel && (
-        <div
-          className="mt-3 flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label="Confirmar cancelamento"
-        >
-          <span className="text-sm text-amber-200">
-            Cancelar “{meeting.title}”? O canal será avisado.
-          </span>
-          <Button
-            size="sm"
-            variant="danger"
-            loading={busy === 'cancel'}
-            onClick={() => void run('cancel', () => api.meetings.cancel(meeting.id))}
-          >
-            Sim, cancelar
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setConfirmCancel(false)}>
-            Voltar
-          </Button>
-        </div>
-      )}
-
-      {error && (
-        <div className="mt-3">
-          <Alert tone="error">{error}</Alert>
-        </div>
-      )}
-      {report && <ReportView report={report} />}
     </li>
   );
 }
@@ -438,12 +454,17 @@ export function AdminMeetingsPage() {
           {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
           {state.status === 'ready' && (
             <>
-              <section aria-label="Abertas e agendadas">
-                <h2 className="mb-2 font-semibold text-zinc-200">Abertas e agendadas</h2>
+              <Section
+                title="Abertas e agendadas"
+                count={state.data.active.length}
+                description="Divulgue, abra, reagende ou cancele. O aviso vai para o canal de avisos do Discord."
+              >
                 {state.data.active.length === 0 ? (
-                  <p className="text-sm text-zinc-500">Nenhuma.</p>
+                  <p className="ink-soft px-1 text-sm">
+                    Nenhuma reunião aberta ou agendada. Crie uma no formulário ao lado.
+                  </p>
                 ) : (
-                  <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+                  <ul className="widget-grid widget-grid-fill stagger">
                     {state.data.active.map((m) => (
                       <MeetingRow
                         key={m.id}
@@ -453,13 +474,16 @@ export function AdminMeetingsPage() {
                     ))}
                   </ul>
                 )}
-              </section>
-              <section aria-label="Encerradas">
-                <h2 className="mb-2 font-semibold text-zinc-200">Encerradas recentemente</h2>
+              </Section>
+              <Section
+                title="Encerradas recentemente"
+                count={state.data.ended.length}
+                description="As últimas que terminaram, com o relatório de presença."
+              >
                 {state.data.ended.length === 0 ? (
-                  <p className="text-sm text-zinc-500">Nenhuma.</p>
+                  <p className="ink-soft px-1 text-sm">Nenhuma reunião encerrada ainda.</p>
                 ) : (
-                  <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+                  <ul className="widget-grid widget-grid-fill stagger">
                     {state.data.ended.map((m) => (
                       <MeetingRow
                         key={m.id}
@@ -469,7 +493,7 @@ export function AdminMeetingsPage() {
                     ))}
                   </ul>
                 )}
-              </section>
+              </Section>
             </>
           )}
         </div>

@@ -1,6 +1,6 @@
 # Screem — contexto para agentes e colaboradores
 
-Atualizado em 08/11/2026, com base na `main` de `willradoux/Screen` até o commit `0ab17f8`. Leia o código e a documentação atuais antes de implementar: este arquivo é um ponto de partida, não substitui o contrato da API.
+Atualizado em 09/11/2026, com base na `main` de `willradoux/Screen` até o commit `2d32672`. Leia o código e a documentação atuais antes de implementar: este arquivo é um ponto de partida, não substitui o contrato da API.
 
 ## O projeto e as pessoas
 
@@ -9,8 +9,7 @@ Atualizado em 08/11/2026, com base na `main` de `willradoux/Screen` até o commi
 | Pessoa | Contexto e responsabilidade combinada |
 | --- | --- |
 | **Will** (`willradoux`) | Idealizador, responsável pelo produto e pelo **frontend**; define prioridades e valida a experiência. Quer alterações diretamente na `main`, sem abrir PR para o próprio trabalho neste momento. |
-| **Flazo** (`flazo0`) | Colaborador que implementou a base atual do monorepo, bot, API, frontend inicial e infraestrutura. **Está configurando o deploy automático**; coordenar mudanças de infra/deploy com ele para evitar conflito. |
-| **Marujo** | Vai ajudar em **partes do backend**. A divisão concreta de tarefas ainda precisa ser combinada com Will e Flazo; não presumir que já recebeu acesso, tarefa ou prazo. |
+| **Flazo** (`flazo0`) | Colaborador que construiu a base do monorepo, bot, API, frontend e infraestrutura e segue responsável pelo **backend e pela infraestrutura**. **Está configurando o deploy automático**; coordenar mudanças de infra/deploy com ele para evitar conflito. |
 | **PC** | Dono/referência da comunidade Acelera DEV e parte interessada no funcionamento das lives e reuniões. Não atribuir a ele aprovação técnica ou acesso administrativo sem confirmação. |
 | **Membros, mods e admins** | Usuários finais; os papéis efetivos vêm dos cargos/permissões do Discord e das configurações do Screem, não dos nomes acima. |
 
@@ -39,17 +38,15 @@ Em produção, o frontend e a API precisam de **subdomínios do mesmo domínio p
 
 ## Estado real do repositório
 
-- Monorepo npm workspaces, Node.js `>=22`: `apps/api`, `apps/web` e `packages/shared`. O backend concentra API REST, Socket.IO, bot e integração LiveKit. O front já tem login, sala, controles de mídia, grid, reuniões, moderação, configurações e auditoria.
+- Monorepo npm workspaces, Node.js `>=22`: `apps/api`, `apps/web` e `packages/shared`. O backend concentra API REST (44 endpoints), Socket.IO, bot, integração LiveKit, gravação por Egress, estatísticas e painel. O front já tem login, salas, calls, reuniões, sala completa (palco, controles, efeitos, legendas, mãos, gravação, QR), painel de administração (visão geral, configurações, pessoas, estatísticas, gravações, auditoria) e PWA.
 - Contratos em `docs/backend/` e OpenAPI em `/api/v1/docs`; documentação do front em `docs/frontend/README.md`; visão, arquitetura e roadmap em `docs/`. Seguir esses contratos ao mudar API ou UI e atualizar docs/testes quando houver alteração de comportamento.
 - Infra declarada em `infra/`, Dockerfiles (`apps/api`, `apps/web`) e `infra/coolify/docker-compose.yml`; CI do GitHub Actions executa lint, typecheck, testes e build. Existem testes automatizados, inclusive integração com substitutos de serviços externos; isso **não equivale a um teste real** de Discord, LiveKit e redes móveis.
-- O último commit incorporado antes deste arquivo, `0ab17f8`, adicionou `ADMIN_ROLE_IDS` para cargos admin fixos via ambiente; consultar `docs/backend/permissoes.md` e a implementação atual antes de configurar privilégios.
-- As fases 0–8 constam como implementadas no `docs/03-roadmap.md`; a fase 9 é parcial. **Não há comprovação aqui** de deploy operacional, webhook de deploy automático ativado, teste em VPS limpa, restauração de backup, teste real entre navegadores ou teste de carga na KVM1. Flazo está trabalhando no deploy; pedir/registrar evidência após executar cada etapa.
+- O commit `2d32672` encerra a entrega da Fase 10 (painel de administração, gravações, efeitos, legendas, PWA, QR e mãos levantadas). O bot usa `/config` e `/reuniao`; privilégios por cargo e `ADMIN_ROLE_IDS` estão em `docs/backend/permissoes.md`.
+- As fases 0–8 e a 10 constam como entregues em `docs/03-roadmap.md`; a fase 9 é parcial (faltam teste de carga e restauração de backup). **Não há comprovação aqui** de deploy operacional, webhook de deploy automático ativado, teste em VPS limpa, teste real com Discord/LiveKit/Egress, teste real entre navegadores ou teste de carga na KVM1. Flazo está trabalhando no deploy; pedir/registrar evidência após executar cada etapa.
 
 ## Próximo trabalho e limites de capacidade
 
-**Will / frontend:** estabilizar fluxo de login e sala em dispositivos reais; implementar seleção de qualidade/resolução de vídeo e tela com limites seguros; detectar mudança de orientação vertical/horizontal no celular; adaptar o mosaico à proporção real da câmera para evitar grandes áreas pretas, respeitando enquadramento/privacidade. Hoje `apps/web/src/room/Stage.tsx` fixa tiles em `aspect-video`, e `Controls.tsx` usa resolução fixa para compartilhamento. Essa melhoria foi pedida por Will e **ainda não está pronta**. Priorizar interação, estados de erro e acessibilidade antes de polimento visual.
-
-**Marujo / backend, após divisão com a equipe:** ajudar a revisar segurança do acesso, presença e capacidade, integração Discord/LiveKit, falhas e contratos que o front consome. Evitar desenvolver em paralelo com Flazo nas mesmas áreas sem combinar limites de responsabilidade.
+**Will / frontend:** revisão visual com o site aberto; ajuste fino de proporções na sala com vídeo real; seleção de qualidade/resolução de vídeo e tela (hoje a tela compartilha fixa em 1080p/30 e a câmera usa o padrão do navegador); mudança de tom de voz (grave/aguda); teste real em Chrome, Firefox e Safari com câmera, microfone e tela. O enquadramento por transmissão (proporção automática, preencher/mostrar tudo, posição) e a orientação vertical/horizontal **já estão implementados** em `VideoSettings.tsx`, `videoPrefs.ts` e `Stage.tsx`. Priorizar interação, estados de erro e acessibilidade antes de polimento visual.
 
 **Flazo / infraestrutura:** concluir e documentar o deploy automático de `main` com separação web/serviços da VPS, segredos no painel, health/readiness, monitoramento, rollback e backup com restauração testada. O repositório contém instruções manuais; configuração ativa no Coolify deve ser confirmada na plataforma.
 

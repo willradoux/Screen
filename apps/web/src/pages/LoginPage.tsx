@@ -1,15 +1,19 @@
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { SplitPanels } from '../components/SplitPanels';
+import { AceleraMark } from '../components/AceleraMark';
+import { Icon, type IconName } from '../components/Icon';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Alert } from '../components/ui';
-import { Wordmark } from '../components/Wordmark';
+import { LogoMark } from '../components/Wordmark';
 import { api } from '../lib/api';
 import { messageFor } from '../lib/errors';
 import { safeRedirect } from '../lib/format';
 
 /**
- * Tela de login. A API termina o fluxo do Discord redirecionando para cá com
- * `?error=<CODE>` quando algo dá errado (docs/backend/autenticacao.md).
+ * Login: o logo e uma frase direto sobre o fundo, e um vidro com o único botão. A API termina
+ * o fluxo do Discord redirecionando para cá com `?error=<CODE>` quando algo dá errado
+ * (docs/backend/autenticacao.md). Quem veio de um link de sala volta direto para ela.
  */
 export function LoginPage() {
   const [params] = useSearchParams();
@@ -22,62 +26,81 @@ export function LoginPage() {
 
   const denied = state.status === 'denied' ? state.code : null;
   const code = errorCode ?? denied;
+  const toRoom = redirect.startsWith('/r/');
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[1.1fr_1fr]">
-      <section className="flex flex-col justify-between border-b border-zinc-800 bg-zinc-900 px-6 py-8 md:border-b-0 md:border-r md:px-14 md:py-12">
-        <div className="flex items-center justify-between">
-          <Wordmark size="md" />
-          <span className="md:hidden">
-            <ThemeToggle />
-          </span>
-        </div>
-        <div className="my-14 max-w-md space-y-4 md:my-0">
-          <h1 className="text-3xl font-semibold text-zinc-50 md:text-4xl">
-            Transmita tela e câmera com a comunidade.
-          </h1>
-          <p className="text-base text-zinc-400">
-            Lives nas calls do Discord e reuniões agendadas, direto no navegador. Sem instalar nada.
-          </p>
-        </div>
-        <Link
-          to="/features"
-          className="text-sm font-medium text-brand-300 underline underline-offset-2"
-        >
-          Ver o que o Screem faz e como usar
-        </Link>
-      </section>
+    <SplitPanels
+      center
+      sideLabel="Screen"
+      side={
+        <>
+          <Link to="/" aria-label="Screen — início" className="hub-brand hub-brand-top">
+            <LogoMark className="h-8" />
+            <span>screen</span>
+          </Link>
 
-      <main className="flex flex-col items-center justify-center px-6 py-14">
-        <div className="hidden w-full max-w-sm justify-end pb-10 md:flex">
-          <ThemeToggle />
-        </div>
-        <div className="w-full max-w-sm space-y-6">
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-semibold text-zinc-50">Entrar</h2>
-            <p className="text-sm text-zinc-400">
-              Use sua conta do Discord. Só entra quem está no servidor.
+          <div className="mt-2 flex-1 space-y-4 px-2">
+            <p className="text-[15px] font-semibold leading-snug text-zinc-50">
+              Lives e reuniões da comunidade, direto no navegador.
             </p>
+            <ul className="space-y-2.5 text-[13px] text-zinc-400">
+              {[
+                ['videocam', 'Tela, câmera e voz nas calls do Discord'],
+                ['calendar_month', 'Reuniões com aviso e contagem regressiva'],
+                ['lock', 'Só entra quem está no servidor'],
+              ].map(([icon, text]) => (
+                <li key={text} className="flex items-start gap-2.5">
+                  <Icon name={icon as IconName} size="1.05rem" className="mt-0.5 text-brand-300" />
+                  {text}
+                </li>
+              ))}
+            </ul>
           </div>
 
+          <div className="hub-footer">
+            <AceleraMark className="mx-2 mb-3 h-[14px] w-auto self-start text-zinc-300" />
+            <Link to="/features" className="hub-link">
+              <Icon name="info" size="1.15rem" />
+              <span className="flex-1">Como funciona</span>
+            </Link>
+            <div className="flex items-center justify-between px-3 pt-1">
+              <span className="text-[11px] text-zinc-500">Tema</span>
+              <ThemeToggle withLabel />
+            </div>
+          </div>
+        </>
+      }
+    >
+      <div className="mx-auto w-full max-w-sm">
+        <div className="rise">
+          <h1 className="text-[1.75rem] font-bold leading-tight tracking-[-0.035em] text-balance text-zinc-50">
+            {toRoom ? 'Falta só entrar' : 'Entre no Screen'}
+          </h1>
+          <p className="mt-2 text-[15px] text-zinc-400">
+            {toRoom
+              ? 'Entre com o Discord e você volta direto para a sala.'
+              : 'Use sua conta do Discord. Não precisa criar senha.'}
+          </p>
+        </div>
+
+        <div className="rise rise-2 mt-7 space-y-3">
+          <h2 className="sr-only">Entrar</h2>
           {code && (
             <Alert tone="error" title="Não foi possível entrar">
               {messageFor(code)}
             </Alert>
           )}
-
-          <a
-            href={api.loginUrl(redirect)}
-            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-zinc-50 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
-          >
+          <a href={api.loginUrl(redirect)} className="btn btn-primary btn-lg w-full">
             Entrar com Discord
+            <Icon name="arrow_forward" size="1.1rem" />
           </a>
-
-          <p className="text-xs text-zinc-500">
-            Nas lives, você também precisa estar no canal de voz. Nas reuniões, não.
+          <p className="text-xs leading-relaxed text-zinc-500">
+            <strong className="text-zinc-300">Lives:</strong> você também precisa estar no canal de
+            voz da call. <strong className="text-zinc-300">Reuniões:</strong> basta estar no
+            servidor.
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </SplitPanels>
   );
 }

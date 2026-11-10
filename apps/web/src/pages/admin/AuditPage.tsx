@@ -87,7 +87,7 @@ export function AuditPage() {
         Auditoria
       </PageTitle>
 
-      <div className="mb-6 grid gap-4 border-b border-zinc-800 pb-6 sm:grid-cols-3">
+      <div className="surface rise mb-3 grid gap-4 p-4 sm:grid-cols-3">
         <Field label="Ação" htmlFor="a-action">
           <select
             id="a-action"
@@ -124,20 +124,24 @@ export function AuditPage() {
 
       {error && <Alert tone="error">{error}</Alert>}
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-800">
+      <div className="surface rise rise-2 overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-900 text-xs font-medium text-zinc-500">
+          <thead className="text-xs font-medium text-zinc-500">
             <tr>
-              <th className="px-3 py-2">Quando</th>
-              <th className="px-3 py-2">Ação</th>
-              <th className="px-3 py-2">Quem</th>
-              <th className="px-3 py-2">Alvo</th>
-              <th className="px-3 py-2">Motivo</th>
+              <th className="px-4 pb-2 pt-3.5">Quando</th>
+              <th className="px-3 pb-2 pt-3.5">Ação</th>
+              <th className="px-3 pb-2 pt-3.5">Quem</th>
+              <th className="px-3 pb-2 pt-3.5">Alvo</th>
+              <th className="px-4 pb-2 pt-3.5">Motivo</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.id} className="border-t border-zinc-800" data-testid="audit-row">
+              <tr
+                key={e.id}
+                className="transition-colors hover:bg-white/[0.04]"
+                data-testid="audit-row"
+              >
                 <td className="whitespace-nowrap px-3 py-2 text-zinc-400">
                   {formatDateTime(e.at)}
                 </td>

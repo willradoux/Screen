@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { ROLE_LABEL, isAdmin, isStaff } from '../lib/moderation-rules';
 import { Icon, type IconName } from './Icon';
+import { ImmersiveContext } from './immersive';
+import { Loader } from './Loader';
 import { SetupBanners } from './SetupBanners';
 import { ThemeToggle } from './ThemeToggle';
 import { Avatar } from './ui';
-import { Wordmark } from './Wordmark';
+import { LogoMark } from './Wordmark';
 
 interface NavItem {
   to: string;
@@ -15,35 +17,12 @@ interface NavItem {
   end?: boolean;
 }
 
-const sideLink = ({ isActive }: { isActive: boolean }) =>
-  `flex h-10 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors ${
-    isActive ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-50'
-  }`;
-
-/** Conteúdo de um item de menu: ícone, rótulo e, no item ativo, um ponto azul (o detalhe). */
-function NavContent({ item, isActive }: { item: NavItem; isActive: boolean }) {
-  return (
-    <>
-      <Icon name={item.icon} size="1.2rem" />
-      {item.label}
-      {isActive && (
-        <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
-      )}
-    </>
-  );
-}
-
-const tabLink = ({ isActive }: { isActive: boolean }) =>
-  `flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[0.6875rem] font-medium transition-colors ${
-    isActive ? 'text-brand-400' : 'text-zinc-500'
-  }`;
-
 /** Evento do navegador que oferece instalar o app (Chrome e Android). */
 interface InstallPrompt extends Event {
   prompt: () => Promise<void>;
 }
 
-function InstallButton() {
+function useInstallPrompt() {
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -53,51 +32,64 @@ function InstallButton() {
     window.addEventListener('beforeinstallprompt', onPrompt);
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
-  if (!prompt) return null;
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        void prompt.prompt();
-        setPrompt(null);
-      }}
-      className="flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-    >
-      <Icon name="download" size="1.15rem" />
-      Instalar app
-    </button>
-  );
+  return {
+    available: prompt !== null,
+    install: () => {
+      void prompt?.prompt();
+      setPrompt(null);
+    },
+  };
 }
 
-function NavGroup({ title, items }: { title?: string; items: NavItem[] }) {
+/** Mesma regra do NavLink: exato quando `end`, prefixo quando é uma seção. */
+function isItemActive(item: NavItem, pathname: string) {
+  if (item.end) return pathname === item.to;
+  return pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
+
+function HubLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = isItemActive(item, pathname);
   return (
-    <div className="space-y-0.5">
-      {title && <p className="px-3 pb-1 pt-5 text-xs font-medium text-zinc-500">{title}</p>}
-      {items.map((i) => (
-        <NavLink key={i.to} to={i.to} end={i.end} className={sideLink}>
-          {({ isActive }) => <NavContent item={i} isActive={isActive} />}
-        </NavLink>
-      ))}
-    </div>
+    <NavLink
+      to={item.to}
+      end={item.end}
+      aria-current={active ? 'page' : undefined}
+      data-active={active ? 'true' : 'false'}
+      className="hub-link"
+    >
+      <Icon name={item.icon} size="1.15rem" />
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {active && <span aria-hidden="true" className="hub-dot" />}
+    </NavLink>
   );
 }
 
 /**
- * Estrutura do app. Computador: barra lateral fixa com a navegação e a conta. Celular: topo
- * enxuto e barra de abas embaixo, com "Mais" para o restante.
+ * Estrutura das páginas antes da chamada: a mesma do Flazo (menu lateral com as páginas,
+ * "Administração" para quem tem acesso e, embaixo, a pessoa, o tema e Sair), com a nossa UI —
+ * o menu é uma peça preta flutuando sobre o fundo do tema e o conteúdo ocupa o resto da tela.
+ * No celular o menu vira uma gaveta, aberta pelo botão do topo. Dentro da sala, a chamada
+ * assume a tela inteira e o menu some.
  */
 export function Layout() {
   const { user, logout } = useAuth();
-  const [more, setMore] = useState(false);
+  const [immersive, setImmersive] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const { available: canInstall, install } = useInstallPrompt();
   const location = useLocation();
-  useEffect(() => setMore(false), [location.pathname]);
+  useEffect(() => {
+    setDrawer(false);
+    setAccountOpen(false);
+  }, [location.pathname]);
 
-  const main: NavItem[] = [
+  const items: NavItem[] = [
     { to: '/', label: 'Salas', icon: 'videocam', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
     { to: '/features', label: 'Guia', icon: 'info' },
-    { to: '/preferencias', label: 'Preferências', icon: 'settings' },
+    { to: '/preferencias', label: 'Preferências', icon: 'tune' },
   ];
+
   const admin: NavItem[] = [];
   if (user && isStaff(user.role)) {
     admin.push({ to: '/admin', label: 'Painel', icon: 'dashboard', end: true });
@@ -112,100 +104,121 @@ export function Layout() {
       { to: '/admin/auditoria', label: 'Auditoria', icon: 'history' },
     );
   }
-  const all = [...main, ...admin];
-  const tabs = all.length <= 5 ? all : all.slice(0, 4);
-  const overflow = all.length <= 5 ? [] : all.slice(4);
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[17.5rem_1fr]">
-      <aside className="glass sticky top-4 m-4 mr-0 hidden h-[calc(100dvh-2rem)] flex-col rounded-3xl px-3 py-5 md:flex">
-        <div className="px-3 pb-4">
-          <Wordmark />
-        </div>
-        <nav aria-label="Principal" className="flex-1 overflow-y-auto">
-          <NavGroup items={main} />
-          {admin.length > 0 && <NavGroup title="Administração" items={admin} />}
-        </nav>
-        <div className="space-y-1 border-t border-zinc-800 pt-3">
-          <InstallButton />
-          {user && (
-            <div className="flex items-center gap-3 px-3 py-2">
-              <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />
-              <div className="min-w-0 flex-1 leading-tight">
-                <p className="truncate text-sm font-medium text-zinc-100">{user.displayName}</p>
-                <p className="text-xs text-zinc-500">{ROLE_LABEL[user.role]}</p>
-              </div>
-              <ThemeToggle />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => void logout()}
-            aria-label="Sair"
-            className="flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-          >
-            <Icon name="logout" size="1.15rem" />
-            Sair
-          </button>
-        </div>
-      </aside>
+    <ImmersiveContext.Provider value={setImmersive}>
+      <div className={immersive ? '' : 'hub'}>
+        {!immersive && (
+          <>
+            <a href="#conteudo" className="skip-link">
+              Pular para o conteúdo
+            </a>
 
-      <div className="min-w-0">
-        <header className="glass sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-30 mx-3 mt-[calc(env(safe-area-inset-top)+0.75rem)] flex items-center justify-between rounded-full px-5 py-2.5 md:hidden">
-          <Wordmark size="sm" />
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            {user && <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />}
-          </div>
-        </header>
-
-        <main className="mx-auto w-full max-w-5xl px-4 pb-36 pt-6 sm:px-6 md:px-10 md:pb-14 md:pt-10">
-          <SetupBanners />
-          <Outlet />
-        </main>
-
-        <nav
-          aria-label="Navegação"
-          className="glass fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 mx-auto max-w-md overflow-hidden rounded-[2rem] md:hidden"
-        >
-          {more && (
-            <div className="pop-in space-y-0.5 border-b border-zinc-800/60 p-2">
-              {overflow.map((i) => (
-                <NavLink key={i.to} to={i.to} end={i.end} className={sideLink}>
-                  {({ isActive }) => <NavContent item={i} isActive={isActive} />}
-                </NavLink>
-              ))}
+            {/* Celular: topo enxuto com o botão que abre o menu. */}
+            <header className="hub-mobilebar surface">
+              <NavLink to="/" aria-label="Screen — início" className="hub-brand">
+                <LogoMark className="h-7" />
+                <span>screen</span>
+              </NavLink>
               <button
                 type="button"
-                onClick={() => void logout()}
-                aria-label="Sair"
-                className="flex h-10 w-full items-center gap-3 rounded-2xl px-3 text-sm font-medium text-zinc-400 hover:bg-zinc-800/60"
+                aria-label={drawer ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={drawer}
+                aria-controls="hub-menu"
+                onClick={() => setDrawer((v) => !v)}
+                className="icon-button"
               >
-                <Icon name="logout" size="1.15rem" />
-                Sair
+                <Icon name={drawer ? 'close' : 'menu_open'} size="1.3rem" />
               </button>
-            </div>
-          )}
-          <div className="mx-auto flex max-w-xl">
-            {tabs.map((i) => (
-              <NavLink key={i.to} to={i.to} end={i.end} className={tabLink}>
-                <Icon name={i.icon} size="1.4rem" />
-                <span className="truncate">{i.label}</span>
+            </header>
+            {drawer && (
+              <div aria-hidden="true" className="hub-scrim" onClick={() => setDrawer(false)} />
+            )}
+
+            <aside id="hub-menu" className="hub-sidebar surface" data-open={drawer || undefined}>
+              <NavLink to="/" aria-label="Screen — início" className="hub-brand hub-brand-top">
+                <LogoMark className="h-8" />
+                <span>screen</span>
               </NavLink>
-            ))}
-            <button
-              type="button"
-              aria-expanded={more}
-              aria-label="Mais opções"
-              onClick={() => setMore((v) => !v)}
-              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[0.6875rem] font-medium text-zinc-500"
-            >
-              <Icon name="menu_open" size="1.4rem" />
-              Mais
-            </button>
-          </div>
-        </nav>
+
+              <nav aria-label="Navegação principal" className="hub-nav">
+                {items.map((item) => (
+                  <HubLink key={item.to} item={item} pathname={location.pathname} />
+                ))}
+
+                {admin.length > 0 && (
+                  <>
+                    <p className="hub-group">Administração</p>
+                    {admin.map((item) => (
+                      <HubLink key={item.to} item={item} pathname={location.pathname} />
+                    ))}
+                  </>
+                )}
+              </nav>
+
+              <div className="hub-footer">
+                {accountOpen && (
+                  <div className="hub-account-menu" role="group" aria-label="Sua conta">
+                    <NavLink to="/preferencias" className="hub-link">
+                      <Icon name="tune" size="1.15rem" />
+                      <span>Preferências</span>
+                    </NavLink>
+                    {canInstall && (
+                      <button type="button" onClick={install} className="hub-link">
+                        <Icon name="download" size="1.15rem" />
+                        <span>Instalar app</span>
+                      </button>
+                    )}
+                    <p className="px-3 pt-1 text-[11px] leading-relaxed text-zinc-500">
+                      O login é feito pelo Discord: o Screen não guarda senha.
+                    </p>
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Sua conta"
+                    aria-expanded={accountOpen}
+                    onClick={() => setAccountOpen((v) => !v)}
+                    className="hub-account"
+                  >
+                    {user ? (
+                      <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />
+                    ) : (
+                      <Icon name="person" size="1.2rem" />
+                    )}
+                    {user && (
+                      <span className="min-w-0 text-left leading-tight">
+                        <span className="block truncate text-[13px] font-medium text-white">
+                          {user.displayName}
+                        </span>
+                        <span className="block text-[11px] text-zinc-500">
+                          {ROLE_LABEL[user.role]}
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                  <ThemeToggle />
+                </div>
+                <button type="button" onClick={() => void logout()} className="hub-link hub-logout">
+                  <Icon name="logout" size="1.15rem" />
+                  <span>Sair</span>
+                </button>
+              </div>
+            </aside>
+          </>
+        )}
+
+        <main id="conteudo" tabIndex={-1} className={immersive ? '' : 'hub-main surface'}>
+          {!immersive && <SetupBanners />}
+          <Suspense fallback={<Loader />}>
+            {/* Cada tela entra com movimento (a chave troca a cada rota). */}
+            <div key={location.pathname} className={immersive ? '' : 'page-enter'}>
+              <Outlet />
+            </div>
+          </Suspense>
+        </main>
       </div>
-    </div>
+    </ImmersiveContext.Provider>
   );
 }

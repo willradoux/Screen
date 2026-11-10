@@ -52,9 +52,9 @@ function Row({ rec, onChanged }: { rec: Recording; onChanged: () => void }) {
   }
 
   return (
-    <li className="py-4" data-testid="recording">
+    <li className="surface px-4 py-3.5" data-testid="recording">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold text-zinc-50">{rec.title}</h3>
+        <h2 className="font-semibold text-zinc-50">{rec.title}</h2>
         <Badge tone={s.tone}>{s.label}</Badge>
         <span className="ml-auto text-sm text-zinc-400">{formatDateTime(rec.startedAt)}</span>
       </div>
@@ -142,7 +142,7 @@ export function RecordingsPage() {
           </Card>
         )}
         {state.status === 'ready' && state.data.length > 0 && (
-          <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+          <ul className="stagger space-y-2">
             {state.data.map((r) => (
               <Row key={r.id} rec={r} onChanged={() => void reload({ silent: true })} />
             ))}

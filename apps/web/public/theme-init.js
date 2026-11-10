@@ -1,14 +1,30 @@
-// Aplica o tema antes da página aparecer (evita o "piscar" claro/escuro).
+// Aplica fundo e modo antes da página aparecer (evita o "piscar" de cores).
 // É um arquivo à parte porque a CSP do site não permite script dentro do HTML.
-// O padrão é o tema claro; o escuro só vale se a pessoa escolheu.
+// Padrão: fundo "screem" (cores do logo) e modo escuro (componentes pretos).
 (function () {
-  var theme = 'light';
+  var bars = {
+    screem: '#fde3da',
+    acelera: '#cfeee4',
+    brasil: '#f6ecc4',
+    portugal: '#f3e6cf',
+    alemanha: '#f5e6bd',
+    mono: '#e6e6e6',
+  };
+  var theme = 'screem';
+  var mode = 'dark';
+  var motion = 'on';
   try {
-    if (localStorage.getItem('screem-theme') === 'dark') theme = 'dark';
+    var saved = localStorage.getItem('screem-theme');
+    if (bars[saved]) theme = saved;
+    if (localStorage.getItem('screem-mode') === 'light') mode = 'light';
+    if (localStorage.getItem('screem-motion') === 'off') motion = 'off';
   } catch {
     /* sem armazenamento: segue o padrão */
   }
-  document.documentElement.setAttribute('data-theme', theme);
+  var root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.setAttribute('data-mode', mode);
+  root.setAttribute('data-motion', motion);
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#ffffff' : '#000000');
+  if (meta) meta.setAttribute('content', bars[theme]);
 })();

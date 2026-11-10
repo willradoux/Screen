@@ -6,7 +6,7 @@ import { ApiError } from './api';
  */
 const MESSAGES: Record<string, string> = {
   // login
-  NOT_IN_GUILD: 'Você precisa estar no servidor Acelera DEV para usar o Screem.',
+  NOT_IN_GUILD: 'Você precisa estar no servidor Acelera DEV para usar o Screen.',
   ACCOUNT_BLOCKED: 'Sua conta está bloqueada.',
   ACCESS_DENIED: 'Você cancelou a autorização no Discord.',
   INVALID_STATE: 'A sessão de login expirou. Tente entrar de novo.',

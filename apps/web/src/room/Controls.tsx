@@ -1,19 +1,30 @@
-import type { LocalParticipant } from 'livekit-client';
+import type { LocalParticipant, Room as LiveKitRoom } from 'livekit-client';
 import { useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
 import { EffectsPanel } from './EffectsPanel';
+import { DeviceMenu, usePermission } from './DeviceMenu';
+import { LayoutPicker } from './LayoutPicker';
+import type { StageLayout } from './Stage';
 import { VideoSettings } from './VideoSettings';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface Props {
   local: LocalParticipant;
+  /** Sala do LiveKit: para trocar de microfone, saída de som e câmera. */
+  room?: LiveKitRoom;
   allowedSources: MediaSource[] | undefined;
   /** Texto de por que não dá para transmitir (modo palestra, silenciado...). */
   restriction: string | null;
+  /** Painel de pessoas aberto. */
   panelOpen: boolean;
   onTogglePanel: () => void;
+  /** Organização do palco (escolhida numa janela com desenhos). */
+  layout?: { value: StageLayout; onChange: (next: StageLayout) => void };
+  /** `media`: a pílula de baixo; `rail`: o trilho de opções da esquerda. */
+  variant?: 'media' | 'rail';
   onLeave: () => void;
   onError: (message: string) => void;
   /** Pedir a palavra (só reuniões). */
@@ -21,8 +32,7 @@ interface Props {
   captions?: { on: boolean; onToggle: () => void };
 }
 
-const SCREEN_UNSUPPORTED =
-  'Compartilhar tela só funciona no computador. Os navegadores de celular e tablet não permitem, nem instalando o Screem como app. Para mostrar a tela, entre pelo computador; no celular você pode transmitir a câmera.';
+const SCREEN_UNSUPPORTED_SHORT = 'Compartilhar tela só funciona no computador.';
 
 /** Botão redondo de controle: ícone, rótulo curto e nome completo para leitores de tela. */
 function RoundButton({
@@ -31,6 +41,7 @@ function RoundButton({
   fullLabel,
   active = false,
   danger = false,
+  off = false,
   disabled = false,
   busy = false,
   title,
@@ -41,16 +52,13 @@ function RoundButton({
   fullLabel: string;
   active?: boolean;
   danger?: boolean;
+  /** Microfone/câmera desligados: vermelho suave, para ninguém achar que está no ar. */
+  off?: boolean;
   disabled?: boolean;
   busy?: boolean;
   title?: string | undefined;
   onClick: () => void;
 }) {
-  const tone = danger
-    ? 'bg-red-600 text-zinc-950 hover:bg-red-500'
-    : active
-      ? 'bg-zinc-50 text-zinc-950 hover:bg-zinc-200'
-      : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700';
   return (
     <button
       type="button"
@@ -59,19 +67,21 @@ function RoundButton({
       aria-label={fullLabel}
       aria-pressed={danger ? undefined : active}
       aria-busy={busy || undefined}
-      title={title}
-      className="group flex min-w-16 flex-col items-center gap-1 text-[0.7rem] font-medium text-zinc-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-45"
+      data-tip={title ?? short}
+      className="ctl-button disabled:cursor-not-allowed"
     >
       <span
-        className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-brand-300 sm:h-13 sm:w-13 ${tone}`}
+        className="ctl"
+        data-on={active || undefined}
+        data-off={off || undefined}
+        data-danger={danger || undefined}
       >
         <Icon
           name={busy ? 'progress_activity' : icon}
-          size="1.5rem"
+          size="1.35rem"
           className={busy ? 'animate-spin' : ''}
         />
       </span>
-      <span aria-hidden="true">{short}</span>
     </button>
   );
 }
@@ -90,7 +100,13 @@ export function Controls({
   onError,
   hand,
   captions,
+  layout,
+  variant = 'media',
+  room,
 }: Props) {
+  const [menu, setMenu] = useState<'audio' | 'video' | null>(null);
+  const micPermission = usePermission('microphone');
+  const camPermission = usePermission('camera');
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
   const screenSupported = canShareScreen();
 
@@ -132,54 +148,35 @@ export function Controls({
   const cam = local.isCameraEnabled;
   const screen = local.isScreenShareEnabled;
 
-  return (
-    <div
-      role="toolbar"
-      aria-label="Controles da sala"
-      className="rounded-2xl border border-zinc-800 bg-zinc-900/80 px-3 py-3 backdrop-blur"
-    >
-      <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3 sm:gap-x-5">
+  // Trilho da esquerda ("Mais opções"): conversa, pessoas e ajustes, um embaixo do outro.
+  if (variant === 'rail') {
+    return (
+      <div
+        role="toolbar"
+        aria-label="Mais opções da sala"
+        aria-orientation="vertical"
+        className="rail-tools"
+      >
         <RoundButton
-          icon={mic ? 'mic' : 'mic_off'}
-          short={mic ? 'Mic ligado' : 'Mic mudo'}
-          fullLabel={`Microfone: ${mic ? 'ligado' : 'desligado'}`}
-          active={mic}
-          disabled={disabled('microphone')}
-          title={restriction ?? undefined}
-          busy={busy === 'microphone'}
-          onClick={() => void toggle('microphone')}
-        />
-        <RoundButton
-          icon={cam ? 'videocam' : 'videocam_off'}
-          short="Câmera"
-          fullLabel={`Câmera: ${cam ? 'ligada' : 'desligada'}`}
-          active={cam}
-          disabled={disabled('camera')}
-          title={restriction ?? undefined}
-          busy={busy === 'camera'}
-          onClick={() => void toggle('camera')}
-        />
-        <RoundButton
-          icon={screen ? 'stop_screen_share' : 'screen_share'}
-          short="Tela"
-          fullLabel={`Tela: ${screen ? 'compartilhando' : 'parada'}`}
-          active={screen}
-          disabled={!screenSupported || disabled('screen_share')}
-          title={screenSupported ? (restriction ?? undefined) : SCREEN_UNSUPPORTED}
-          busy={busy === 'screen'}
-          onClick={() => void toggle('screen')}
+          icon="group"
+          short="Pessoas"
+          fullLabel="Pessoas"
+          active={panelOpen}
+          onClick={onTogglePanel}
         />
         {hand && (
           <RoundButton
             icon="front_hand"
-            short={hand.raised ? 'Abaixar mão' : 'Pedir a palavra'}
+            short={hand.raised ? 'Abaixar a mão' : 'Pedir a palavra'}
             fullLabel={hand.raised ? 'Abaixar a mão' : 'Pedir a palavra'}
             active={hand.raised}
             busy={hand.busy}
             onClick={hand.onToggle}
           />
         )}
+        {layout && <LayoutPicker value={layout.value} onChange={layout.onChange} />}
         <VideoSettings />
+        <ThemeToggle variant="ctl" />
         {captions && (
           <EffectsPanel
             local={local}
@@ -188,33 +185,144 @@ export function Controls({
             onError={onError}
           />
         )}
-        <RoundButton
-          icon="group"
-          short="Pessoas"
-          fullLabel="Pessoas"
-          active={panelOpen}
-          onClick={onTogglePanel}
-        />
+      </div>
+    );
+  }
+
+  // Pílula de baixo: só a voz, a imagem e a tela, "Mais opções" e sair.
+  return (
+    <div
+      role="toolbar"
+      aria-label="Controles da sala"
+      className="relative flex flex-col items-center"
+    >
+      {menu && room && (
+        <DeviceMenu room={room} kind={menu} onClose={() => setMenu(null)} onError={onError} />
+      )}
+      <div className="ctl-row">
+        <div className="ctl-group" role="group" aria-label="Mídia">
+          <span className="ctl-split">
+            {room && (
+              <DeviceToggle
+                label="Trocar aparelho de áudio"
+                open={menu === 'audio'}
+                onClick={() => setMenu((m) => (m === 'audio' ? null : 'audio'))}
+              />
+            )}
+            <span className="relative">
+              <RoundButton
+                icon={mic ? 'mic' : 'mic_off'}
+                short={
+                  micPermission === 'denied'
+                    ? 'Permissão necessária'
+                    : mic
+                      ? 'Desligar microfone'
+                      : 'Ligar microfone'
+                }
+                fullLabel={`Microfone: ${mic ? 'ligado' : 'desligado'}${
+                  micPermission === 'denied' ? ' (permissão necessária no navegador)' : ''
+                }`}
+                active={mic}
+                off={!mic}
+                disabled={disabled('microphone')}
+                title={restriction ?? undefined}
+                busy={busy === 'microphone'}
+                onClick={() => void toggle('microphone')}
+              />
+              {micPermission === 'denied' && <PermissionBadge />}
+            </span>
+          </span>
+          <span className="ctl-split">
+            {room && (
+              <DeviceToggle
+                label="Trocar aparelho de vídeo"
+                open={menu === 'video'}
+                onClick={() => setMenu((m) => (m === 'video' ? null : 'video'))}
+              />
+            )}
+            <span className="relative">
+              <RoundButton
+                icon={cam ? 'videocam' : 'videocam_off'}
+                short={
+                  camPermission === 'denied'
+                    ? 'Permissão necessária'
+                    : cam
+                      ? 'Desligar câmera'
+                      : 'Ligar câmera'
+                }
+                fullLabel={`Câmera: ${cam ? 'ligada' : 'desligada'}${
+                  camPermission === 'denied' ? ' (permissão necessária no navegador)' : ''
+                }`}
+                active={cam}
+                off={!cam}
+                disabled={disabled('camera')}
+                title={restriction ?? undefined}
+                busy={busy === 'camera'}
+                onClick={() => void toggle('camera')}
+              />
+              {camPermission === 'denied' && <PermissionBadge />}
+            </span>
+          </span>
+          <RoundButton
+            icon={screen ? 'stop_screen_share' : 'screen_share'}
+            short={screen ? 'Parar de compartilhar' : 'Compartilhar tela'}
+            fullLabel={`Tela: ${screen ? 'compartilhando' : 'parada'}`}
+            active={screen}
+            disabled={!screenSupported || disabled('screen_share')}
+            title={screenSupported ? (restriction ?? undefined) : SCREEN_UNSUPPORTED_SHORT}
+            busy={busy === 'screen'}
+            onClick={() => void toggle('screen')}
+          />
+        </div>
         <RoundButton
           icon="call_end"
-          short="Sair"
+          short="Sair da sala"
           fullLabel="Sair da sala"
           danger
           onClick={onLeave}
         />
       </div>
 
-      {!screenSupported && (
-        <p className="mt-3 text-center text-xs text-zinc-500" role="note">
-          <Icon name="info" size="1em" className="mr-1" />
-          {SCREEN_UNSUPPORTED}
-        </p>
-      )}
       {restriction && (
-        <p className="mt-3 text-center text-xs text-amber-300" role="status">
+        <p className="mt-1.5 px-3 text-center text-[11px] text-amber-300" role="status">
           {restriction}
         </p>
       )}
     </div>
+  );
+}
+
+/** Setinha colada no botão: abre a escolha de aparelho (como no Meet). */
+function DeviceToggle({
+  label,
+  open,
+  onClick,
+}: {
+  label: string;
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      data-tip={label}
+      onClick={onClick}
+      className="ctl-button ctl-chevron"
+      data-open={open || undefined}
+    >
+      <Icon name={open ? 'keyboard_arrow_down' : 'keyboard_arrow_up'} size="1.05rem" />
+    </button>
+  );
+}
+
+/** "!" amarelo: o navegador bloqueou o acesso. */
+function PermissionBadge() {
+  return (
+    <span aria-hidden="true" className="perm-badge" title="Permissão necessária">
+      !
+    </span>
   );
 }

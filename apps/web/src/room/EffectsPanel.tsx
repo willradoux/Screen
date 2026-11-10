@@ -99,16 +99,12 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label="Efeitos"
-        className="group flex min-w-16 flex-col items-center gap-1 text-[0.7rem] font-medium text-zinc-300 focus:outline-none"
+        data-tip="Efeitos"
+        className="ctl-button"
       >
-        <span
-          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-brand-300 ${
-            open ? 'bg-zinc-50 text-zinc-950' : 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700'
-          }`}
-        >
-          <Icon name="palette" size="1.5rem" />
+        <span className="ctl" data-on={open || undefined}>
+          <Icon name="palette" size="1.35rem" />
         </span>
-        <span aria-hidden="true">Efeitos</span>
       </button>
 
       {open && (

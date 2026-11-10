@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Wordmark } from '../components/Wordmark';
+import { SplitPanels } from '../components/SplitPanels';
+import { LogoMark } from '../components/Wordmark';
 
 interface Feature {
   icon: IconName;
@@ -59,7 +60,7 @@ const FEATURES: Feature[] = [
   {
     icon: 'qr_code_2',
     title: 'QR code e app',
-    text: 'Abra a sala no celular lendo o QR code e instale o Screem como aplicativo.',
+    text: 'Abra a sala no celular lendo o QR code e instale o Screen como aplicativo.',
   },
   {
     icon: 'dashboard',
@@ -160,7 +161,7 @@ const MEMBER_STEPS: Step[] = [
     body: (
       <>
         Na tela de entrada da sala, abra <strong>Abrir no celular (QR code)</strong> e leia com a
-        câmera. Para instalar o Screem como app, use <strong>Instalar app</strong> no cabeçalho (ou
+        câmera. Para instalar o Screen como app, use <strong>Instalar app</strong> no cabeçalho (ou
         “Adicionar à tela de início” no iPhone).
       </>
     ),
@@ -311,14 +312,14 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 
 function StepList({ steps }: { steps: Step[] }) {
   return (
-    <ol>
+    <ol className="stagger mt-3 space-y-2">
       {steps.map((s, i) => (
-        <li key={s.title} className="flex gap-4 border-t border-zinc-800 py-4" data-testid="step">
-          <span className="tabular w-6 shrink-0 font-display text-base font-semibold text-brand-400">
+        <li key={s.title} className="surface flex gap-4 p-4" data-testid="step">
+          <span className="tabular flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/8 text-[13px] font-bold text-brand-300">
             {i + 1}
           </span>
           <div className="min-w-0 space-y-1">
-            <h3 className="font-display text-base font-semibold text-zinc-50">{s.title}</h3>
+            <h3 className="text-base font-semibold text-zinc-50">{s.title}</h3>
             <div className="text-sm leading-relaxed text-zinc-300">{s.body}</div>
           </div>
         </li>
@@ -328,7 +329,7 @@ function StepList({ steps }: { steps: Step[] }) {
 }
 
 /**
- * Página pública (sem login) que apresenta o Screem e ensina a usar, para membros e para admins.
+ * Página pública (sem login) que apresenta o Screen e ensina a usar, para membros e para admins.
  */
 export function FeaturesPage() {
   const initial = (typeof location !== 'undefined' ? location.hash.replace('#', '') : '') as Tab;
@@ -344,99 +345,94 @@ export function FeaturesPage() {
   }
 
   return (
-    <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5">
-          <Link to="/">
-            <Wordmark />
+    <SplitPanels
+      sideLabel="Guia do Screen"
+      side={
+        <>
+          <Link to="/" aria-label="Screen — início" className="hub-brand hub-brand-top">
+            <LogoMark className="h-8" />
+            <span>screen</span>
           </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <Link
-              to="/"
-              className="inline-flex h-9 items-center rounded-lg bg-zinc-50 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
-            >
+
+          <p className="hub-group mt-0">Guia</p>
+          <div role="tablist" aria-label="Seções" aria-orientation="vertical" className="hub-nav">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                data-active={tab === t.id ? 'true' : 'false'}
+                onClick={() => choose(t.id)}
+                className="hub-link"
+              >
+                <Icon name={t.icon} size="1.15rem" />
+                <span className="min-w-0 flex-1 truncate text-left">{t.label}</span>
+                {tab === t.id && <span aria-hidden="true" className="hub-dot" />}
+              </button>
+            ))}
+          </div>
+
+          <div className="hub-footer">
+            <div className="flex items-center gap-2 px-1 pb-1">
+              <span className="flex-1 text-[11px] leading-snug text-zinc-500">
+                Projeto aberto da comunidade Acelera DEV.
+              </span>
+              <ThemeToggle />
+            </div>
+            <Link to="/" className="btn btn-primary w-full">
               Entrar
             </Link>
           </div>
-        </div>
+        </>
+      }
+    >
+      <header className="rise max-w-2xl">
+        <p className="eyebrow">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+          Guia de uso
+        </p>
+        <h1 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-balance text-zinc-50 sm:text-3xl">
+          Transmita tela, câmera e voz com a comunidade
+        </h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
+          O Screen liga o Discord a salas de vídeo: lives nas calls, reuniões agendadas, pedir a
+          palavra, legendas, gravação e um painel para os admins.{' '}
+          <strong className="text-zinc-200">Sem instalar nada.</strong>
+        </p>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-10 px-4 py-10">
-        <section className="space-y-4 text-center">
-          <h1 className="font-display text-4xl font-bold text-zinc-50 sm:text-5xl">
-            Transmita tela, câmera e voz com a comunidade
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-zinc-400">
-            O Screem liga o Discord a salas de vídeo: lives nas calls, reuniões agendadas, pedir a
-            palavra, legendas, gravação e um painel para os admins. Sem instalar nada.
-          </p>
-          <Link
-            to="/"
-            className="inline-flex h-11 items-center gap-2 rounded-lg bg-zinc-50 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200"
-          >
-            Entrar com Discord
-            <Icon name="chevron_right" />
-          </Link>
-        </section>
-
-        <div
-          role="tablist"
-          aria-label="Seções"
-          className="flex flex-wrap justify-center gap-1 border-b border-zinc-800"
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => choose(t.id)}
-              className={`-mb-px inline-flex h-10 items-center border-b-2 px-4 text-sm font-medium transition-colors ${
-                tab === t.id
-                  ? 'border-brand-400 text-zinc-50'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-100'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
+      <div className="mt-8">
         {tab === 'recursos' && (
-          <section aria-label="O que tem" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <section aria-label="O que tem" className="stagger grid gap-2 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <article
-                key={f.title}
-                className="space-y-2 border-t border-zinc-800 pt-5"
-                data-testid="feature"
-              >
-                <Icon name={f.icon} size="1.5rem" className="text-brand-400" />
-                <h2 className="font-display text-lg font-semibold text-zinc-50">{f.title}</h2>
-                <p className="text-sm leading-relaxed text-zinc-400">{f.text}</p>
+              <article key={f.title} className="surface flex gap-3.5 p-4" data-testid="feature">
+                <span className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-white/6 text-brand-300">
+                  <Icon name={f.icon} size="1.2rem" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-[15px] font-semibold text-zinc-50">{f.title}</h2>
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-zinc-400">{f.text}</p>
+                </div>
               </article>
             ))}
           </section>
         )}
 
         {tab === 'membros' && (
-          <section aria-label="Tutorial para membros" className="space-y-4">
-            <h2 className="font-display text-2xl font-semibold text-zinc-50">Como usar</h2>
+          <section aria-label="Tutorial para membros" className="rise">
+            <h2 className="text-lg font-semibold text-zinc-50">Como usar</h2>
             <StepList steps={MEMBER_STEPS} />
           </section>
         )}
 
         {tab === 'admins' && (
-          <section aria-label="Tutorial para admins" className="space-y-4">
-            <h2 className="font-display text-2xl font-semibold text-zinc-50">Como administrar</h2>
+          <section aria-label="Tutorial para admins" className="rise">
+            <h2 className="text-lg font-semibold text-zinc-50">Como administrar</h2>
             <StepList steps={ADMIN_STEPS} />
           </section>
         )}
-
-        <footer className="border-t border-zinc-800 pt-6 text-center text-sm text-zinc-500">
-          Projeto aberto da comunidade Acelera DEV.
-        </footer>
-      </main>
-    </div>
+      </div>
+    </SplitPanels>
   );
 }

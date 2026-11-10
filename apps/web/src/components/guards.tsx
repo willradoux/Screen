@@ -2,11 +2,17 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { messageFor } from '../lib/errors';
 import { isAdmin, isStaff } from '../lib/moderation-rules';
+import { Bare } from './Bare';
 import { Loader } from './Loader';
-import { Alert, Button } from './ui';
+import { StatusCard } from './StatusCard';
+import { Button } from './ui';
 
 export function FullPageSpinner({ label = 'Carregando' }: { label?: string }) {
-  return <Loader label={label} />;
+  return (
+    <Bare center>
+      <Loader label={label} />
+    </Bare>
+  );
 }
 
 /** Só passa quem está logado. Anônimos vão para o login e voltam para onde estavam. */
@@ -25,14 +31,23 @@ export function RequireAuth() {
       return <Navigate to={`/login?error=${state.code}`} replace />;
     case 'error':
       return (
-        <div className="mx-auto max-w-md space-y-4 py-16">
-          <Alert tone="error" title="Não foi possível carregar sua conta">
-            {messageFor(state.code, state.message)}
-          </Alert>
-          <Button variant="primary" onClick={() => void refresh()}>
-            Tentar de novo
-          </Button>
-        </div>
+        <Bare center>
+          <div className="mx-auto w-full max-w-sm">
+            <StatusCard
+              icon={state.code === 'NETWORK_ERROR' ? 'wifi_off' : 'error'}
+              tone="error"
+              title="Não foi possível carregar sua conta"
+              headingLevel={1}
+              actions={
+                <Button variant="primary" onClick={() => void refresh()}>
+                  Tentar de novo
+                </Button>
+              }
+            >
+              <p>{messageFor(state.code, state.message)}</p>
+            </StatusCard>
+          </div>
+        </Bare>
       );
     case 'authenticated':
       return <Outlet />;
@@ -41,16 +56,19 @@ export function RequireAuth() {
 
 function Restricted({ text }: { text: string }) {
   return (
-    <div className="mx-auto max-w-md space-y-4 py-16">
-      <Alert tone="warning" title="Acesso restrito">
-        {text}
-      </Alert>
-      <Link
-        to="/"
-        className="inline-block rounded-lg bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200"
+    <div className="mx-auto max-w-sm py-16">
+      <StatusCard
+        icon="lock"
+        tone="warning"
+        title="Acesso restrito"
+        actions={
+          <Link to="/" className="btn btn-secondary">
+            Voltar para a página principal
+          </Link>
+        }
       >
-        Voltar para a página principal
-      </Link>
+        <p>{text}</p>
+      </StatusCard>
     </div>
   );
 }

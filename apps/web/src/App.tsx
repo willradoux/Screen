@@ -1,6 +1,9 @@
 import { lazy, Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
+import { Backdrop } from './components/Backdrop';
+import { Intro } from './components/Intro';
 import { Layout } from './components/Layout';
+import { StatusCard } from './components/StatusCard';
 import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff } from './components/guards';
 import { HomePage } from './pages/HomePage';
 import { FeaturesPage } from './pages/FeaturesPage';
@@ -35,47 +38,59 @@ const AuditPage = lazy(() =>
 
 function NotFound() {
   return (
-    <div className="mx-auto max-w-md space-y-3 py-16 text-center">
-      <h1 className="text-2xl font-bold text-zinc-50">Página não encontrada</h1>
-      <Link to="/" className="text-brand-300 underline">
-        Voltar para as salas
-      </Link>
+    <div className="mx-auto max-w-sm py-16">
+      <StatusCard
+        icon="info"
+        title="Página não encontrada"
+        headingLevel={1}
+        actions={
+          <Link to="/" className="btn btn-primary">
+            Voltar para as salas
+          </Link>
+        }
+      >
+        <p>O endereço pode ter mudado ou estar errado.</p>
+      </StatusCard>
     </div>
   );
 }
 
 /**
- * Rotas do Screem. `/r/:roomId` é o link que o bot manda no Discord e não pode mudar
+ * Rotas do Screen. `/r/:roomId` é o link que o bot manda no Discord e não pode mudar
  * (docs/frontend/README.md).
  */
 export function App() {
   return (
-    <Suspense fallback={<FullPageSpinner />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        {/* Pública: apresenta o Screem e ensina a usar, sem exigir login. */}
-        <Route path="/features" element={<FeaturesPage />} />
-        <Route element={<RequireAuth />}>
-          <Route element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="reunioes" element={<MeetingsPage />} />
-            <Route path="preferencias" element={<PreferencesPage />} />
-            <Route path="r/:roomId" element={<RoomPage />} />
-            <Route element={<RequireStaff />}>
-              <Route path="admin" element={<AdminHomePage />} />
+    <>
+      <Backdrop />
+      <Intro />
+      <Suspense fallback={<FullPageSpinner />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          {/* Pública: apresenta o Screen e ensina a usar, sem exigir login. */}
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route element={<RequireAuth />}>
+            <Route element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="reunioes" element={<MeetingsPage />} />
+              <Route path="preferencias" element={<PreferencesPage />} />
+              <Route path="r/:roomId" element={<RoomPage />} />
+              <Route element={<RequireStaff />}>
+                <Route path="admin" element={<AdminHomePage />} />
+              </Route>
+              <Route element={<RequireAdmin />}>
+                <Route path="admin/reunioes" element={<AdminMeetingsPage />} />
+                <Route path="admin/pessoas" element={<PeoplePage />} />
+                <Route path="admin/estatisticas" element={<StatsPage />} />
+                <Route path="admin/gravacoes" element={<RecordingsPage />} />
+                <Route path="admin/config" element={<SettingsPage />} />
+                <Route path="admin/auditoria" element={<AuditPage />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
             </Route>
-            <Route element={<RequireAdmin />}>
-              <Route path="admin/reunioes" element={<AdminMeetingsPage />} />
-              <Route path="admin/pessoas" element={<PeoplePage />} />
-              <Route path="admin/estatisticas" element={<StatsPage />} />
-              <Route path="admin/gravacoes" element={<RecordingsPage />} />
-              <Route path="admin/config" element={<SettingsPage />} />
-              <Route path="admin/auditoria" element={<AuditPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
           </Route>
-        </Route>
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </>
   );
 }

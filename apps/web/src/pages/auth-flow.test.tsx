@@ -87,15 +87,17 @@ describe('RequireAdmin e menu', () => {
     mockMe(makeUser({ role: 'MOD' }));
     renderRoutes('/admin/config');
     expect(await screen.findByText(/Acesso restrito/i)).toBeInTheDocument();
-    expect(screen.getByText('Moderador')).toBeInTheDocument(); // selo do papel no cabeçalho
+    await userEvent.click(await screen.findByRole('button', { name: /sua conta/i }));
+    expect(await screen.findByText('Moderador')).toBeInTheDocument(); // papel na folha da conta
   });
 
   it('admin vê os links e a página', async () => {
     mockMe(makeUser({ role: 'ADMIN' }));
     renderRoutes('/admin/config');
     expect(await screen.findByText('conteúdo de admin')).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /sua conta/i }));
     for (const name of [/gerenciar reuniões/i, /configurações/i, /auditoria/i]) {
-      expect(screen.getAllByRole('link', { name })).not.toHaveLength(0);
+      expect(await screen.findByRole('link', { name })).toBeInTheDocument();
     }
   });
 });
@@ -105,6 +107,7 @@ describe('Layout: sair', () => {
     mockMe(makeUser());
     const logout = vi.spyOn(api.auth, 'logout').mockResolvedValue(undefined);
     renderRoutes('/');
+    await userEvent.click(await screen.findByRole('button', { name: /sua conta/i }));
     await userEvent.click(await screen.findByRole('button', { name: /sair/i }));
     expect(logout).toHaveBeenCalledOnce();
     expect(await screen.findByRole('link', { name: /entrar com discord/i })).toBeInTheDocument();
@@ -114,6 +117,7 @@ describe('Layout: sair', () => {
     mockMe(makeUser());
     vi.spyOn(api.auth, 'logout').mockRejectedValue(apiError(0, 'NETWORK_ERROR'));
     renderRoutes('/');
+    await userEvent.click(await screen.findByRole('button', { name: /sua conta/i }));
     await userEvent.click(await screen.findByRole('button', { name: /sair/i }));
     expect(await screen.findByRole('link', { name: /entrar com discord/i })).toBeInTheDocument();
   });

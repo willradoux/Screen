@@ -48,22 +48,32 @@ describe('Sheet (folhas de ajustes)', () => {
 });
 
 describe('tema', () => {
-  it('o padrão é o claro, mesmo se o sistema estiver no escuro', () => {
+  it('o padrão é o Screen (cores do logo), mesmo se o sistema estiver no escuro', () => {
     localStorage.clear();
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
-    expect(readTheme()).toBe('light');
+    expect(readTheme()).toBe('screem');
     vi.unstubAllGlobals();
   });
 
-  it('escolher o escuro nas preferências vale e fica salvo', async () => {
+  it('fundos que deixaram de existir voltam ao padrão', () => {
+    for (const old of ['dark', 'light', 'nuvens', 'noite']) {
+      localStorage.setItem('screem-theme', old);
+      expect(readTheme()).toBe('screem');
+    }
+    localStorage.clear();
+  });
+
+  it('escolher a Acelera UI nas preferências vale e fica salvo', async () => {
     localStorage.clear();
     render(<PreferencesPage />);
-    expect(screen.getByRole('radio', { name: /Claro/ })).toHaveAttribute('aria-checked', 'true');
-    await userEvent.click(screen.getByRole('radio', { name: /Escuro/ }));
-    expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(readTheme()).toBe('dark');
-    await userEvent.click(screen.getByRole('radio', { name: /Claro/ }));
-    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(screen.getByRole('radio', { name: /Screen/ })).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(screen.getByRole('radio', { name: /Acelera/ }));
+    expect(document.documentElement.dataset.theme).toBe('acelera');
+    expect(readTheme()).toBe('acelera');
+    await userEvent.click(screen.getByRole('radio', { name: /Brasil/ }));
+    expect(document.documentElement.dataset.theme).toBe('brasil');
+    await userEvent.click(screen.getByRole('radio', { name: /Screen/ }));
+    expect(document.documentElement.dataset.theme).toBe('screem');
   });
 });
 

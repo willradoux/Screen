@@ -122,10 +122,7 @@ export function ParticipantsPanel({
   }
 
   return (
-    <aside
-      aria-label="Pessoas na sala"
-      className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4"
-    >
+    <section aria-label="Pessoas na sala" className="space-y-4">
       <header className="flex items-center justify-between">
         <h2 className="font-semibold text-zinc-100">
           Pessoas {people ? `(${people.length})` : ''}
@@ -136,7 +133,7 @@ export function ParticipantsPanel({
       </header>
 
       {staff && (
-        <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-4">
+        <div className="flex flex-wrap gap-2 pb-4">
           <Button
             size="sm"
             variant={lectureMode ? 'primary' : 'secondary'}
@@ -222,7 +219,7 @@ export function ParticipantsPanel({
           const mayModerate = staff && canModerateTarget(me, { id: p.userId, role: p.role });
           const isPending = pending?.userId === p.userId;
           return (
-            <li key={p.userId} className="rounded-lg bg-zinc-950/60 p-2" data-testid="person">
+            <li key={p.userId} className="rounded-xl bg-white/5 p-2" data-testid="person">
               <div className="flex items-center gap-2">
                 <Avatar name={p.displayName} url={p.avatarUrl} size="sm" />
                 <span className="min-w-0 flex-1 truncate text-sm text-zinc-100">
@@ -334,7 +331,7 @@ export function ParticipantsPanel({
                       <select
                         value={banMinutes}
                         onChange={(e) => setBanMinutes(Number(e.target.value))}
-                        className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1"
+                        className="rounded bg-zinc-950 px-2 py-1"
                       >
                         {options.map((o) => (
                           <option key={o.minutes} value={o.minutes}>
@@ -384,6 +381,6 @@ export function ParticipantsPanel({
           Moderadores não podem moderar outros moderadores ou admins.
         </p>
       )}
-    </aside>
+    </section>
   );
 }

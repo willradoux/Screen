@@ -102,7 +102,7 @@ export function RecordingControl({
             id="rec-mode"
             value={mode}
             onChange={(e) => setMode(e.target.value as RecordingMode)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-sm text-zinc-100"
+            className="w-full rounded-lg bg-zinc-950 px-2 py-1.5 text-sm text-zinc-100"
           >
             {MODES.map((m) => (
               <option key={m.value} value={m.value}>
@@ -116,7 +116,7 @@ export function RecordingControl({
               aria-label="Pessoa a gravar"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-sm text-zinc-100"
+              className="w-full rounded-lg bg-zinc-950 px-2 py-1.5 text-sm text-zinc-100"
             >
               <option value="">Escolha a pessoa…</option>
               {people.map((p) => (

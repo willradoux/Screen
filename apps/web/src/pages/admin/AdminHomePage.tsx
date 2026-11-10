@@ -8,6 +8,7 @@ import {
   Spinner,
   StatusDot,
 } from '../../components/ui';
+import { StatTile } from '../../components/Widget';
 import { useAuth } from '../../auth/AuthProvider';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -31,7 +32,7 @@ export function setupChecklist(s: Settings): { done: boolean; text: string }[] {
 function LiveRow({ room }: { room: Room }) {
   const active = room.mediaState === 'ACTIVE';
   return (
-    <li className="flex items-center gap-4 py-3">
+    <li className="surface flex items-center gap-4 px-4 py-3">
       <StatusDot tone={active ? 'live' : 'idle'} />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-zinc-50">{room.title}</p>
@@ -40,10 +41,7 @@ function LiveRow({ room }: { room: Room }) {
           {room.participantCount === 1 ? 'pessoa conectada' : 'pessoas conectadas'}
         </p>
       </div>
-      <Link
-        to={`/r/${room.id}`}
-        className="text-sm font-medium text-brand-300 underline underline-offset-2"
-      >
+      <Link to={`/r/${room.id}`} className="btn btn-secondary btn-sm">
         Abrir
       </Link>
     </li>
@@ -52,7 +50,7 @@ function LiveRow({ room }: { room: Room }) {
 
 function MeetingRow({ meeting }: { meeting: Meeting }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
+    <li className="surface flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
       <StatusDot tone={meeting.status === 'OPEN' ? 'open' : 'scheduled'} />
       <p className="min-w-0 flex-1 truncate font-medium text-zinc-50">{meeting.title}</p>
       {meeting.announced ? (
@@ -64,6 +62,34 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
         {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
       </span>
     </li>
+  );
+}
+
+/**
+ * Três números no topo, a partir do que a página já buscou (sem pedir nada a mais): lives no ar,
+ * pessoas conectadas e a próxima reunião.
+ */
+function Summary({ lives, meetings }: { lives: Room[]; meetings: Meeting[] }) {
+  const people = lives.reduce((sum, room) => sum + room.participantCount, 0);
+  const next = meetings
+    .filter((m) => m.status === 'SCHEDULED' && m.startsAt)
+    .sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''))[0];
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <StatTile icon="videocam" label="Lives no ar" value={String(lives.length)} />
+      <StatTile
+        icon="group"
+        label="Pessoas conectadas"
+        value={String(people)}
+        hint="nas lives abertas"
+      />
+      <StatTile
+        icon="calendar_month"
+        label="Próxima reunião"
+        value={next ? formatDateTime(next.startsAt) : '—'}
+        hint={next ? next.title : 'Nenhuma agendada'}
+      />
+    </div>
   );
 }
 
@@ -106,13 +132,19 @@ export function AdminHomePage() {
             </Alert>
           )}
 
-          <Section title="Sessões de live agora">
+          <Summary lives={state.data.lives} meetings={state.data.meetings} />
+
+          <Section
+            title="Sessões de live agora"
+            count={state.data.lives.length}
+            description="Lives abertas e quantas pessoas estão em cada uma."
+          >
             {state.data.lives.length === 0 ? (
               <EmptyState title="Nenhuma live aberta.">
                 Elas abrem sozinhas quando alguém entra numa call habilitada.
               </EmptyState>
             ) : (
-              <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+              <ul className="stagger space-y-2">
                 {state.data.lives.map((r) => (
                   <LiveRow key={r.id} room={r} />
                 ))}
@@ -122,11 +154,13 @@ export function AdminHomePage() {
 
           <Section
             title="Reuniões"
+            count={state.data.meetings.length}
+            description="Abertas e agendadas; o selo diz se o aviso já foi para o Discord."
             action={
               admin ? (
                 <Link
                   to="/admin/reunioes"
-                  className="text-sm font-medium text-brand-300 underline underline-offset-2"
+                  className="inline-flex min-h-6 items-center text-sm font-medium text-brand-300 underline underline-offset-2"
                 >
                   Gerenciar
                 </Link>
@@ -136,7 +170,7 @@ export function AdminHomePage() {
             {state.data.meetings.length === 0 ? (
               <EmptyState title="Nenhuma reunião aberta ou agendada." />
             ) : (
-              <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
+              <ul className="stagger space-y-2">
                 {state.data.meetings.map((m) => (
                   <MeetingRow key={m.id} meeting={m} />
                 ))}
