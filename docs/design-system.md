@@ -1,74 +1,130 @@
-# Design system do Screem
+# Design system do Screen
 
-Direção, tokens e regras de uso. Código: `apps/web/src/index.css` (tokens e peças), `lib/theme.ts` (modos e fundos), `components/Backdrop.tsx` (fundo), `components/Layout.tsx` (antes da chamada), `pages/RoomPage.tsx` (moldura da chamada), `components/Intro.tsx` (abertura), `lib/motion.ts` (mola), `components/ui.tsx` (componentes base).
+Direção, tokens e regras de uso da interface. Só a UI: páginas, funcionalidades e regras de negócio são as do backend e da [documentação do frontend](frontend/README.md).
+
+**Onde está no código** (`apps/web/src/`):
+
+| O quê | Arquivo |
+|---|---|
+| Tokens, temas, peças (hub, sala, widgets, palco) | `index.css` |
+| Fundos, modos e animações (preferências) | `lib/theme.ts` e `public/theme-init.js` (aplica antes de pintar a tela) |
+| Fundo em degradê animado | `components/Backdrop.tsx` + `lib/gradient.ts` |
+| Componentes base (botão, seção, título, avisos, campos) | `components/ui.tsx` |
+| Widgets (capa, avatares, números) | `components/Widget.tsx`, `components/RoomCard.tsx`, `components/CallsSection.tsx` |
+| Hub (menu lateral + painel) | `components/Layout.tsx`; login e guia em `components/SplitPanels.tsx` |
+| Moldura da chamada | `pages/RoomPage.tsx`, `room/Controls.tsx`, `room/Stage.tsx` |
+| Logo e marca | `components/ScreenLogo.tsx`, `components/AceleraMark.tsx`, `components/Wordmark.tsx` |
+| Abertura e carregamento | `components/Intro.tsx`, `components/Creature.tsx`, `components/Loader.tsx`, `components/StatusCard.tsx` |
+| Mola e movimento | `lib/motion.ts` |
+| Sons | `lib/sounds.ts` |
 
 ## Direção
 
-**UI limpa: componentes pretos sobre um fundo escolhido pela pessoa. Sem borda em componente.**
+**UI limpa e minimalista: componentes pretos sobre um fundo escolhido pela pessoa. Sem borda e sem brilho.**
 
-- **Antes da chamada (hub):** a estrutura do Flazo — menu lateral com Salas, Reuniões, Guia e Preferências, o grupo "Administração" para quem tem acesso e, embaixo, a pessoa ("Sua conta"), o tema e Sair — com a nossa UI: o menu é uma peça preta flutuando sobre o fundo e o conteúdo ocupa o resto da tela (até 68rem). No celular o menu vira uma gaveta aberta pelo topo. Título da página direto no fundo, na cor do tema (`.ink`); todo o resto em peças pretas.
-- **Na chamada** (`/r/:id`, conectado): moldura preta como um monitor; a tela de dentro é transparente com desfoque, mostrando o fundo. O topo do site some (`useImmersive`).
-  - **Voz embaixo:** uma pílula preta flutuando sobre a tela com microfone, câmera e tela (desligados ficam em vermelho suave), "Mais opções" e sair. Some com o mouse parado por 3 s e volta ao mexer (não some com ponteiro ou foco nela, painel aberto ou para quem usa teclado).
-  - **Opções à direita:** o botão do canto inferior direito abre uma faixa estreita na borda direita da moldura (pessoas, pedir a palavra, layout, vídeo, efeitos e você embaixo), que desliza e encolhe a tela. Dicas com o nome à esquerda de cada ícone. Botão ligado fica na cor do tema.
-  - **Painel de pessoas:** no computador vira uma coluna preta da moldura entre a tela e a faixa, e a tela encolhe; no celular cobre a tela. (Não há chat na sala.)
-  - **Palco:** Automático (destaque com tela compartilhada, mosaico sem), Mosaico e Destaque, escolhidos numa janela com desenho e nome (`room/LayoutPicker.tsx`). Cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé) e cresce até onde couber, sem faixas pretas (`--ar` + container queries).
-- **Sem borda:** separação por fundo, espaço e sombra. Listas são peças separadas por espaço.
-- **Cor com função:** vermelho = ao vivo/perigo; âmbar = espera; verde = aberto; a cor do tema = detalhe (foco, item ativo, agendado).
+- **Preto de verdade:** painéis em `#000`; peças dentro deles (cards, linhas) um tom acima (`--panel-nested`, branco a 5,5%). Nada brilha: sem glow, sem sombra colorida.
+- **Sem borda:** separação por fundo, espaço e proximidade.
+- **Cor com função:** vermelho = ao vivo/perigo; âmbar = espera; verde = aberto/divulgado; a cor do tema = detalhe (foco, item ativo, ícones dos números). Estado nunca só por cor: sempre com texto ou ícone.
+- **Negrito onde ajuda:** títulos de página, de seção e de card; números principais.
+
+## Antes da chamada (hub)
+
+Estrutura do Flazo com a nossa UI: duas peças pretas sobre o fundo do tema.
+
+- **Menu lateral:** Salas, Reuniões, Guia, Preferências; o grupo "Administração" só para quem tem acesso (Painel para moderação e admin; o resto só admin); embaixo, "Sua conta", tema e Sair. No celular vira uma gaveta aberta pelo topo.
+- **Painel de conteúdo:** ocupa o resto da tela; o conteúdo vai até 80rem.
+- **Login e Guia:** as mesmas duas peças (`SplitPanels`).
+
+### Organização das páginas
+
+- **Título da página:** nome em negrito e resumo à esquerda; a ação (ex.: Atualizar) à direita, na mesma linha. No celular a ação desce.
+- **Seções** (`Section`): título em negrito com a contagem e uma linha dizendo para que serve (`count`, `description`). O cabeçalho fica alinhado à borda dos cards. A seção é nomeada pelo título para leitores de tela.
+- **Grade de cards** (`.widget-grid`): colunas da mesma largura começando na mesma linha, então cards de seções diferentes se alinham.
+- **Salas:** "Ao vivo agora", "Calls agora" e "Agendadas" lado a lado numa fileira (cada uma com a largura dos seus cards, até 4 por linha); o bloco inteiro, título junto, fica no meio. Os cards de uma fileira têm a mesma altura. Sem espaço, a seção desce; no celular, uma embaixo da outra.
+- **Reuniões:** a próxima em destaque, grande, à esquerda (capa, título, contagem regressiva em blocos, data, lembretes, botão); a lista à direita. Empilha em telas estreitas.
+- **Sem repetição:** a call do Discord que já aparece como sala não ganha um segundo card (a sala já mostra quem está na call).
+- **Uma ação principal por card:** só "Entrar" (sala ao vivo) e "Enviar aviso" (reunião não divulgada) são botões brancos. Destrutivas (Cancelar, Encerrar) são texto vermelho; a confirmação é que usa o botão vermelho.
+
+### Widgets
+
+Card com capa grande (o degradê do tema com granulado e um esmaecido embaixo), selos na capa (estado e tipo), avatares de quem está na call saindo da capa, título, números com ícone e o botão em pílula. Tudo centralizado dentro do card. Números, aviso e botão ficam presos embaixo (`mt-auto`), então se alinham entre cards de alturas diferentes.
+
+### Estados
+
+- **Carregando:** o "bichinho" (o logo do Screen piscando a barra, olhando para os lados com o "|<" e dando um pulinho) e o texto do que está acontecendo (`Loader`).
+- **Cartões de estado** (`StatusCard`): tons `neutral`, `info`, `wait` (com o bichinho), `warning` e `error` (anunciado como alerta). Usados em sala bloqueada, encerrada, removido, erro e página não encontrada.
+- **Avisos (toasts):** no canto, sem repetir o mesmo aviso, no máximo 4.
+
+## Na chamada
+
+`/r/:id` conectado: o menu e o topo do site somem (`useImmersive`).
+
+- **Moldura:** preta como um monitor; a tela de dentro é transparente com desfoque, mostrando o fundo.
+- **Pílula de voz:** flutua embaixo com microfone, câmera e tela (cada um com a setinha para escolher o aparelho, como no Meet, e o "!" amarelo quando o navegador bloqueou a permissão) e sair. Some com o mouse parado por 3 s e volta ao mexer (não some com ponteiro ou foco nela, com painel aberto ou para quem usa teclado).
+- **Mais opções:** o botão do canto inferior direito abre uma faixa na borda direita (pessoas, pedir a palavra, layout, vídeo, tema, efeitos e você embaixo).
+- **Pessoas:** no computador, uma coluna preta entre a tela e a faixa; no celular, cobre a tela. Começa fechada. Não há chat na sala.
+- **Palco** (`room/Stage.tsx`):
+  - Layouts Automático (destaque com tela compartilhada, mosaico sem), Mosaico e Destaque, escolhidos numa janela com desenho e nome (`room/LayoutPicker.tsx`).
+  - Cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé) e cresce até onde couber, sem faixas pretas (`--ar` + container queries).
+  - **Fixar:** botão no canto de cada vídeo (aparece no hover/foco; fixado, fica à vista). Fixado vira destaque: a tela da pessoa, se compartilha, ou a câmera dela.
+  - **Palco ligado** (modo palestra): só quem está no palco aparece; a plateia vira uma pílula com o número. Palco vazio mostra o aviso e, para admin em reunião, "Subir ao palco".
+  - **Sala cheia de gente:** acima de 6 pessoas, quem só ouve (sem câmera, tela ou voz) vira o número "Só ouvindo".
+- **"Como ver o vídeo"** (`room/VideoSettings.tsx`): formato, encaixe e posição, cada opção com desenho.
 
 ## Aparência: modo × fundo
 
-Duas escolhas independentes, em Preferências (e o fundo também no botão de tema).
+Escolhas independentes, em Preferências e no botão de tema (que abre uma janela, também dentro da chamada). Ficam no navegador.
 
-| Modo (`data-mode`) | Componentes |
+| Preferência | Valores | Padrão | Chave |
+|---|---|---|---|
+| Modo (`data-mode`) | Escuro, Claro | Escuro | `screem-mode` |
+| Fundo (`data-theme`) | ver abaixo | Screen | `screem-theme` |
+| Animações (`data-motion`) | ligadas, desligadas | ligadas | `screem-motion` |
+| Sons | ligados, desligados | ligados | `screem-sounds` |
+| Layout do palco | Automático, Mosaico, Destaque | Automático | `screem-stage-layout` |
+| Como ver o vídeo | formato, encaixe, posição | — | `screem-video-prefs` |
+
+| Fundo | Cores |
 |---|---|
-| Escuro (padrão) | Pretos (`rgb(6 6 6 / .9)` com desfoque), texto branco |
-| Claro | Brancos, texto preto (escala `zinc` e `white`/`black` invertidas) |
+| Screen | As do logo: pêssego e rosa (`#ffaa7f`, `#ff4f93`) |
+| Acelera | A Acelera UI: menta e turquesa (`#00c8b2`, `#00e0a4`) |
+| Brasil | Verde, amarelo e azul, suaves |
+| Portugal | Verde e vermelho sobre creme |
+| Alemanha | Dourado e vermelho |
+| Preto e branco | Só tons de cinza |
 
-A chamada é sempre escura.
+**Criar um fundo:** adicione em `THEMES` (`lib/theme.ts`) e em `public/theme-init.js`, e defina `--bg-1..3`, `--ink`, `--ink-soft` e `--brand-*` em `index.css` (`:root[data-theme='nome']`).
 
-| Fundo (`data-theme`) | Tipo | Cores |
-|---|---|---|
-| Screem (padrão) | Degradê animado | As do logo: `#fde6dc`, `#ffaa7f`, `#ff4f93` |
-| Acelera | Degradê animado | Acelera UI: `#dcefe8`, `#00c8b2`, `#00e0a4` |
-| Brasil | Degradê animado | `#f6ecc4`, `#4fae7a`, `#2f6db5` |
-| Portugal | Degradê animado | `#f3e6cf`, `#5f9a6f`, `#c4473f` |
-| Alemanha | Degradê animado | `#f5e6bd`, `#e2b04a`, `#b8322f` |
-
-**Criar um fundo:** adicione em `THEMES` (`lib/theme.ts`) e em `public/theme-init.js`, e defina `--bg-1..3`, `--ink`, `--ink-soft` e `--brand-*` em `index.css` (`:root[data-theme='nome']`). Para foto, basta `photo: '/backgrounds/arquivo.webp'`.
-
-O degradê é o shader do AWS Hub: 40% da resolução, 30 fps, para com a aba escondida e fica parado com movimento reduzido. O granulado vai por cima (`--grain-opacity` por tema).
+O degradê é o shader do AWS Hub: 40% da resolução, 30 fps, para com a aba escondida e fica parado com movimento reduzido ou animações desligadas. O granulado vai por cima.
 
 ## Marca
 
-Screem (badge do logo + "screem") e a marca da comunidade em SVG (`components/AceleraMark.tsx`): "ACELERA" no degradê turquesa→azul com as linhas de velocidade e "DEV" na cor do texto. Aparece na abertura e no login.
+- **Logo do Screen** (`ScreenLogo`): SVG no formato da arte, retângulo de cantos bem redondos (302 × 238, raio 62) com o "|<" vazado (mostra o fundo). Usa a cor do texto, então fica preto sobre o fundo e claro dentro do painel. As peças têm classes para animar (`logo-glyph`, `logo-eye`).
+- **Acelera DEV** (`AceleraMark`): o nome vetorizado (Geist Italic 800): "ACELERA" no degradê turquesa→azul com as linhas de velocidade e "DEV" na cor do texto. Layout em linha ou empilhado.
+- O nome visível é **Screen**.
 
 ## Tipografia e forma
 
-Inter Tight em tudo. Título de página `2xl`, texto `sm`. Componentes com raio 22 px, botões em pílula, alvos de toque de 40 px ou mais.
+Geist (variável) em tudo. Título de página `2xl`/`3xl` em negrito; título de seção `lg` em negrito; texto `sm`; metadados `xs`. Componentes com cantos grandes (cards 26 px), botões em pílula.
 
 ## Movimento
 
-- **Abertura** (uma vez por sessão): o badge salta no preto, o preto fecha em volta dele e some. Pula com clique ou tecla.
-- **Entrar na chamada:** a tela "acende" como um monitor.
-- **Mola exata** (`lib/motion.ts`), entradas `.rise`/`.stagger`, botões encolhem ao toque. Tudo desliga com movimento reduzido.
+- **Abertura** (a cada carregamento da página, inclusive reload; trocar de tela dentro do app não toca): o logo salta, pisca, olha para os lados, pisca de novo, estica virando uma cápsula e o "Acelera DEV" aparece dentro; ~3,8 s. Pula com clique ou tecla.
+- **Mola exata** (`lib/motion.ts`), entradas `.rise`/`.stagger`, troca de página suave, botões encolhem ao toque.
+- Animações desligadas ou `prefers-reduced-motion`: sem abertura, sem deriva do fundo, sem transições de entrada.
 
-## Acessibilidade
+## Sons
 
-- Foco sem borda: só para quem usa teclado, um brilho suave na cor do tema; campos de texto apenas clareiam o fundo.
-- Modo claro: vermelho, âmbar, verde e a cor do tema escurecidos para 4,5:1 sobre branco. A chamada mantém as cores do escuro.
-- Texto direto no fundo (`.ink-soft`) com 80% de opacidade; `prefers-contrast: more` deixa tudo opaco; `forced-colors` ganha bordas reais.
-- Controles da chamada com nome completo para leitores de tela, dicas visíveis no mouse e no teclado, alvos de 44 px.
-- `prefers-reduced-motion` desliga abertura, transições, deriva do fundo e animações.
+Sintetizados (Web Audio, `lib/sounds.ts`): você entrou, alguém entrou, alguém saiu, aviso e erro. Um som só para várias pessoas juntas; nunca o único sinal (sempre há texto ou mudança na tela). Desligáveis em Preferências.
 
-## A fazer
+## Acessibilidade (WCAG 2.2 AA)
 
-Telas longas do painel, ajuste fino da sala com vídeo real e várias pessoas, teste com leitor de tela.
+- **Foco visível:** contorno de 2 px na cor do foco em todo controle (`:focus-visible`).
+- **Contraste:** texto ≥ 4,5:1; texto branco sobre vermelho com `#c81e1e` (botão) e `#c8352a` (selo "Ao vivo"). Modo claro com as cores de estado escurecidas.
+- **Alvos:** ≥ 24 px (caixas de seleção de 18 px dentro de rótulos de 32 px); controles da chamada com 44 px; 40 px em telas de toque.
+- **Estrutura:** um `h1` por página, headings sem saltos, landmarks (`main` com "Pular para o conteúdo"), seções nomeadas.
+- **Nomes:** todo botão de ícone com nome; controles da chamada com o nome completo e dica visível no mouse e no teclado.
+- **Gráfico de Estatísticas:** os mesmos números numa tabela para leitores de tela.
+- `prefers-contrast: more` deixa tudo opaco; `forced-colors` (alto contraste do Windows) ganha bordas reais.
 
-## Organização das páginas (hub)
-
-- **Título da página:** nome e resumo à esquerda, ação (ex.: Atualizar) à direita, na mesma linha da borda do conteúdo.
-- **Seções:** título em negrito com a contagem e uma linha dizendo para que serve (`Section` com `count` e `description`). Cada seção é nomeada pelo próprio título para leitores de tela.
-- **Grade de cards:** uma grade só (`.widget-grid`), colunas da mesma largura começando na mesma linha; em Salas o bloco fica centralizado com a largura da seção com mais cards.
-- **Uma ação principal por card:** só "Entrar" (sala ao vivo) e "Enviar aviso" (reunião não divulgada) são botões brancos; ações destrutivas (Cancelar, Encerrar) são texto vermelho, e a confirmação é que usa o botão vermelho.
-- **Sem repetição:** a call do Discord que já aparece como sala não ganha um segundo card.
-- **Acessibilidade conferida:** texto branco sobre vermelho ≥ 4,5:1 (`#c81e1e`, `#c8352a`), alvos ≥ 24 px (caixas de seleção 18 px dentro de rótulos de 32 px), headings sem saltos, gráfico de Estatísticas com tabela para leitores de tela.
+**Conferido:** checagem automática no navegador (nomes, alt, headings, ids, contraste, alvos) nas páginas do hub, sem falhas. **Falta:** axe e teclado em testes automáticos (Playwright) e teste com leitor de tela (NVDA).

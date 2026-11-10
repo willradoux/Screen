@@ -2,6 +2,8 @@
 
 Stack: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, `livekit-client` e `socket.io-client`. Hospedado na VPS: build estático servido por nginx (`apps/web/Dockerfile`).
 
+A aparência (temas, componentes, hub, moldura da chamada, abertura, sons, acessibilidade) está em [design-system.md](../design-system.md).
+
 **Este frontend é descartável.** Tudo que ele sabe vem do contrato do backend ([backend/](../backend/README.md)); nada de regra de negócio mora aqui. A interface só esconde ou desabilita o que o servidor recusaria, e o servidor confere tudo de novo.
 
 ## Rodando
@@ -25,7 +27,8 @@ Em desenvolvimento, `localhost:5173` e `localhost:3000` são o mesmo *site* para
 
 ```
 apps/web/src/
-  main.tsx, App.tsx          entrada e rotas (sala e admin carregam sob demanda)
+  main.tsx, App.tsx          entrada, rotas (sala e admin sob demanda), fundo e abertura
+  index.css                  tokens, temas e todas as peças visuais
   auth/AuthProvider.tsx      quem está logado (GET /auth/me)
   lib/
     api.ts                   cliente da API: um método por rota, erros como ApiError
@@ -33,18 +36,35 @@ apps/web/src/
     format.ts                datas, contagens, redirect seguro
     moderation-rules.ts      hierarquia espelhada do backend (só para a interface)
     media.ts                 erros de câmera/microfone/tela em texto útil
+    bigRoom.ts               perfis de qualidade e vídeo assinado em salas grandes
+    theme.ts                 fundos, modo claro/escuro e animações (preferências)
+    sounds.ts                sons de entrada, saída e avisos (Web Audio)
+    motion.ts, gradient.ts   mola exata e o degradê animado do fundo
+    videoPrefs.ts            "como ver o vídeo" (formato, encaixe, posição)
+    useAsync.ts, useCooldown.ts  carregar dados; trava curta no botão Atualizar
     types.ts, config.ts
-  components/                Layout, guardas de rota, UI básica, avisos (toasts)
+  components/
+    Layout.tsx               hub: menu lateral + painel (gaveta no celular)
+    ui.tsx                   botão, título de página, seção, avisos, campos
+    Widget.tsx, RoomCard.tsx, CallsSection.tsx   cards de salas, calls e números
+    StatusCard.tsx, Loader.tsx, Creature.tsx     estados e carregamento
+    ScreenLogo.tsx, AceleraMark.tsx, Wordmark.tsx  marca em SVG
+    Intro.tsx, Backdrop.tsx  abertura e fundo
+    Sheet.tsx, ThemeToggle.tsx, Toasts.tsx, guards.tsx, SplitPanels.tsx
   room/
     sessionReducer.ts        máquina de estados da entrada na sala (pura)
     useRoomSession.ts        orquestra API + LiveKit + Socket.IO
     useParticipants.ts       pessoas e faixas do LiveKit
-    Stage.tsx                grade de vídeos, destaque de tela, áudio remoto
-    Controls.tsx             microfone, câmera, tela, sair
+    useAudienceSubscriptions.ts  plateia de sala grande assina um vídeo só
+    Stage.tsx                palco: mosaico/destaque, fixar, palco ligado, áudio remoto
+    Controls.tsx             pílula de voz (microfone, câmera, tela, sair) e faixa de opções
+    DeviceMenu.tsx           escolher microfone, saída de som e câmera; permissão
+    LayoutPicker.tsx, VideoSettings.tsx  janelas de layout e de como ver o vídeo
     ParticipantsPanel.tsx    lista de pessoas e moderação
-    Screens.tsx              telas de bloqueio, encerrada, removido, erro
+    Screens.tsx              telas de entrada, bloqueio, encerrada, removido, erro
+    useIdle.ts               esconde a pílula com o mouse parado
     publish-rules.ts         por que o botão está desabilitado
-  pages/                     Login, Salas, Reuniões, Sala, e admin/ (reuniões, config, auditoria)
+  pages/                     Login, Salas, Reuniões, Preferências, Guia, Sala e admin/
 ```
 
 ## Rotas
@@ -54,8 +74,14 @@ apps/web/src/
 | `/login` | todos | Botão "Entrar com Discord"; mostra `?error=` |
 | `/` | logado | Salas abertas e agendadas (`GET /rooms`) |
 | `/reunioes` | logado | Reuniões e a próxima com contagem regressiva |
+| `/preferencias` | logado | Modo, fundo, animações e sons (ficam no navegador) |
+| `/features` | todos | Guia: como funciona |
 | `/r/:roomId` | logado | **A sala.** É o link que o bot manda no Discord e **não pode mudar** |
+| `/admin` | MOD, ADMIN | Painel: números do momento, lives abertas, reuniões, o que falta configurar |
 | `/admin/reunioes` | ADMIN | Criar, agendar, reagendar, abrir, cancelar, encerrar, relatório |
+| `/admin/pessoas` | ADMIN | Quem acessa o painel sem depender de cargo no Discord |
+| `/admin/estatisticas` | ADMIN | Números e gráfico do período (7, 30 ou 90 dias) |
+| `/admin/gravacoes` | ADMIN | Baixar ou apagar as gravações das reuniões |
 | `/admin/config` | ADMIN | Canais, cargos e limites |
 | `/admin/auditoria` | ADMIN | Registros com filtros e "carregar mais" |
 
@@ -108,7 +134,8 @@ Depois de entrar:
 
 - `POST /rooms/:id/join` devolve `livekit.url` e `livekit.token`; o frontend conecta com as opções recomendadas ([livekit-webrtc.md](../backend/livekit-webrtc.md#qualidade-e-capacidade)): `adaptiveStream`, `dynacast`, simulcast, DTX e câmera em 720p. Tela: até 1080p/30 fps, com `contentHint: 'detail'` (legibilidade acima de fluidez).
 - Em seguida abre o Socket.IO, envia `room:subscribe` (e de novo a cada reconexão) e trata os eventos: `room:ended`, `moderation:action`, `voice:warning`/`voice:restored`, `room:updated`, `participant:updated`, `participant:joined`/`left`, `session:revoked`.
-- Quem compartilha tela ganha destaque (tela grande e pessoas numa faixa); sem compartilhamento, grade. Quem está falando ganha borda.
+- Palco: com tela compartilhada, destaque (tela grande e câmeras numa faixa); sem, mosaico. A pessoa pode trocar o layout e fixar qualquer câmera ou tela. Com o palco ligado (modo palestra) só aparece quem está no palco e a plateia vira um número; acima de 6 pessoas, quem só ouve vira o número "Só ouvindo". Detalhes visuais em [design-system.md](../design-system.md#na-chamada).
+- Sons ao entrar, quando alguém entra ou sai e em avisos (desligáveis em Preferências).
 - O áudio de todos e o áudio de tela tocam em elementos escondidos; são recriados só quando as faixas mudam.
 - Sair: derruba LiveKit e Socket.IO, chama `POST /rooms/:id/leave` (falha dele não trava) e volta para `/`.
 
