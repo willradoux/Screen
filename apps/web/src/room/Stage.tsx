@@ -191,11 +191,12 @@ function gridColumns(count: number): string {
   if (count <= 1) return 'grid-cols-1 max-w-3xl mx-auto';
   if (count <= 4) return 'grid-cols-1 sm:grid-cols-2';
   if (count <= 9) return 'grid-cols-2 lg:grid-cols-3';
-  return 'grid-cols-2 lg:grid-cols-4';
+  if (count <= 16) return 'grid-cols-2 lg:grid-cols-4';
+  return 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-5';
 }
 
 /** Acima disto, quem está só ouvindo (sem câmera, tela ou voz) deixa de ter um quadrado. */
-const CROWD = 24;
+const CROWD = 6;
 
 const isActive = (t: Tile) =>
   t.isLocal || t.isSpeaking || t.micOn || Boolean(t.cameraPub) || Boolean(t.screenPub);
