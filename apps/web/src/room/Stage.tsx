@@ -102,6 +102,25 @@ function PinButton({
   );
 }
 
+/**
+ * No toque não existe "passar o mouse": tocar no vídeo mostra o botão de fixar por 3 s.
+ * Devolve as props para o quadro (`data-reveal` e o toque).
+ */
+function useTouchReveal() {
+  const [reveal, setReveal] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  return {
+    'data-reveal': reveal || undefined,
+    onPointerUp: (e: React.PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      setReveal(true);
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setReveal(false), 3000);
+    },
+  };
+}
+
 interface TileExtras {
   pinned?: boolean;
   onPin?: (identity: string) => void;
@@ -118,8 +137,10 @@ function PersonTile({
   const prefs = useVideoPrefs();
   const [natural, setNatural] = useState<number | null>(null);
   const ratio = aspectRatioNumber(prefs.shape, tile.cameraPub ? natural : null);
+  const reveal = useTouchReveal();
   return (
     <figure
+      {...(onPin ? reveal : {})}
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
       data-size={size}
@@ -167,9 +188,11 @@ function PersonTile({
 
 function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
+  const reveal = useTouchReveal();
   if (!tile.screenPub) return null;
   return (
     <figure
+      {...(onPin ? reveal : {})}
       data-testid="screen-tile"
       style={fitStyle(natural ?? 16 / 9)}
       className="stage-tile stage-tile-screen"
@@ -379,6 +402,7 @@ export function Stage({
     <div
       className="stage-mosaic"
       data-layout="mosaic"
+      data-dense={all.length >= 3 || undefined}
       style={
         {
           '--cols': cols,

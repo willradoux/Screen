@@ -229,6 +229,22 @@
   --brand-600: #3a3a3a;
 }
 
+/* Preto: só escuro, sem cor. Fundo quase preto (um cinza bem escuro no alto, para os painéis
+   pretos ainda se destacarem), texto claro e o "ligado" dos botões em branco. */
+:root[data-theme='preto'] {
+  --bg-1: #262626;
+  --bg-3: #101010;
+  --bg-2: #000000;
+  --grain-opacity: 0.25;
+  --ink: #f5f5f5;
+  --ink-soft: rgb(245 245 245 / 0.72);
+  --brand-200: #f5f5f5;
+  --brand-300: #ffffff;
+  --brand-400: #e6e6e6;
+  --brand-500: #bdbdbd;
+  --brand-600: #8a8a8a;
+}
+
 :root {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
@@ -2633,12 +2649,12 @@ html[data-intro='play'] .page-enter {
   right: 8px;
   z-index: 2;
   display: inline-flex;
-  height: 32px;
-  width: 32px;
+  height: 30px;
+  width: 30px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.6);
+  background: rgb(0 0 0 / 0.55);
   color: #fff;
   opacity: 0;
   -webkit-backdrop-filter: blur(8px);
@@ -2660,12 +2676,6 @@ html[data-intro='play'] .page-enter {
 
 .stage-pin[data-pinned] {
   background: var(--brand-500, #000);
-}
-
-@media (hover: none) {
-  .stage-pin {
-    opacity: 1;
-  }
 }
 
 /* Quantas pessoas só ouvem / estão na plateia: pílula no canto de cima do palco. */
@@ -2705,4 +2715,113 @@ html[data-intro='play'] .page-enter {
 
 .stage-empty .stage-audience {
   position: static;
+}
+
+/* Desenho do formato do quadro (janela "Como ver o vídeo"): fica dentro do próprio desenho. */
+.video-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-shape {
+  position: relative;
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--bg-1), var(--bg-3) 60%, var(--bg-2));
+  opacity: 0.85;
+}
+
+/* Miniaturas da faixa: todas do mesmo tamanho; o vídeo preenche (recorta) o quadro. */
+.stage-thumb {
+  width: calc(clamp(72px, 18cqh, 132px) * 1.5);
+}
+
+.stage-thumb .stage-tile {
+  aspect-ratio: auto;
+  height: 100%;
+  width: 100%;
+  max-height: none;
+}
+
+.stage-thumb video {
+  object-fit: cover;
+}
+
+/*
+ * Celular em pé (palco mais alto que largo): o destaque ocupa a largura e fica em cima; as
+ * miniaturas vêm logo abaixo, maiores, sem sobrar um vazão no meio da tela.
+ */
+@container (orientation: portrait) {
+  .stage-focus,
+  .stage-focus[data-strip] {
+    height: auto;
+    min-height: calc(100cqh - 4px);
+    grid-template-rows: auto auto;
+    align-content: center;
+    gap: 10px;
+  }
+
+  .stage-focus > .stage-cell:first-child {
+    container-type: normal;
+  }
+
+  .stage-focus > .stage-cell:first-child > .stage-tile {
+    width: min(100cqw, calc(64cqh * var(--ar, 1.7778)));
+    max-height: 64cqh;
+  }
+
+  /* As miniaturas viram uma grade que quebra linha (nada escondido numa rolagem de lado). */
+  .stage-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 100px), 1fr));
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .stage-thumb {
+    width: auto;
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+}
+
+/* Toque: o botão de fixar só aparece ao tocar no vídeo (e some sozinho); fixado, fica à vista. */
+@media (hover: none) {
+  .stage-pin:not([data-pinned]) {
+    pointer-events: none;
+  }
+
+  .stage-tile[data-reveal] .stage-pin {
+    pointer-events: auto;
+    opacity: 1;
+  }
+}
+
+/* Mosaico com 3 ou mais: cada quadro preenche a célula (o vídeo é recortado), formando uma
+   grade uniforme, sem buracos e sem faixas pretas. Com 1 ou 2, o formato real da transmissão. */
+.stage-mosaic[data-dense] .stage-cell {
+  container-type: normal;
+  place-items: stretch;
+}
+
+.stage-mosaic[data-dense] .stage-tile {
+  aspect-ratio: auto;
+  height: 100%;
+  width: 100%;
+  max-height: none;
+}
+
+.stage-mosaic[data-dense] .stage-tile video {
+  object-fit: cover;
+}
+
+.stage-mosaic[data-dense] .stage-tile-screen video {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Tema Preto: os desenhos das janelas (vídeo, layout) num cinza claro, para aparecerem. */
+:root[data-theme='preto'] .video-image,
+:root[data-theme='preto'] .video-shape {
+  background: linear-gradient(135deg, #8a8a8a, #4a4a4a);
 }

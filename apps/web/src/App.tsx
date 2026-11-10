@@ -13,6 +13,8 @@ import { PreferencesPage } from './pages/PreferencesPage';
 
 // A sala puxa o LiveKit e o Socket.IO (a maior parte do código) e a administração só
 // serve para admins: carregam sob demanda, para login e lista de salas abrirem rápido.
+// Laboratório do palco: só em desenvolvimento (o import some do build de produção).
+const StageLab = import.meta.env.DEV ? lazy(() => import('./dev/StageLab')) : null;
 const RoomPage = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
 const AdminMeetingsPage = lazy(() =>
   import('./pages/admin/AdminMeetingsPage').then((m) => ({ default: m.AdminMeetingsPage })),
@@ -69,6 +71,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           {/* Pública: apresenta o Screen e ensina a usar, sem exigir login. */}
           <Route path="/features" element={<FeaturesPage />} />
+          {StageLab && <Route path="/__lab" element={<StageLab />} />}
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />

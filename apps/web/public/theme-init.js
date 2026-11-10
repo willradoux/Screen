@@ -9,6 +9,7 @@
     portugal: '#f3e6cf',
     alemanha: '#f5e6bd',
     mono: '#e6e6e6',
+    preto: '#000000',
   };
   var theme = 'screem';
   var mode = 'dark';

@@ -93,7 +93,7 @@ const Shape = ({ ratio }: { ratio: 'auto' | 'landscape' | 'portrait' | 'square' 
   }[ratio];
   return (
     <span className="flex h-full items-center justify-center">
-      <span className={`video-image relative ${size}`} />
+      <span className={`video-shape ${size}`} />
     </span>
   );
 };

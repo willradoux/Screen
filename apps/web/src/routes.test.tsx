@@ -157,7 +157,12 @@ describe('cobertura de rotas', () => {
     const src = (await import('./App?raw')).default as string;
     const declared = [...src.matchAll(/path="([^"*]+)"/g)].map((m) => m[1]!);
     // /login é auditada no teste de anônimo, que é o único que a vê.
-    const audited = [...ROUTES.map((r) => r.path.replace(ROOM_ID, ':roomId')), '/login'];
+    // /__lab é o laboratório do palco: só existe em desenvolvimento, fora do build.
+    const audited = [
+      ...ROUTES.map((r) => r.path.replace(ROOM_ID, ':roomId')),
+      '/login',
+      '/__lab',
+    ];
     for (const p of declared) {
       const normalized = p.startsWith('/') ? p : `/${p}`;
       const index = normalized === '/' ? true : false;

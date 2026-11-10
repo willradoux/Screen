@@ -25,6 +25,7 @@ export function PreferencesPage() {
   function choose(next: Theme) {
     saveTheme(next);
     setTheme(next);
+    setMode(readMode()); // o fundo Preto liga o modo escuro
   }
 
   return (

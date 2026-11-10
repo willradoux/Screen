@@ -9,7 +9,7 @@
  * (`:root[data-theme='nome']`). Fundo com foto só precisa de `photo`.
  */
 export type Mode = 'dark' | 'light';
-export type Theme = 'screem' | 'acelera' | 'brasil' | 'portugal' | 'alemanha' | 'mono';
+export type Theme = 'screem' | 'acelera' | 'brasil' | 'portugal' | 'alemanha' | 'mono' | 'preto';
 
 export interface ThemeInfo {
   value: Theme;
@@ -65,6 +65,13 @@ export const THEMES: ThemeInfo[] = [
     text: 'Sem cor nenhuma: só tons de cinza.',
     swatch: ['#d9d9d9', '#2b2b2b'],
     bar: '#e6e6e6',
+  },
+  {
+    value: 'preto',
+    label: 'Preto',
+    text: 'Só escuro, sem cor nenhuma.',
+    swatch: ['#2a2a2a', '#000000'],
+    bar: '#000000',
   },
 ];
 
@@ -131,9 +138,11 @@ export function applyMode(mode: Mode): void {
   document.documentElement.dataset.mode = mode;
 }
 
+/** O fundo "Preto" é só escuro: escolher ele liga também o modo escuro. */
 export function saveTheme(theme: Theme): void {
   write(THEME_KEY, theme);
   applyTheme(theme);
+  if (theme === 'preto') saveMode('dark');
 }
 
 export function saveMode(mode: Mode): void {
