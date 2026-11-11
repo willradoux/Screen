@@ -1,17 +1,7 @@
-/** O badge do Screen (a única peça quente da interface). Decorativo: o nome vem do texto ao lado. */
+import { ScreenLogo } from './ScreenLogo';
+/** Ícone do Screen (SVG, laranja para rosa) com o "|<" piscando de vez em quando. Decorativo. */
 export function LogoMark({ className = 'h-8' }: { className?: string }) {
-  return (
-    <img
-      src="/logo-mark.webp"
-      alt=""
-      aria-hidden="true"
-      width={120}
-      height={96}
-      decoding="async"
-      className={`w-auto shrink-0 select-none ${className}`}
-      draggable={false}
-    />
-  );
+  return <ScreenLogo brand className={`brand-logo w-auto shrink-0 select-none ${className}`} />;
 }
 
 /**

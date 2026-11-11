@@ -2304,3 +2304,70 @@ html:not([data-call]) .backdrop {
     animation: none;
   }
 }
+
+/* Ícone do topo vivo: o "|<" pisca de vez em quando (às vezes duas vezes seguidas) e, no hover,
+   o ícone dá uma inclinadinha. Some com animações desligadas ou movimento reduzido. */
+.brand-logo .logo-eye {
+  animation: v3-brand-blink 5.2s ease-in-out infinite;
+}
+
+.brand-logo .logo-glyph {
+  animation: v3-brand-look 10.4s ease-in-out infinite;
+}
+
+@keyframes v3-brand-blink {
+  0%,
+  86%,
+  100% {
+    transform: scaleY(1);
+  }
+  88% {
+    transform: scaleY(0.1);
+  }
+  90% {
+    transform: scaleY(1);
+  }
+  93% {
+    transform: scaleY(0.1);
+  }
+  95% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes v3-brand-look {
+  0%,
+  40%,
+  58%,
+  100% {
+    transform: translateX(0);
+  }
+  44%,
+  48% {
+    transform: translateX(-12px);
+  }
+  52%,
+  55% {
+    transform: translateX(12px);
+  }
+}
+
+.hub-brand .brand-logo {
+  transition: transform 320ms var(--v3-spring);
+}
+
+.hub-brand:hover .brand-logo {
+  transform: rotate(-6deg) scale(1.06);
+}
+
+:root[data-motion='off'] .brand-logo .logo-eye,
+:root[data-motion='off'] .brand-logo .logo-glyph {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo .logo-eye,
+  .brand-logo .logo-glyph {
+    animation: none;
+  }
+}
