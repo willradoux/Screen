@@ -12,7 +12,7 @@ import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
-import { cameraPin, parsePin, screenPin } from './pin';
+import { cameraPin, parsePin, screenPin, transitionName, withPinTransition } from './pin';
 
 function Video({
   pub,
@@ -388,7 +388,9 @@ export function Stage({
       // Clicar no que já está fixado solta (vale também para o formato do destaque do admin).
       const current = pinnedPiece(pieces(tiles), pinnedId);
       const target = pinnedPiece(pieces(tiles), value);
-      setPinned(current && target && current.key === target.key ? null : value);
+      withPinTransition(() =>
+        setPinned(current && target && current.key === target.key ? null : value),
+      );
     },
     cameraQuality: cameraQualityFor(tiles.length),
     screenQuality: screenQualityFor(tiles.length),
@@ -441,14 +443,22 @@ export function Stage({
     return (
       <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
         {main && (
-          <div className="stage-cell">
+          <div
+            key={main.key}
+            className="stage-cell"
+            style={{ viewTransitionName: transitionName(main.key) }}
+          >
             <PieceView piece={main} extras={extras} />
           </div>
         )}
         {rest.length > 0 && (
           <div className="stage-strip">
             {rest.map((p) => (
-              <div key={p.key} className="stage-cell stage-thumb">
+              <div
+                key={p.key}
+                className="stage-cell stage-thumb"
+                style={{ viewTransitionName: transitionName(p.key) }}
+              >
                 <PieceView piece={p} small extras={extras} />
               </div>
             ))}
@@ -473,7 +483,11 @@ export function Stage({
       }
     >
       {all.map((p) => (
-        <div key={p.key} className="stage-cell">
+        <div
+          key={p.key}
+          className="stage-cell"
+          style={{ viewTransitionName: transitionName(p.key) }}
+        >
           <PieceView piece={p} extras={extras} />
         </div>
       ))}

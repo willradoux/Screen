@@ -2567,3 +2567,39 @@ html:not([data-call]) .backdrop {
   background: var(--v3-accent);
   color: #120a08;
 }
+
+/* Fixar/desfixar: o vídeo desliza da faixa para o lugar grande (e vice-versa), rápido e macio.
+   Só os quadros do palco animam; o resto da página não pisca. */
+html[data-pinning]::view-transition-old(root),
+html[data-pinning]::view-transition-new(root) {
+  animation: none;
+}
+
+html[data-pinning]::view-transition-group(*) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+html[data-pinning]::view-transition-old(*),
+html[data-pinning]::view-transition-new(*) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: 200ms;
+}
+
+/* O botão de fixar dá um "clique" ao trocar. */
+.stage-pin[data-pinned],
+.person-pin[data-on] {
+  animation: v3-pin-pop 260ms var(--v3-spring);
+}
+
+@keyframes v3-pin-pop {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+:root[data-motion='off'] .stage-pin[data-pinned],
+:root[data-motion='off'] .person-pin[data-on] {
+  animation: none;
+}

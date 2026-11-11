@@ -25,6 +25,7 @@ import {
 import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Stage';
 import { useIdle } from '../room/useIdle';
 import { useVoiceLevels } from '../room/useVoiceLevels';
+import { withPinTransition } from '../room/pin';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { StatusBadge } from '../components/RoomCard';
@@ -142,7 +143,8 @@ function ConnectedRoom({
   // Quem a administração destacou vale para todos; fixar outra pessoa por conta própria vale só aqui.
   const effectivePin = pinnedId ?? room?.spotlightId ?? null;
   // Fixar pela lista de pessoas: clicar no que já está fixado solta.
-  const togglePin = (value: string) => setPinnedId((v) => (v === value ? null : value));
+  const togglePin = (value: string) =>
+    withPinTransition(() => setPinnedId((v) => (v === value ? null : value)));
   const sharingIds = new Set(tiles.filter((t) => t.screenPublished).map((t) => t.identity));
   // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
   const lastSpeaker = useRef<string | null>(null);
