@@ -318,6 +318,7 @@ function DeviceToggle({
       aria-haspopup="dialog"
       aria-expanded={open}
       data-tip={label}
+      data-device-toggle=""
       onClick={onClick}
       className="ctl-button ctl-chevron"
       data-open={open || undefined}

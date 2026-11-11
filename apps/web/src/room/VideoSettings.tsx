@@ -98,6 +98,19 @@ const Shape = ({ ratio }: { ratio: 'auto' | 'landscape' | 'portrait' | 'square' 
   );
 };
 
+/** Prévia da própria câmera: um "R" que fica ao contrário quando espelha. */
+function Selfie({ mirror = false }: { mirror?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`text-lg font-black leading-none ${mirror ? '-scale-x-100' : ''}`}
+      style={{ display: 'inline-block' }}
+    >
+      R
+    </span>
+  );
+}
+
 /** Ajustes de como os vídeos aparecem NA SUA TELA (preencher, posição e formato do quadro). */
 export function VideoSettings() {
   const [open, setOpen] = useState(false);
@@ -159,6 +172,16 @@ export function VideoSettings() {
               { value: 'landscape', label: 'Horizontal', preview: <Shape ratio="landscape" /> },
               { value: 'portrait', label: 'Vertical', preview: <Shape ratio="portrait" /> },
               { value: 'square', label: 'Quadrado', preview: <Shape ratio="square" /> },
+            ]}
+          />
+          <Choice
+            legend="Minha câmera"
+            columns={2}
+            value={prefs.selfie}
+            onChange={set('selfie')}
+            options={[
+              { value: 'normal', label: 'Como os outros veem', preview: <Selfie /> },
+              { value: 'mirror', label: 'Espelhada', preview: <Selfie mirror /> },
             ]}
           />
           <p className="px-1 text-xs leading-relaxed text-zinc-500">

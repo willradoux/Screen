@@ -67,6 +67,9 @@ export function DeviceMenu({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     const onDown = (e: PointerEvent) => {
+      // A setinha que abriu o menu cuida dela mesma (abre/fecha); senão o toque nela fechava
+      // aqui e o clique abria de novo na hora.
+      if ((e.target as Element | null)?.closest?.('[data-device-toggle]')) return;
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     window.addEventListener('keydown', onKey);

@@ -43,6 +43,7 @@ class FakeLk {
   remoteParticipants = new Map();
   handlers = new Map<string, ((...a: unknown[]) => void)[]>();
   connect = vi.fn(async () => undefined);
+  getActiveDevice = vi.fn(() => undefined);
   startAudio = vi.fn(async () => undefined);
   disconnect = vi.fn(async () => undefined);
   on(event: string, fn: (...a: unknown[]) => void) {
@@ -294,6 +295,20 @@ describe('RoomPage: entrar e usar a sala', () => {
     expect(cam).toBeGreaterThan(-1);
     expect(fx).toBe(cam + 1);
     expect(tela).toBeGreaterThan(fx);
+  });
+
+  it('setinha do aparelho funciona como botão: abre, e clicar de novo fecha', async () => {
+    setup();
+    vi.spyOn(api.rooms, 'join').mockResolvedValue(joinResult());
+    await enter();
+    const bar = screen.getByRole('toolbar', { name: /controles da sala/i });
+    const arrow = within(bar).getByRole('button', { name: 'Trocar aparelho de vídeo' });
+    await userEvent.click(arrow);
+    expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(arrow);
+    expect(arrow).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(arrow);
+    expect(arrow).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('liga e desliga microfone e câmera pelos botões', async () => {

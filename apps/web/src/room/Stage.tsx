@@ -152,7 +152,7 @@ function PersonTile({
       {tile.cameraPub ? (
         <Video
           pub={tile.cameraPub}
-          mirror={tile.isLocal}
+          mirror={tile.isLocal && prefs.selfie === 'mirror'}
           fit={prefs.fit}
           label={`Câmera de ${tile.name}`}
           onNaturalAspect={setNatural}

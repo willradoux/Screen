@@ -6,14 +6,21 @@ import { useSyncExternalStore } from 'react';
  *  - position: qual parte da imagem fica visível quando preenche (cima, meio, baixo)
  *  - shape: formato do quadro. "auto" segue o formato real da transmissão: se a pessoa transmite
  *    na vertical, aparece na vertical; deitou o celular, o quadro deita junto.
+ *  - selfie: a SUA câmera como os outros veem ('normal', padrão) ou espelhada ('mirror').
  */
 export interface VideoPrefs {
   fit: 'cover' | 'contain';
   position: 'top' | 'center' | 'bottom';
   shape: 'auto' | 'landscape' | 'portrait' | 'square';
+  selfie: 'normal' | 'mirror';
 }
 
-export const DEFAULT_PREFS: VideoPrefs = { fit: 'cover', position: 'center', shape: 'auto' };
+export const DEFAULT_PREFS: VideoPrefs = {
+  fit: 'cover',
+  position: 'center',
+  shape: 'auto',
+  selfie: 'normal',
+};
 
 const KEY = 'screem-video-prefs';
 const listeners = new Set<() => void>();
@@ -22,6 +29,7 @@ let cache: VideoPrefs | null = null;
 const FITS = ['cover', 'contain'];
 const POSITIONS = ['top', 'center', 'bottom'];
 const SHAPES = ['auto', 'landscape', 'portrait', 'square'];
+const SELFIES = ['normal', 'mirror'];
 
 /** Lê as preferências salvas, ignorando qualquer valor inválido. */
 export function parsePrefs(raw: string | null): VideoPrefs {
@@ -36,6 +44,9 @@ export function parsePrefs(raw: string | null): VideoPrefs {
       shape: SHAPES.includes(v.shape as string)
         ? (v.shape as VideoPrefs['shape'])
         : DEFAULT_PREFS.shape,
+      selfie: SELFIES.includes(v.selfie as string)
+        ? (v.selfie as VideoPrefs['selfie'])
+        : DEFAULT_PREFS.selfie,
     };
   } catch {
     return DEFAULT_PREFS;
