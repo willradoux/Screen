@@ -3731,6 +3731,9 @@ html[data-pinning]::view-transition-new(*) {
 /* ---- Chat no molde: enquete em cartão no degradê do tema, mensagens de baixo para cima,
    "digitando" acima da caixa e botão redondo de enviar ---- */
 .chat-list-inner {
+  /* Não encolhe: cresce com as mensagens (a lista de fora rola). Sem isto, o excesso "vazava"
+     para cima, onde não dá para rolar. */
+  flex: none;
   display: flex;
   min-height: 100%;
   flex-direction: column;
