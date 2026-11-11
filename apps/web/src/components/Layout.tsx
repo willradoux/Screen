@@ -82,6 +82,11 @@ export function Layout() {
     setDrawer(false);
     setAccountOpen(false);
   }, [location.pathname]);
+  // Na chamada o fundo do tema volta a aparecer; fora dela o fundo é liso.
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-call', immersive);
+    return () => document.documentElement.removeAttribute('data-call');
+  }, [immersive]);
 
   const items: NavItem[] = [
     { to: '/', label: 'Salas', icon: 'videocam', end: true },

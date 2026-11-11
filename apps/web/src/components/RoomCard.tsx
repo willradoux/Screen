@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useId, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useOptionalAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
@@ -7,7 +7,8 @@ import { isAdmin } from '../lib/moderation-rules';
 import { formatDateTime } from '../lib/format';
 import type { Room } from '../lib/types';
 import { Badge } from './ui';
-import { CoverChip, WidgetCover, WidgetStat, type Person } from './Widget';
+import { Icon } from './Icon';
+import { AvatarStack, type Person } from './Widget';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
@@ -23,8 +24,9 @@ export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
 }
 
 /**
- * Uma sala (live ou reunião) como widget: capa com o degradê do tema, estado e tipo, quem está
- * na call, título em negrito, ocupação e horário, e o botão de entrar ocupando a largura.
+ * Uma sala (live ou reunião) como card: capa com o degradê do tema, o estado e quem está na
+ * call; embaixo, o nome em negrito e as informações em cinza. O botão redondo de entrar aparece
+ * na capa ao passar o mouse (sempre visível no toque e no foco); clicar no card também entra.
  */
 export function RoomCard({
   room,
@@ -41,6 +43,8 @@ export function RoomCard({
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const titleId = useId();
+  const navigate = useNavigate();
 
   async function cancel() {
     setBusy(true);
@@ -76,87 +80,87 @@ export function RoomCard({
         ? 'live'
         : 'off';
 
+  const open = room.status === 'OPEN';
+  const people = `${room.participantCount}/${room.maxParticipants} ${
+    room.participantCount === 1 ? 'pessoa' : 'pessoas'
+  }`;
+
   return (
-    <article className="widget" data-testid="room-row">
-      <WidgetCover
-        tone={tone}
-        people={members}
-        left={<StatusBadge room={room} />}
-        right={
-          <CoverChip icon={room.type === 'LIVE' ? 'videocam' : 'calendar_month'}>
-            {room.type === 'LIVE' ? 'Live' : 'Reunião'}
-          </CoverChip>
-        }
-      />
-      <div className="widget-body">
-        <div className="widget-head">
-          <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-zinc-50">
-            {room.title}
-          </h3>
-          {room.description && (
-            <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-zinc-400">
-              {room.description}
-            </p>
-          )}
-        </div>
+    <article
+      className="sp-card"
+      data-testid="room-row"
+      aria-labelledby={titleId}
+      onClick={(e) => {
+        // O card inteiro leva para a sala (o botão redondo é o caminho do teclado).
+        if ((e.target as HTMLElement).closest('a, button')) return;
+        navigate(`/r/${room.id}`);
+      }}
+    >
+      <div className="sp-cover" data-tone={tone}>
+        <span className="sp-cover-badge">
+          <StatusBadge room={room} />
+        </span>
+        {members && members.length > 0 ? (
+          <AvatarStack people={members} max={4} />
+        ) : (
+          <span aria-hidden="true" className="sp-cover-icon">
+            <Icon name={room.type === 'LIVE' ? 'videocam' : 'calendar_month'} size="2rem" />
+          </span>
+        )}
+        <Link
+          to={`/r/${room.id}`}
+          aria-label={open ? 'Entrar' : 'Ver sala'}
+          aria-describedby={titleId}
+          title={open ? 'Entrar' : 'Ver sala'}
+          className="sp-play"
+          data-open={open || undefined}
+        >
+          <Icon name={open ? 'play_arrow' : 'arrow_forward'} size="1.5rem" />
+        </Link>
+      </div>
 
-        <div className="mt-auto grid grid-cols-2 gap-3">
-          <WidgetStat
-            icon="group"
-            value={`${room.participantCount}/${room.maxParticipants} ${room.participantCount === 1 ? 'pessoa' : 'pessoas'}`}
-            label="na sala"
-          />
-          {when && (
-            <WidgetStat
-              icon="schedule"
-              value={formatDateTime(room.status === 'SCHEDULED' ? room.startsAt : room.openedAt)}
-              label={room.status === 'SCHEDULED' ? 'começa' : 'aberta desde'}
-            />
-          )}
-        </div>
+      <h3 id={titleId} className="sp-card-title">
+        {room.title}
+      </h3>
+      <p className="sp-card-sub">
+        {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {people}
+      </p>
+      {when && <p className="sp-card-sub">{when}</p>}
+      {room.description && <p className="sp-card-desc">{room.description}</p>}
+      {session && <p className="sp-card-note">{session}</p>}
+      {failure && <p className="sp-card-note text-red-400">{failure}</p>}
 
-        <div className="widget-note">
-          {session && <p className="text-zinc-500">{session}</p>}
-          {failure && <p className="text-red-400">{failure}</p>}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-          {canCancel &&
-            (confirming ? (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void cancel()}
-                  className="btn btn-danger btn-sm"
-                >
-                  Cancelar mesmo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming(false)}
-                  className="btn btn-ghost btn-sm"
-                >
-                  Voltar
-                </button>
-              </>
-            ) : (
+      {canCancel && (
+        <div className="sp-card-actions">
+          {confirming ? (
+            <>
               <button
                 type="button"
-                onClick={() => setConfirming(true)}
-                className="btn btn-ghost btn-sm text-red-300!"
+                disabled={busy}
+                onClick={() => void cancel()}
+                className="btn btn-danger btn-sm"
               >
-                Cancelar
+                Cancelar mesmo
               </button>
-            ))}
-          <Link
-            to={`/r/${room.id}`}
-            className={`btn ${room.status === 'OPEN' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            {room.status === 'OPEN' ? 'Entrar' : 'Ver sala'}
-          </Link>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                Voltar
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className="btn btn-ghost btn-sm text-red-300!"
+            >
+              Cancelar
+            </button>
+          )}
         </div>
-      </div>
+      )}
     </article>
   );
 }

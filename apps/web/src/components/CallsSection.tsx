@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import type { CallInfo } from '../lib/types';
 import { useAsync } from '../lib/useAsync';
 import { EmptyState, Section } from './ui';
-import { CoverChip, WidgetCover, WidgetStat } from './Widget';
+import { AvatarStack, CoverChip } from './Widget';
 
 /**
  * Só as calls que têm gente agora. Call vazia não aparece (mesmo estando habilitada para live).
@@ -46,35 +46,26 @@ export function CallsSection({
       ) : (
         <ul className="widget-grid stagger" aria-label="Calls agora">
           {active.map((call) => (
-            <li key={call.id} className="widget" data-testid="call">
-              <WidgetCover
-                tone={call.mediaState === 'IDLE' ? 'idle' : 'live'}
-                people={call.members}
-                left={<CoverChip icon="mic">Na call</CoverChip>}
-              />
-              <div className="widget-body">
-                <div className="widget-head">
-                  <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-zinc-50">
-                    {call.name}
-                  </h3>
-                </div>
-                <div className="mt-auto">
-                  <WidgetStat
-                    icon="group"
-                    value={`${call.members.length} ${call.members.length === 1 ? 'pessoa' : 'pessoas'}`}
-                    label="no canal de voz"
-                  />
-                </div>
-                <div className="widget-note" />
-                <div className="flex justify-center pt-1">
-                  {call.roomId ? (
-                    <Link to={`/r/${call.roomId}`} className="btn btn-secondary">
-                      Abrir a sala{call.mediaState === 'IDLE' ? ' (ativa a sessão)' : ''}
-                    </Link>
-                  ) : (
-                    <p className="text-xs text-zinc-500">A sala abre em instantes.</p>
-                  )}
-                </div>
+            <li key={call.id} className="sp-card" data-testid="call">
+              <div className="sp-cover" data-tone={call.mediaState === 'IDLE' ? 'idle' : 'live'}>
+                <span className="sp-cover-badge">
+                  <CoverChip icon="mic">Na call</CoverChip>
+                </span>
+                <AvatarStack people={call.members} max={4} />
+              </div>
+              <h3 className="sp-card-title">{call.name}</h3>
+              <p className="sp-card-sub">
+                {call.members.length} {call.members.length === 1 ? 'pessoa' : 'pessoas'} no canal de
+                voz
+              </p>
+              <div className="sp-card-actions">
+                {call.roomId ? (
+                  <Link to={`/r/${call.roomId}`} className="btn btn-secondary btn-sm">
+                    Abrir a sala{call.mediaState === 'IDLE' ? ' (ativa a sessão)' : ''}
+                  </Link>
+                ) : (
+                  <p className="sp-card-note">A sala abre em instantes.</p>
+                )}
               </div>
             </li>
           ))}

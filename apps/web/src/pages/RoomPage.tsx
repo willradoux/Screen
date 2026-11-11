@@ -26,6 +26,7 @@ import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Sta
 import { useIdle } from '../room/useIdle';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
+import { StatusBadge } from '../components/RoomCard';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
@@ -101,7 +102,10 @@ function ConnectedRoom({
   // Painel de pessoas: fechado por padrão, para o palco ficar limpo.
   const [side, setSide] = useState<'people' | null>(null);
   // Sempre começa minimizada (só o essencial, flutuando).
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(
+    () =>
+      typeof window !== 'undefined' && window.matchMedia?.('(min-width: 1100px)').matches === true,
+  );
   const [layout, setLayout] = useState<StageLayout>(() => {
     const saved = readPref(LAYOUT_KEY);
     return STAGE_LAYOUTS.some((l) => l.value === saved) ? (saved as StageLayout) : 'auto';
@@ -211,9 +215,47 @@ function ConnectedRoom({
       <div className="call-rail" data-open={expanded || undefined} inert={!expanded}>
         {expanded && (
           <div className="call-rail-inner" {...holdHandlers}>
+            {/* A sala: nome, estado e quantas pessoas. */}
+            <div className="rail-room">
+              <p className="rail-room-title">{room.title}</p>
+              <p className="rail-room-sub">
+                <StatusBadge room={room} />
+                <span>
+                  {tiles.length} {tiles.length === 1 ? 'pessoa' : 'pessoas'}
+                </span>
+              </p>
+            </div>
+
             {controlsFor('rail')}
-            <div className="mt-auto" title={`${me.displayName} · ${ROLE_LABEL[me.role]}`}>
+
+            {/* Quem está na chamada (como a lista de membros do Discord). */}
+            <div className="rail-people">
+              <p className="rail-heading">Na chamada · {tiles.length}</p>
+              <ul aria-label="Na chamada">
+                {tiles.slice(0, 40).map((t) => (
+                  <li key={t.identity} data-speaking={t.isSpeaking || undefined}>
+                    <Avatar name={t.name} url={t.avatarUrl} size="sm" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t.name}
+                      {t.isLocal && ' (você)'}
+                    </span>
+                    <Icon
+                      name={t.micOn ? 'mic' : 'mic_off'}
+                      size="0.95rem"
+                      label={t.micOn ? 'microfone ligado' : 'microfone desligado'}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {tiles.length > 40 && <p className="rail-more">e mais {tiles.length - 40} pessoas</p>}
+            </div>
+
+            <div className="rail-me" title={`${me.displayName} · ${ROLE_LABEL[me.role]}`}>
               <Avatar name={me.displayName} url={me.avatarUrl} size="sm" />
+              <span className="min-w-0 leading-tight">
+                <span className="block truncate text-[13px] font-semibold">{me.displayName}</span>
+                <span className="block text-[11px] text-zinc-500">{ROLE_LABEL[me.role]}</span>
+              </span>
             </div>
           </div>
         )}

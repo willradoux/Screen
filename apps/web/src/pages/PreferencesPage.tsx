@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { PageTitle, Section } from '../components/ui';
+import { useId, useState, type ReactNode } from 'react';
+import { PageTitle } from '../components/ui';
 import { playSound, readSounds, saveSounds } from '../lib/sounds';
 import {
   MODES,
@@ -15,137 +15,186 @@ import {
   type Theme,
 } from '../lib/theme';
 
-/** Preferências de quem usa: modo (escuro/claro) e fundo. Fica salvo neste navegador. */
+/** Um grupo de ajustes: título em negrito e as linhas embaixo (como as configurações de um app). */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="pref-group">
+      <h2 id={id} className="pref-group-title">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** Uma linha: nome e explicação à esquerda, o controle à direita. */
+function Row({
+  label,
+  hint,
+  control,
+  labelId,
+}: {
+  label: string;
+  hint?: ReactNode;
+  control: ReactNode;
+  labelId?: string;
+}) {
+  return (
+    <div className="pref-row">
+      <div className="min-w-0">
+        <p id={labelId} className="pref-label">
+          {label}
+        </p>
+        {hint && <p className="pref-hint">{hint}</p>}
+      </div>
+      <div className="pref-control">{control}</div>
+    </div>
+  );
+}
+
+function Switch({
+  on,
+  onChange,
+  labelledBy,
+}: {
+  on: boolean;
+  onChange: () => void;
+  labelledBy: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-labelledby={labelledBy}
+      onClick={onChange}
+      className="switch"
+      data-on={on || undefined}
+    >
+      <span className="switch-knob" />
+    </button>
+  );
+}
+
+/** Preferências de quem usa: modo, tema, animações e sons. Ficam salvas neste navegador. */
 export function PreferencesPage() {
   const [theme, setTheme] = useState<Theme>(() => readTheme());
   const [mode, setMode] = useState<Mode>(() => readMode());
   const [motion, setMotion] = useState<Motion>(() => readMotion());
   const [sounds, setSounds] = useState(() => readSounds());
+  const motionId = useId();
+  const soundsId = useId();
+  const modeId = useId();
 
   function choose(next: Theme) {
     saveTheme(next);
     setTheme(next);
-    setMode(readMode()); // o fundo Preto liga o modo escuro
+    setMode(readMode()); // o tema Preto liga o modo escuro
   }
 
   return (
     <>
       <PageTitle description="Valem só para você, neste navegador.">Preferências</PageTitle>
-      <Section title="Modo">
-        <div role="radiogroup" aria-label="Modo" className="grid grid-cols-2 gap-2">
-          {MODES.map((o) => {
-            const on = mode === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => {
-                  saveMode(o.value);
-                  setMode(o.value);
-                }}
-                className={`glass glass-button p-3 text-left ${on ? 'glass-selected' : ''}`}
-              >
-                <span className="flex items-center gap-2.5">
+
+      <div className="pref-list">
+        <Group title="Aparência">
+          <Row
+            label="Modo"
+            labelId={modeId}
+            hint="Escuro deixa os painéis pretos; claro, brancos."
+            control={
+              <div role="radiogroup" aria-labelledby={modeId} className="pref-segment">
+                {MODES.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === o.value}
+                    onClick={() => {
+                      saveMode(o.value);
+                      setMode(o.value);
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            }
+          />
+          <div role="radiogroup" aria-label="Tema" className="pref-themes">
+            {THEMES.map((o) => {
+              const on = theme === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => choose(o.value)}
+                  className="pref-theme"
+                >
                   <span
                     aria-hidden="true"
-                    className={`h-6 w-6 rounded-full ${o.value === 'dark' ? 'bg-[#000] shadow-[0_0_0_1px_rgb(255_255_255/0.2)]' : 'bg-[#fff]'}`}
+                    className="pref-theme-swatch"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${o.swatch[0]}, ${o.swatch[1]})`,
+                    }}
                   />
-                  <span className="text-sm font-semibold text-white">{o.label}</span>
-                </span>
-                <span className="mt-1.5 block text-xs text-zinc-400">{o.text}</span>
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-      <div className="h-6" />
-      <Section title="Fundo">
-        <div role="radiogroup" aria-label="Fundo" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {THEMES.map((o) => {
-            const on = theme === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => choose(o.value)}
-                className={`glass glass-button p-3 text-left ${on ? 'glass-selected' : ''}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className="block h-16 rounded-xl bg-cover bg-center"
-                  style={{
-                    backgroundImage: o.photo
-                      ? `url(${o.photo})`
-                      : `linear-gradient(135deg, ${o.swatch[0]}, ${o.swatch[1]})`,
-                  }}
-                />
-                <span className="mt-2.5 flex items-center justify-between px-0.5">
-                  <span className="text-sm font-semibold text-white">{o.label}</span>
-                  {on && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand-400" />}
-                </span>
-                <span className="block px-0.5 text-xs text-zinc-400">{o.text}</span>
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-      <div className="h-6" />
-      <Section title="Animações">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={motion === 'on'}
-          onClick={() => {
-            const next: Motion = motion === 'on' ? 'off' : 'on';
-            saveMotion(next);
-            setMotion(next);
-          }}
-          className="glass glass-button flex w-full items-center justify-between gap-4 p-4 text-left"
-        >
-          <span>
-            <span className="block text-sm font-semibold text-white">
-              {motion === 'on' ? 'Animações ligadas' : 'Animações desligadas'}
-            </span>
-            <span className="mt-0.5 block text-xs text-zinc-400">
-              Desligue se o movimento incomodar ou se o aparelho for mais lento. A abertura, as
-              transições e o fundo ficam parados.
-            </span>
-          </span>
-          <span aria-hidden="true" className="switch" data-on={motion === 'on' || undefined}>
-            <span className="switch-knob" />
-          </span>
-        </button>
-      </Section>
-      <div className="h-6" />
-      <Section title="Sons">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={sounds}
-          onClick={() => {
-            saveSounds(!sounds);
-            setSounds(!sounds);
-            if (!sounds) playSound('notify');
-          }}
-          className="glass glass-button flex w-full items-center justify-between gap-4 p-4 text-left"
-        >
-          <span>
-            <span className="block text-sm font-semibold text-white">
-              {sounds ? 'Sons ligados' : 'Sons desligados'}
-            </span>
-            <span className="mt-0.5 block text-xs text-zinc-400">
-              Um toque curto quando alguém entra ou sai da sala e quando chega um aviso.
-            </span>
-          </span>
-          <span aria-hidden="true" className="switch" data-on={sounds || undefined}>
-            <span className="switch-knob" />
-          </span>
-        </button>
-      </Section>
+                  <span className="pref-theme-name">{o.label}</span>
+                  <span className="pref-theme-text">{o.text}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Group>
+
+        <Group title="Movimento">
+          <Row
+            label="Animações"
+            labelId={motionId}
+            hint="Desligue se o movimento incomodar ou se o aparelho for mais lento. A abertura, as transições e o fundo ficam parados."
+            control={
+              <Switch
+                on={motion === 'on'}
+                labelledBy={motionId}
+                onChange={() => {
+                  const next: Motion = motion === 'on' ? 'off' : 'on';
+                  saveMotion(next);
+                  setMotion(next);
+                }}
+              />
+            }
+          />
+        </Group>
+
+        <Group title="Sons">
+          <Row
+            label="Sons da sala"
+            labelId={soundsId}
+            hint="Um toque curto quando alguém entra ou sai da sala e quando chega um aviso."
+            control={
+              <Switch
+                on={sounds}
+                labelledBy={soundsId}
+                onChange={() => {
+                  saveSounds(!sounds);
+                  setSounds(!sounds);
+                  if (!sounds) playSound('notify');
+                }}
+              />
+            }
+          />
+        </Group>
+
+        <Group title="Conta">
+          <Row
+            label="Login pelo Discord"
+            hint="O Screen não guarda senha: quem você é e seus cargos vêm do Discord."
+            control={<span className="pref-value">Conectado</span>}
+          />
+        </Group>
+      </div>
     </>
   );
 }
