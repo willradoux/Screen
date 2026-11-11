@@ -1444,3 +1444,62 @@ html:not([data-call]) .backdrop {
 .call-frame[data-idle] .call-screen {
   padding-bottom: 14px;
 }
+
+/* Celular: a barra não ocupa uma coluna (a tela é estreita). Fechada, fica só o botão de abrir,
+   flutuando no canto; aberta, vira uma gaveta por cima do vídeo. */
+@media (max-width: 640px) {
+  .call-frame {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .call-rail {
+    position: absolute;
+    top: calc(var(--v3-gap) + 8px);
+    right: calc(var(--v3-gap) + 8px);
+    z-index: 8;
+    width: auto;
+    overflow: visible;
+  }
+
+  .call-rail:not([data-open]) .call-rail-inner {
+    height: auto;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.6);
+    padding: 2px;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .call-rail:not([data-open]) .call-rail-inner > :not(.rail-toggle) {
+    display: none;
+  }
+
+  .call-rail:not([data-open]) .rail-toggle {
+    margin: 0;
+    color: #fff;
+  }
+
+  .call-rail[data-open] {
+    bottom: calc(var(--v3-gap) + 8px);
+    width: min(82vw, 290px);
+  }
+
+  .call-rail[data-open] .call-rail-inner {
+    border-radius: 12px;
+    background: var(--v3-panel);
+    padding: 8px 6px;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.6);
+    animation: v3-drawer 420ms var(--v3-spring) both;
+  }
+
+  .call-rail[data-idle] {
+    width: auto;
+  }
+
+  @keyframes v3-drawer {
+    from {
+      opacity: 0;
+      transform: translateX(24px) scale(0.97);
+    }
+  }
+}
