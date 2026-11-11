@@ -3668,3 +3668,62 @@ html[data-pinning]::view-transition-new(*) {
 :root[data-motion='off'] .chat-badge {
   animation: none;
 }
+
+/* ---- Celular em pé: um grande ocupando a tela e uma fileira de miniaturas pequenas ----
+   (antes o grande ficava limitado a 64% da altura e as miniaturas cresciam demais). */
+@container (orientation: portrait) {
+  .stage-focus,
+  .stage-focus[data-strip] {
+    height: calc(100cqh - 4px);
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+    gap: 8px;
+  }
+
+  .stage-focus[data-strip] {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .stage-focus > .stage-cell:first-child {
+    container-type: size;
+  }
+
+  /* A câmera preenche o quadro grande; a tela compartilhada aparece inteira. */
+  .stage-focus > .stage-cell:first-child > .stage-tile:not(.stage-tile-screen) {
+    height: 100cqh;
+    width: 100cqw;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+
+  .stage-focus > .stage-cell:first-child > .stage-tile:not(.stage-tile-screen) video {
+    object-fit: cover;
+  }
+
+  .stage-focus > .stage-cell:first-child > .stage-tile-screen {
+    width: min(100cqw, calc(100cqh * var(--ar, 1.7778)));
+    max-height: 100cqh;
+  }
+
+  .stage-strip {
+    display: flex;
+    justify-content: safe center;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .stage-thumb {
+    height: 104px;
+    width: 78px;
+    flex: none;
+    aspect-ratio: auto;
+  }
+
+  .stage-thumb .stage-caption {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+}
