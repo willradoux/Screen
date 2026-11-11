@@ -3889,3 +3889,113 @@ html[data-call] .zoom-controls {
     background: rgb(0 0 0 / 0.75);
   }
 }
+
+/* Apagar mensagem (só a moderação): lixeira discreta que aparece ao passar o mouse, ao focar a
+   mensagem ou, no celular, ao tocar nela. */
+.chat-msg-del {
+  height: 22px;
+  width: 22px;
+  background: transparent;
+  color: var(--v3-text-3);
+}
+
+.chat-msg-del:hover {
+  background: color-mix(in srgb, #e5483a 18%, transparent);
+  color: #ff9d94;
+}
+
+.chat-msg:focus-within .chat-msg-del {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .chat-msg-del {
+    opacity: 0;
+  }
+}
+
+/* Cabeçalho do painel: título à esquerda (chat) e fechar à direita. */
+.call-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.call-panel-title {
+  margin-right: auto;
+  padding-left: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--v3-text);
+}
+
+.call-panel:focus {
+  outline: none;
+}
+
+.sheet-handle {
+  display: none;
+}
+
+/* ---- Celular: o painel (chat e pessoas) vira gaveta que sobe de baixo, como no Discord ----
+   O vídeo continua aparecendo em cima. Arrastar a alça para baixo fecha; para cima aumenta. */
+@media (max-width: 899px) {
+  .call-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9;
+    height: 62%;
+    border-radius: 18px 18px 0 0;
+    padding: 0 12px calc(env(safe-area-inset-bottom) + 10px);
+    box-shadow: 0 -18px 50px rgb(0 0 0 / 0.55);
+    animation: v3-sheet-up 300ms var(--v3-spring) both;
+    transition:
+      height 280ms var(--v3-spring),
+      transform 260ms var(--v3-spring);
+  }
+
+  .call-panel[data-size='big'] {
+    height: 92%;
+  }
+
+  .call-panel[data-dragging] {
+    transition: none;
+  }
+
+  .sheet-handle {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    padding: 10px 0 6px;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sheet-handle > span {
+    height: 5px;
+    width: 42px;
+    border-radius: 999px;
+    background: var(--v3-text-3);
+  }
+
+  /* Com a gaveta aberta, a pílula de controles não fica por cima dela. */
+  .call-frame[data-panel] .call-float {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes v3-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+:root[data-motion='off'] .call-panel {
+  animation: none;
+  transition: none;
+}

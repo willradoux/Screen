@@ -26,7 +26,11 @@ const MessageRow = memo(function MessageRow({
   onDelete: (id: string) => void;
 }) {
   return (
-    <article className="chat-msg" data-mine={mine || undefined}>
+    <article
+      className="chat-msg"
+      data-mine={mine || undefined}
+      tabIndex={canDelete ? 0 : undefined}
+    >
       <Avatar name={m.displayName} url={m.avatarUrl} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="chat-msg-head">
@@ -43,10 +47,10 @@ const MessageRow = memo(function MessageRow({
           type="button"
           className="chat-msg-del"
           aria-label={`Apagar a mensagem de ${m.displayName}`}
-          title="Apagar para todos"
+          title="Apagar para todos (moderação)"
           onClick={() => onDelete(m.id)}
         >
-          <Icon name="close" size="0.9rem" />
+          <Icon name="delete" size="0.85rem" />
         </button>
       )}
     </article>

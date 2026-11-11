@@ -26,6 +26,7 @@ import { useVoiceLevels } from '../room/useVoiceLevels';
 import { withPinTransition } from '../room/pin';
 import { PersonAudio } from '../room/PersonAudio';
 import { ChatPanel } from '../room/ChatPanel';
+import { useSheetDrag } from '../room/useSheetDrag';
 import { useAudioPrefs } from '../lib/audioPrefs';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
@@ -126,6 +127,34 @@ function ConnectedRoom({
   const seenChat = useRef(session.chat.messages.length);
   if (side === 'chat') seenChat.current = session.chat.messages.length;
   const unread = Math.max(0, session.chat.messages.length - seenChat.current);
+  // Painel (chat/pessoas): no celular vira gaveta que se arrasta. Ao abrir, o foco vai para ele;
+  // ao fechar (botão, Esc ou arrastando), volta para quem abriu.
+  const panelRef = useRef<HTMLElement>(null);
+  // Abre/fecha o painel; no celular, fecha a gaveta de opções para a do painel subir sozinha.
+  const toggleSide = (next: 'people' | 'chat') => {
+    setSide((v) => (v === next ? null : next));
+    if (window.matchMedia?.('(max-width: 640px)').matches) setExpanded(false);
+  };
+  const sheet = useSheetDrag({ onClose: () => setSide(null) });
+  const openedFrom = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!side) return;
+    openedFrom.current ??= document.activeElement as HTMLElement | null;
+    panelRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSide(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [side]);
+  useEffect(() => {
+    if (side) return;
+    sheet.reset();
+    // Volta o foco para quem abriu; se ele sumiu (estava na gaveta de opções do celular), vai
+    // para o botão de opções.
+    const from = openedFrom.current;
+    if (from && from.isConnected && from.offsetParent !== null) from.focus();
+    else document.querySelector<HTMLElement>('.rail-toggle')?.focus();
+    openedFrom.current = null;
+  }, [side]);
   // Volume de quem (na lista da barra), como no Discord.
   const [audioOf, setAudioOf] = useState<string | null>(null);
   const audio = useAudioPrefs();
@@ -202,10 +231,10 @@ function ConnectedRoom({
       screenLocked={room.screenLock}
       restriction={restriction}
       panelOpen={side === 'people'}
-      onTogglePanel={() => setSide((v) => (v === 'people' ? null : 'people'))}
+      onTogglePanel={() => toggleSide('people')}
       chatOpen={side === 'chat'}
       chatUnread={unread}
-      onToggleChat={() => setSide((v) => (v === 'chat' ? null : 'chat'))}
+      onToggleChat={() => toggleSide('chat')}
       layout={{
         value: layout,
         onChange: (next) => {
@@ -369,8 +398,21 @@ function ConnectedRoom({
         </section>
 
         {side && (
-          <aside aria-label={side === 'chat' ? 'Chat' : 'Pessoas'} className="call-panel">
-            <div className="flex items-center justify-end gap-1 pb-1">
+          <aside
+            ref={panelRef}
+            tabIndex={-1}
+            aria-label={side === 'chat' ? 'Chat' : 'Pessoas'}
+            className="call-panel"
+            data-size={sheet.big ? 'big' : undefined}
+            data-dragging={sheet.dragging || undefined}
+            style={sheet.dy ? { transform: `translateY(${sheet.dy}px)` } : undefined}
+          >
+            {/* Celular: alça para arrastar (para baixo fecha, para cima aumenta). */}
+            <div aria-hidden="true" className="sheet-handle" {...sheet.handlers}>
+              <span />
+            </div>
+            <div className="call-panel-head">
+              {side === 'chat' && <h2 className="call-panel-title">Chat</h2>}
               <button
                 type="button"
                 aria-label="Fechar painel"
