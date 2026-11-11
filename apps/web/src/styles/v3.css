@@ -4022,3 +4022,21 @@ html[data-call] .zoom-controls {
   z-index: 2;
   animation: v3-rise 220ms var(--v3-spring) both;
 }
+
+/* "Na chamada": quem transmite tem os ícones de tela/câmera na cor do tema. */
+.rail-live {
+  color: var(--v3-accent);
+}
+
+/* Barra de rolagem do chat no padrão do projeto (fina e discreta), também no Firefox. */
+.chat-list {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--v3-text) 28%, transparent) transparent;
+}
+
+@supports selector(::-webkit-scrollbar) {
+  .chat-list {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}

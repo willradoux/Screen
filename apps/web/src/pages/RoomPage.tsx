@@ -34,7 +34,7 @@ import { StatusBadge } from '../components/RoomCard';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
-import { useParticipants } from '../room/useParticipants';
+import { useParticipants, type Tile } from '../room/useParticipants';
 import { countVideos, isBigRoom, profileFor, wantedVideo } from '../lib/bigRoom';
 
 /** Avisa que a pessoa saiu da call e será removida da live em instantes. */
@@ -297,49 +297,68 @@ function ConnectedRoom({
           <div className="rail-people">
             <p className="rail-heading">Na chamada · {tiles.length}</p>
             <ul aria-label="Na chamada">
-              {tiles.slice(0, 40).map((t) => (
-                <li
-                  key={t.identity}
-                  data-speaking={t.isSpeaking || undefined}
-                  data-voice-id={t.identity}
-                  data-open={audioOf === t.identity || undefined}
-                >
-                  <Avatar name={t.name} url={t.avatarUrl} size="sm" />
-                  {t.isLocal ? (
-                    <span className="min-w-0 flex-1 truncate">{t.name} (você)</span>
-                  ) : (
-                    // Como no Discord: clicar na pessoa abre o volume dela (só para você).
-                    <button
-                      type="button"
-                      className="rail-person min-w-0 flex-1 truncate text-left"
-                      aria-expanded={audioOf === t.identity}
-                      onClick={() => setAudioOf((v) => (v === t.identity ? null : t.identity))}
-                      title="Volume (só para você)"
-                    >
-                      {t.name}
-                      {audio.muted[t.identity] && (
-                        <span className="sr-only"> (mutada para você)</span>
-                      )}
-                    </button>
-                  )}
-                  <Icon
-                    name={audio.muted[t.identity] ? 'volume_off' : t.micOn ? 'mic' : 'mic_off'}
-                    size="0.95rem"
-                    label={
-                      audio.muted[t.identity]
-                        ? 'mutada para você'
-                        : t.micOn
-                          ? 'microfone ligado'
-                          : 'microfone desligado'
-                    }
-                  />
-                  {audioOf === t.identity && (
-                    <div className="rail-audio">
-                      <PersonAudio id={t.identity} name={t.name} sharing={t.screenPublished} />
-                    </div>
-                  )}
-                </li>
-              ))}
+              {byStreaming(tiles)
+                .slice(0, 40)
+                .map((t) => (
+                  <li
+                    key={t.identity}
+                    data-speaking={t.isSpeaking || undefined}
+                    data-voice-id={t.identity}
+                    data-open={audioOf === t.identity || undefined}
+                  >
+                    <Avatar name={t.name} url={t.avatarUrl} size="sm" />
+                    {t.isLocal ? (
+                      <span className="min-w-0 flex-1 truncate">{t.name} (você)</span>
+                    ) : (
+                      // Como no Discord: clicar na pessoa abre o volume dela (só para você).
+                      <button
+                        type="button"
+                        className="rail-person min-w-0 flex-1 truncate text-left"
+                        aria-expanded={audioOf === t.identity}
+                        onClick={() => setAudioOf((v) => (v === t.identity ? null : t.identity))}
+                        title="Volume (só para você)"
+                      >
+                        {t.name}
+                        {audio.muted[t.identity] && (
+                          <span className="sr-only"> (mutada para você)</span>
+                        )}
+                      </button>
+                    )}
+                    {/* Quem está transmitindo: tela e câmera (além do microfone). */}
+                    {t.screenPublished && (
+                      <Icon
+                        name="screen_share"
+                        size="0.95rem"
+                        label="compartilhando a tela"
+                        className="rail-live"
+                      />
+                    )}
+                    {t.cameraPub && (
+                      <Icon
+                        name="videocam"
+                        size="0.95rem"
+                        label="câmera ligada"
+                        className="rail-live"
+                      />
+                    )}
+                    <Icon
+                      name={audio.muted[t.identity] ? 'volume_off' : t.micOn ? 'mic' : 'mic_off'}
+                      size="0.95rem"
+                      label={
+                        audio.muted[t.identity]
+                          ? 'mutada para você'
+                          : t.micOn
+                            ? 'microfone ligado'
+                            : 'microfone desligado'
+                      }
+                    />
+                    {audioOf === t.identity && (
+                      <div className="rail-audio">
+                        <PersonAudio id={t.identity} name={t.name} sharing={t.screenPublished} />
+                      </div>
+                    )}
+                  </li>
+                ))}
             </ul>
             {tiles.length > 40 && <p className="rail-more">e mais {tiles.length - 40} pessoas</p>}
           </div>
@@ -465,6 +484,14 @@ function ConnectedRoom({
  * docs/frontend/README.md: checa o acesso, mostra o motivo de qualquer bloqueio e só
  * então conecta.
  */
+/** Na lista "Na chamada", quem está transmitindo vem primeiro (tela, depois câmera). */
+const byStreaming = (tiles: Tile[]) =>
+  [...tiles].sort(
+    (a, b) =>
+      Number(b.screenPublished) - Number(a.screenPublished) ||
+      Number(Boolean(b.cameraPub)) - Number(Boolean(a.cameraPub)),
+  );
+
 /** Quanto tempo com o mouse parado até os controles sumirem. */
 const IDLE_MS = 30_000;
 
