@@ -1064,7 +1064,8 @@ html:not([data-call]) .backdrop {
   width: 40px;
   flex: none;
   place-items: center;
-  align-self: flex-end;
+  /* À esquerda, na mesma linha dos ícones de baixo (não solto no canto). */
+  align-self: flex-start;
   margin: 0 4px 6px;
   border-radius: 8px;
   color: var(--v3-text-2);
