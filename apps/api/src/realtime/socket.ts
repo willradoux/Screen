@@ -13,6 +13,7 @@ import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import { AppError } from '../shared/errors.js';
 import { metrics } from '../observability/metrics.js';
 import type { Logger } from '../shared/logger.js';
+import { ChatState, registerChat } from './chat.js';
 import type { RealtimeEmitter } from './emitter.js';
 
 export interface SocketDeps {
@@ -76,6 +77,8 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
 
   const connections = new Map<string, number>();
   const data = (socket: Socket) => socket.data as SocketData;
+  // Chat e enquetes (em memória; some quando a sala fecha).
+  const chat = new ChatState();
 
   // Autenticação no handshake, pelo mesmo cookie de sessão da API.
   io.use(async (socket, next) => {
@@ -102,6 +105,15 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
     const subscribeTimes: number[] = [];
     void socket.join(`user:${userId}`);
     if (role === 'ADMIN') void socket.join('admins');
+    registerChat({
+      io,
+      socket,
+      userId,
+      role: () => data(socket).role,
+      participations: deps.participations,
+      state: chat,
+      logger,
+    });
 
     socket.on('disconnect', () => {
       metrics.socketConnections.dec();
@@ -137,12 +149,17 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
         }
 
         await socket.join(`room:${room.id}`);
+        // O papel pode ter mudado desde a conexão: o chat usa o mais novo.
+        data(socket).role = identity.role;
         const participants = await deps.participations.listOpen(room.id);
         reply({
           ok: true,
           data: {
             room: toRoomDto(room, participants.length, env.WEB_URL),
             participants: participants.map((p) => toParticipantDto(p, room)),
+            // Quem entra no meio já vê a enquete do topo; a moderação vê as sugestões.
+            poll: chat.active(room.id),
+            ...(staff ? { pendingPolls: chat.pending(room.id) } : {}),
           },
         });
       } catch (err) {
@@ -197,7 +214,10 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
 
   return {
     io,
-    toRoom: (roomId, event, payload) => void io.to(`room:${roomId}`).emit(event, payload),
+    toRoom: (roomId, event, payload) => {
+      io.to(`room:${roomId}`).emit(event, payload);
+      if (event === 'room:ended') chat.forget(roomId);
+    },
     toUser: (userId, event, payload) => void io.to(`user:${userId}`).emit(event, payload),
     toAdmins: (event, payload) => void io.to('admins').emit(event, payload),
     revoke({ sessionId, userId }) {

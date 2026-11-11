@@ -1,6 +1,6 @@
 # Eventos Socket.IO
 
-> **Estado da implementação (Fase 6):** conexão autenticada, `room:subscribe`, `room:unsubscribe` e os eventos `participant:joined`, `participant:left`, `participant:updated`, `room:updated`, `room:ended`, `moderation:action`, `voice:warning`, `voice:restored`, `settings:updated` e `session:revoked`. Ficam para depois: `chat:send`/`chat:message` e `presence:*`.
+> **Estado da implementação (Fase 6):** conexão autenticada, `room:subscribe`, `room:unsubscribe` e os eventos `participant:joined`, `participant:left`, `participant:updated`, `room:updated`, `room:ended`, `moderation:action`, `voice:warning`, `voice:restored`, `settings:updated` e `session:revoked`. Chat (`chat:send`, `chat:message`, `chat:delete`) e enquete (`poll:*`) implementados em `realtime/chat.ts`. Fica para depois: `presence:*`.
 
 O Socket.IO leva **estado e notificações de controle**. A mídia vai direto pelo LiveKit.
 
@@ -39,7 +39,24 @@ Resposta `data`: snapshot `{ room, participants[], bans[] (MOD+) }`.
 `{ roomId }`.
 
 ### `chat:send`
-`{ roomId, text }` (1 a 500 caracteres). Limite: 5 mensagens / 5 s por usuário. Mensagens **não** são persistidas no MVP.
+`{ roomId, text }` (1 a 500 caracteres, aparado). Precisa acompanhar a sala (`room:subscribe`) e estar conectado nela. **Uma mensagem a cada 3 s por pessoa** (todas as abas). Quem foi silenciado pela moderação recebe `MUTED`. Mensagens **não** são persistidas: o servidor só repassa (`chat:message`); o histórico fica no navegador de cada um e some quando a sala fecha.
+
+### `chat:delete`
+`{ roomId, id }`. Só MOD+. Avisa todos com `chat:deleted` para tirar a mensagem da tela.
+
+### `poll:propose`
+`{ roomId, question, options }` (pergunta até 200 caracteres; 2 a 5 opções de até 80). Membro: vira sugestão (`poll:pending` só para a moderação da sala; uma sugestão a cada 30 s; no máximo 10 esperando). MOD+: a enquete já abre (`poll:state`).
+
+### `poll:approve` / `poll:reject`
+`{ roomId, pollId }`. Só MOD+. Aceitar põe a enquete no topo para todos (`poll:state`); a lista de sugestões é reenviada à moderação.
+
+### `poll:vote`
+`{ roomId, pollId, option }`. Um voto por pessoa (`ALREADY_VOTED` na segunda). O placar sai agrupado, no máximo a cada 0,5 s.
+
+### `poll:close` / `poll:clear`
+`{ roomId, pollId }`. Só MOD+. `close` encerra e mantém o resultado no topo; `clear` tira do topo.
+
+> A enquete ativa e as sugestões ficam **só na memória** enquanto a sala está aberta (somem em `room:ended`). A resposta de `room:subscribe` traz `poll` (a ativa, ou `null`) e, para MOD+, `pendingPolls`.
 
 ### `presence:ping`
 `{ roomId }` a cada 15 s. Mantém a participação viva; sem ping por 45 s o servidor considera desconectado.
@@ -98,8 +115,17 @@ Se voltar ao canal, chega `voice:restored`.
 
 ### `chat:message`
 ```json
-{ "roomId": "kF3x...", "id": "m_01", "userId": "1234", "displayName": "Fulano", "text": "olá", "at": "2026-11-08T20:00:00.000Z" }
+{ "roomId": "kF3x...", "id": "uuid", "userId": "1234", "displayName": "Fulano", "avatarUrl": null, "role": "MEMBER", "text": "olá", "at": "2026-11-08T20:00:00.000Z" }
 ```
+
+### `chat:deleted`
+`{ roomId, id }`: a moderação apagou a mensagem.
+
+### `poll:state`
+`{ roomId, poll }`: a enquete do topo (`{ id, question, options: [{ text, votes }], total, status: 'open' | 'closed', proposedBy }`) ou `null`.
+
+### `poll:pending`
+`{ roomId, polls }`: sugestões esperando a moderação (só MOD+ recebe).
 
 ### `session:revoked`
 Sessão invalidada (logout em outro lugar, conta bloqueada). O servidor desconecta o socket em seguida.
