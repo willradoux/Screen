@@ -1433,3 +1433,14 @@ html:not([data-call]) .backdrop {
   opacity: 1;
   transform: none;
 }
+
+/* O palco reserva espaço embaixo para a pílula de controles (ela não cobre as miniaturas nem os
+   nomes); com o mouse parado a pílula some e o palco ocupa esse espaço, deslizando. */
+.call-screen {
+  padding-bottom: 84px;
+  transition: padding-bottom 420ms var(--ease-glide);
+}
+
+.call-frame[data-idle] .call-screen {
+  padding-bottom: 14px;
+}
