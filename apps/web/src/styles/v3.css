@@ -1010,7 +1010,9 @@ html:not([data-call]) .backdrop {
   background: #71717a; /* o botão branco fica com 4,8:1 */
 }
 
-.switch[data-on] {
+/* Ligada: na cor do tema nos dois modos (sem o seletor do claro, a regra acima ganhava). */
+.switch[data-on],
+:root[data-mode='light'] .switch[data-on] {
   background: var(--v3-accent);
 }
 
