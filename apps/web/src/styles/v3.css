@@ -3093,3 +3093,68 @@ html[data-pinning]::view-transition-new(*) {
 :root[data-motion='off'] .dt-col button {
   animation: none;
 }
+
+/* ---- Pílula compacta quando falta espaço (celular, ou janela estreita com painel aberto) ----
+   Com o fone, a pílula precisa de ~435 px; abaixo disso os botões encolhem um pouco em vez de
+   cortar o botão de sair no fim. */
+.call-float {
+  max-width: calc(100% - var(--rail-w, 0px) - var(--panel-w, 0px) - 24px);
+}
+
+@media (max-width: 1180px) {
+  .call-frame[data-panel] .call-float .ctl,
+  .call-frame[data-rail] .call-float .ctl {
+    height: 38px;
+    width: 38px;
+  }
+
+  .call-frame[data-panel] .call-float .ctl-chevron,
+  .call-frame[data-rail] .call-float .ctl-chevron {
+    width: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .call-float {
+    padding: 4px;
+  }
+
+  .call-float .ctl-row,
+  .call-float .ctl-group {
+    gap: 4px;
+  }
+
+  .call-float .ctl {
+    height: 38px;
+    width: 38px;
+  }
+
+  .call-float .ctl[data-danger='true'] {
+    width: 48px;
+  }
+
+  .call-float .ctl-chevron {
+    height: 38px;
+    width: 18px;
+  }
+
+  .call-float .ctl-split {
+    padding-right: 2px;
+  }
+}
+
+@media (max-width: 380px) {
+  .call-float .ctl {
+    height: 34px;
+    width: 34px;
+  }
+
+  .call-float .ctl[data-danger='true'] {
+    width: 42px;
+  }
+
+  .call-float .ctl-chevron {
+    height: 34px;
+    width: 16px;
+  }
+}
