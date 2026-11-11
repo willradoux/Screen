@@ -2142,3 +2142,16 @@ html:not([data-call]) .backdrop {
     inset: -8px -4px;
   }
 }
+
+/* Abertura: o logo do Screen sai de cena (encolhe e some) e fica só o nome da Acelera DEV. */
+.intro-svg {
+  transform-origin: center;
+  transition:
+    opacity 260ms var(--ease-out),
+    transform 320ms var(--ease-out);
+}
+
+.intro-svg[data-gone] {
+  opacity: 0;
+  transform: scale(0.82);
+}

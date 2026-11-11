@@ -8,16 +8,10 @@ function shouldPlay(): boolean {
   return import.meta.env.MODE !== 'test' && !prefersReducedMotion();
 }
 
-/** Quanto o retângulo do logo cresce para os lados ao virar a cápsula. */
-const GROW = 230;
-const VIEW_X = -GROW;
-const VIEW_W = LOGO_W + GROW * 2;
-const CAPSULE_R = LOGO_H / 2;
-
 /**
  * Abertura: sobre o fundo do tema, o logo do Screen (laranja/rosa, com o "|<" vazado) salta, pisca,
- * olha para os lados e pisca de novo; então o retângulo se estica e vira uma cápsula, o "|<"
- * some e o logo da Acelera DEV aparece dentro dela. Depois tudo some e o app entra. A cada carregamento
+ * olha para os lados e pisca de novo; então o logo sai de cena e fica só o nome da Acelera DEV,
+ * sem fundo nenhum. Depois tudo some e o app entra. A cada carregamento
  * da página, ~3,8 s; pula com clique ou tecla; não existe com movimento reduzido ou com as
  * animações desligadas. Decorativa.
  */
@@ -27,8 +21,7 @@ export function Intro() {
   const [mark, setMark] = useState(false);
   const id = useId().replace(/:/g, '');
   const popRef = useRef<HTMLDivElement>(null);
-  const shapeRef = useRef<SVGRectElement>(null);
-  const maskRectRef = useRef<SVGRectElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const glyphRef = useRef<SVGGElement>(null);
   const eyeRef = useRef<SVGRectElement>(null);
 
@@ -36,11 +29,10 @@ export function Intro() {
     if (!playing) return;
     const html = document.documentElement;
     const pop = popRef.current;
-    const shape = shapeRef.current;
-    const maskRect = maskRectRef.current;
+    const svg = svgRef.current;
     const glyph = glyphRef.current;
     const eye = eyeRef.current;
-    if (!pop || !shape || !maskRect || !glyph || !eye) return;
+    if (!pop || !svg || !glyph || !eye) return;
     html.dataset.intro = 'play';
 
     const timers: number[] = [];
@@ -53,18 +45,6 @@ export function Intro() {
       at(0.11, () => (eye.style.transform = 'scaleY(1)'));
     };
     const look = (x: number) => (glyph.style.transform = `translateX(${x}px)`);
-    /** O retângulo do logo, de 0 (logo) a 1 (cápsula). */
-    const morph = (p: number) => {
-      const x = -GROW * p;
-      const w = LOGO_W + GROW * 2 * p;
-      const r = 62 + (CAPSULE_R - 62) * Math.min(1, Math.max(0, p));
-      for (const el of [shape, maskRect]) {
-        el.setAttribute('x', String(x));
-        el.setAttribute('width', String(Math.max(1, w)));
-        el.setAttribute('rx', String(r));
-      }
-      glyph.style.opacity = String(Math.max(0, 1 - p * 2.5));
-    };
 
     const finish = () => {
       if (done) return;
@@ -99,11 +79,9 @@ export function Intro() {
     at(1.65, () => look(16));
     at(2.0, () => look(0));
     at(2.2, blink);
-    // 3. Vira a cápsula e aparece a Acelera DEV.
-    at(2.55, () =>
-      cancels.push(animateSpring({ from: 0, to: 1, freq: 9, damp: 0.78, onUpdate: morph })),
-    );
-    at(2.85, () => setMark(true));
+    // 3. O logo sai de cena e fica só o nome da Acelera DEV (sem fundo).
+    at(2.55, () => (svg.dataset.gone = ''));
+    at(2.75, () => setMark(true));
     at(3.85, finish);
 
     const skip = () => finish();
@@ -123,22 +101,15 @@ export function Intro() {
   return (
     <div aria-hidden="true" className="intro-stage" data-leaving={leaving || undefined}>
       <div ref={popRef} className="intro-figure" style={{ transform: 'scale(0)', opacity: 0 }}>
-        <svg viewBox={`${VIEW_X} 0 ${VIEW_W} ${LOGO_H}`} className="intro-svg">
+        <svg ref={svgRef} viewBox={`0 0 ${LOGO_W} ${LOGO_H}`} className="intro-svg">
           <defs>
             {/* As cores do logo do Screen (laranja para rosa), visíveis no escuro e no claro. */}
             <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor="#ffb347" />
               <stop offset="1" stopColor="#ff4f93" />
             </linearGradient>
-            <mask
-              id={mask}
-              maskUnits="userSpaceOnUse"
-              x={VIEW_X}
-              y="0"
-              width={VIEW_W}
-              height={LOGO_H}
-            >
-              <rect ref={maskRectRef} width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
+            <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
+              <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
               <g ref={glyphRef} className="intro-glyph">
                 <rect
                   ref={eyeRef}
@@ -162,7 +133,6 @@ export function Intro() {
             </mask>
           </defs>
           <rect
-            ref={shapeRef}
             width={LOGO_W}
             height={LOGO_H}
             rx="62"
@@ -171,7 +141,8 @@ export function Intro() {
           />
         </svg>
         <div className="intro-mark-acelera" data-show={mark || undefined}>
-          <AceleraMark className="h-[24px] w-auto text-white" title="" />
+          {/* Só o nome: "ACELERA" no degradê da marca e "DEV" na cor do texto do modo. */}
+          <AceleraMark className="h-[30px] w-auto max-w-full text-[var(--v3-text)]" title="" />
         </div>
       </div>
     </div>
