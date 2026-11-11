@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { StatTile } from '../../components/Widget';
 import { Alert, Badge, Button, Card, PageTitle, Spinner } from '../../components/ui';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -88,7 +89,12 @@ function Row({ rec, onChanged }: { rec: Recording; onChanged: () => void }) {
           </a>
         )}
         {(rec.status === 'READY' || rec.status === 'FAILED') && !confirm && (
-          <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-red-300!"
+            onClick={() => setConfirm(true)}
+          >
             Apagar
           </Button>
         )}
@@ -110,6 +116,38 @@ function Row({ rec, onChanged }: { rec: Recording; onChanged: () => void }) {
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * Resumo em números, a partir da lista que a página já buscou: quantas estão prontas, o espaço
+ * que ocupam, o tempo gravado e quantas vencem nos próximos 3 dias (para baixar a tempo).
+ */
+function RecordingsSummary({ items }: { items: Recording[] }) {
+  const ready = items.filter((r) => r.status === 'READY');
+  const bytes = items.reduce((sum, r) => sum + r.sizeBytes, 0);
+  const minutes = Math.round(items.reduce((sum, r) => sum + r.durationSec, 0) / 60);
+  const expiring = ready.filter((r) => r.daysLeft !== null && r.daysLeft <= 3).length;
+  const size =
+    bytes >= 1024 ** 3
+      ? `${(bytes / 1024 ** 3).toFixed(1).replace('.', ',')} GB`
+      : `${Math.round(bytes / 1024 ** 2)} MB`;
+  return (
+    <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatTile
+        icon="radio_button_checked"
+        label="Prontas para baixar"
+        value={String(ready.length)}
+      />
+      <StatTile icon="download" label="Espaço ocupado" value={size} />
+      <StatTile icon="schedule" label="Tempo gravado" value={`${minutes} min`} />
+      <StatTile
+        icon="warning"
+        label="Vencem em até 3 dias"
+        value={String(expiring)}
+        hint={expiring > 0 ? 'Baixe antes de serem apagadas' : 'Nada para correr atrás'}
+      />
+    </div>
   );
 }
 
@@ -140,6 +178,9 @@ export function RecordingsPage() {
             Nenhuma gravação ainda. Dentro de uma reunião aberta, use “Gravação” no painel de
             pessoas.
           </Card>
+        )}
+        {state.status === 'ready' && state.data.length > 0 && (
+          <RecordingsSummary items={state.data} />
         )}
         {state.status === 'ready' && state.data.length > 0 && (
           <ul className="stagger space-y-2">

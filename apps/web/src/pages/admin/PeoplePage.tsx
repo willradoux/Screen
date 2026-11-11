@@ -174,7 +174,12 @@ function PersonRow({
           Tornar {person.role === 'ADMIN' ? 'moderador' : 'administrador'}
         </Button>
         {!confirm ? (
-          <Button size="sm" variant="danger" onClick={() => setConfirm(true)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-red-300!"
+            onClick={() => setConfirm(true)}
+          >
             Tirar acesso
           </Button>
         ) : (

@@ -125,7 +125,7 @@ export function AuditPage() {
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="surface rise rise-2 overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="audit-table w-full text-left text-sm">
           <thead className="text-xs font-medium text-zinc-500">
             <tr>
               <th className="px-4 pb-2 pt-3.5">Quando</th>
@@ -142,13 +142,21 @@ export function AuditPage() {
                 className="transition-colors hover:bg-white/[0.04]"
                 data-testid="audit-row"
               >
-                <td className="whitespace-nowrap px-3 py-2 text-zinc-400">
+                <td data-label="Quando" className="whitespace-nowrap px-3 py-2 text-zinc-400">
                   {formatDateTime(e.at)}
                 </td>
-                <td className="px-3 py-2 text-zinc-100">{actionLabel(e.action)}</td>
-                <td className="px-3 py-2 text-zinc-300">{actorLabel(e.actorId)}</td>
-                <td className="px-3 py-2 text-zinc-400">{e.targetId ?? '—'}</td>
-                <td className="px-3 py-2 text-zinc-400">{e.reason ?? '—'}</td>
+                <td data-label="Ação" className="px-3 py-2 text-zinc-100">
+                  {actionLabel(e.action)}
+                </td>
+                <td data-label="Quem" className="px-3 py-2 text-zinc-300">
+                  {actorLabel(e.actorId)}
+                </td>
+                <td data-label="Alvo" className="px-3 py-2 text-zinc-400">
+                  {e.targetId ?? '—'}
+                </td>
+                <td data-label="Motivo" className="px-3 py-2 text-zinc-400">
+                  {e.reason ?? '—'}
+                </td>
               </tr>
             ))}
           </tbody>

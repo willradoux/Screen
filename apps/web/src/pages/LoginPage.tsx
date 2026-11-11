@@ -5,6 +5,7 @@ import { AceleraMark } from '../components/AceleraMark';
 import { Icon, type IconName } from '../components/Icon';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Alert } from '../components/ui';
+import { Creature } from '../components/Creature';
 import { LogoMark } from '../components/Wordmark';
 import { api } from '../lib/api';
 import { messageFor } from '../lib/errors';
@@ -39,7 +40,7 @@ export function LoginPage() {
             <span>screen</span>
           </Link>
 
-          <div className="mt-2 flex-1 space-y-4 px-2">
+          <div className="login-side-intro mt-2 flex-1 space-y-4 px-2">
             <p className="text-[15px] font-semibold leading-snug text-zinc-50">
               Lives e reuniões da comunidade, direto no navegador.
             </p>
@@ -71,19 +72,21 @@ export function LoginPage() {
         </>
       }
     >
-      <div className="mx-auto w-full max-w-sm">
-        <div className="rise">
-          <h1 className="text-[1.75rem] font-bold leading-tight tracking-[-0.035em] text-balance text-zinc-50">
-            {toRoom ? 'Falta só entrar' : 'Entre no Screen'}
-          </h1>
-          <p className="mt-2 text-[15px] text-zinc-400">
-            {toRoom
-              ? 'Entre com o Discord e você volta direto para a sala.'
-              : 'Use sua conta do Discord. Não precisa criar senha.'}
-          </p>
+      <div className="login-main">
+        {/* O bichinho, a frase e o único botão. */}
+        <div className="login-hero rise">
+          <Creature className="loader-pet h-16" />
+          <div>
+            <h1 className="login-title">{toRoom ? 'Falta só entrar' : 'Entre no Screen'}</h1>
+            <p className="login-sub">
+              {toRoom
+                ? 'Entre com o Discord e você volta direto para a sala.'
+                : 'Use sua conta do Discord. Não precisa criar senha.'}
+            </p>
+          </div>
         </div>
 
-        <div className="rise rise-2 mt-7 space-y-3">
+        <div className="rise rise-2 login-action">
           <h2 className="sr-only">Entrar</h2>
           {code && (
             <Alert tone="error" title="Não foi possível entrar">
@@ -100,6 +103,38 @@ export function LoginPage() {
             servidor.
           </p>
         </div>
+
+        {/* O que dá para fazer: três cards, no estilo das capas das salas. */}
+        <section aria-labelledby="login-what" className="rise rise-3 login-what">
+          <h2 id="login-what" className="login-what-title">
+            O que tem no Screen
+          </h2>
+          <ul className="login-cards">
+            {(
+              [
+                [
+                  'videocam',
+                  'Lives nas calls',
+                  'Tela, câmera e voz junto do canal de voz do Discord.',
+                ],
+                [
+                  'calendar_month',
+                  'Reuniões',
+                  'Com aviso no servidor, lembretes e contagem regressiva.',
+                ],
+                ['front_hand', 'Pedir a palavra', 'Levante a mão e a moderação libera sua vez.'],
+              ] as [IconName, string, string][]
+            ).map(([icon, title, text]) => (
+              <li key={title} className="login-card">
+                <span aria-hidden="true" className="login-card-cover">
+                  <Icon name={icon} size="1.8rem" />
+                </span>
+                <span className="login-card-title">{title}</span>
+                <span className="login-card-text">{text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </SplitPanels>
   );

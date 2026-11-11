@@ -97,7 +97,7 @@ export function StatsPage() {
       {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
       {state.status === 'ready' && (
         <div className="space-y-6">
-          <div className="stagger grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="stagger grid grid-cols-2 gap-2 lg:grid-cols-3">
             <StatTile
               icon="videocam"
               label="Lives abertas"

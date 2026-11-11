@@ -9,6 +9,7 @@ import {
   StatusDot,
 } from '../../components/ui';
 import { StatTile } from '../../components/Widget';
+import { Icon, type IconName } from '../../components/Icon';
 import { useAuth } from '../../auth/AuthProvider';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -62,6 +63,31 @@ function MeetingRow({ meeting }: { meeting: Meeting }) {
         {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
       </span>
     </li>
+  );
+}
+
+/** Atalhos para o que o admin mais faz (só para admin: são páginas só dele). */
+function Shortcuts() {
+  const items: [string, string, IconName, string][] = [
+    ['/admin/reunioes', 'Nova reunião', 'campaign', 'Criar, agendar e divulgar'],
+    ['/admin/pessoas', 'Pessoas', 'group', 'Quem modera e administra'],
+    ['/admin/estatisticas', 'Estatísticas', 'bar_chart', 'Participação no período'],
+    ['/admin/config', 'Configurações', 'settings', 'Canais, cargos e limites'],
+  ];
+  return (
+    <nav aria-label="Atalhos" className="shortcuts">
+      {items.map(([to, label, icon, text]) => (
+        <Link key={to} to={to} className="shortcut">
+          <span aria-hidden="true" className="shortcut-icon">
+            <Icon name={icon} size="1.3rem" />
+          </span>
+          <span className="min-w-0">
+            <span className="shortcut-label">{label}</span>
+            <span className="shortcut-text">{text}</span>
+          </span>
+        </Link>
+      ))}
+    </nav>
   );
 }
 
@@ -133,6 +159,8 @@ export function AdminHomePage() {
           )}
 
           <Summary lives={state.data.lives} meetings={state.data.meetings} />
+
+          {admin && <Shortcuts />}
 
           <Section
             title="Sessões de live agora"
