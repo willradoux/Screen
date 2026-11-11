@@ -269,6 +269,19 @@ describe('Stage (layout dos vídeos)', () => {
     expect(screen.getByTestId('audience-count')).toHaveTextContent('Na plateia: 200 pessoas');
   });
 
+  it('sala comum (8 pessoas, quase todas só ouvindo): todo mundo aparece no palco', () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'cam', cameraPub: pub() }),
+          ...Array.from({ length: 7 }, (_, i) => tile({ identity: `q${i}`, micOn: false })),
+        ]}
+      />,
+    );
+    expect(screen.getAllByTestId('tile')).toHaveLength(8);
+    expect(screen.queryByTestId('audience-count')).not.toBeInTheDocument();
+  });
+
   it('sala grande sem palco: só quem transmite ou fala ganha quadrado', () => {
     render(
       <Stage

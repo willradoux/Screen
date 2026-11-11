@@ -405,8 +405,9 @@ function pinnedPiece(all: Piece[], pinnedId: string | null): Piece | undefined {
 /** Colunas do mosaico: o mais perto de um quadrado (1, 2, 2, 2, 3, 3, ...). */
 const columnsFor = (count: number) => Math.max(1, Math.ceil(Math.sqrt(count)));
 
-/** Acima disto, quem está só ouvindo (sem câmera, tela ou voz) deixa de ter um quadrado. */
-const CROWD = 6;
+// Quem só ouve aparece como avatar (sem vídeo, leve): numa sala comum, todo mundo aparece.
+// Só numa sala cheia (live grande) quem não transmite vira o número "Só ouvindo: N".
+const CROWD = 24;
 
 const isActive = (t: Tile) =>
   t.isLocal || t.isSpeaking || t.micOn || Boolean(t.cameraPub) || Boolean(t.screenPub);
