@@ -29,6 +29,18 @@ const typing = z.object({ roomId });
 
 /** "Fulano está digitando": no máximo um aviso a cada 1,5 s por pessoa. */
 export const TYPING_EVERY_MS = 1_500;
+/** O resumo de quem digita sai no máximo 1 vez por segundo por sala (não 1 por pessoa). */
+export const TYPING_FLUSH_MS = 1_000;
+/** Quem não avisa há 3 s parou de digitar. */
+const TYPING_TTL_MS = 3_000;
+/**
+ * Modo lento da sala inteira (como no YouTube): no máximo 10 mensagens por segundo, com folga
+ * de 20 de uma vez. Com 500 pessoas, cada mensagem vira 500 entregas: isso segura a VPS.
+ */
+export const ROOM_MSGS_PER_SEC = 10;
+const ROOM_MSG_BURST = 20;
+/** Os mapas de "última mensagem" são limpos quando passam disto (memória não cresce sem fim). */
+const PRUNE_ABOVE = 5_000;
 
 /** Uma mensagem a cada 3 s por pessoa (contra spam), valendo para todas as abas dela. */
 export const CHAT_COOLDOWN_MS = 3_000;
@@ -81,6 +93,64 @@ export class ChatState {
   >();
   readonly lastMessage = new Map<string, number>();
   readonly lastProposal = new Map<string, number>();
+  /** Balde de mensagens por sala (modo lento). */
+  private buckets = new Map<string, { tokens: number; at: number }>();
+  /** Quem está digitando, por sala, e o resumo agendado. */
+  private typing = new Map<
+    string,
+    { who: Map<string, { name: string; until: number }>; timer?: ReturnType<typeof setTimeout> }
+  >();
+
+  /** A sala ainda aceita mensagem agora? (gasta uma ficha do balde) */
+  takeRoomSlot(roomId: string, t: number): boolean {
+    const b = this.buckets.get(roomId) ?? { tokens: ROOM_MSG_BURST, at: t };
+    b.tokens = Math.min(ROOM_MSG_BURST, b.tokens + ((t - b.at) / 1000) * ROOM_MSGS_PER_SEC);
+    b.at = t;
+    this.buckets.set(roomId, b);
+    if (b.tokens < 1) return false;
+    b.tokens -= 1;
+    return true;
+  }
+
+  /** Marca que alguém digita; devolve true se é preciso agendar o resumo da sala. */
+  markTyping(roomId: string, userId: string, name: string, t: number): boolean {
+    let r = this.typing.get(roomId);
+    if (!r) {
+      r = { who: new Map() };
+      this.typing.set(roomId, r);
+    }
+    r.who.set(userId, { name, until: t + TYPING_TTL_MS });
+    return r.timer === undefined;
+  }
+
+  stopTyping(roomId: string, userId: string): void {
+    this.typing.get(roomId)?.who.delete(userId);
+  }
+
+  setTypingTimer(roomId: string, timer: ReturnType<typeof setTimeout> | undefined): void {
+    const r = this.typing.get(roomId);
+    if (r) r.timer = timer;
+  }
+
+  /** Resumo atual: até 3 nomes (com o id, para cada um não ver o próprio) e quantos ao todo. */
+  typingSummary(roomId: string, t: number) {
+    const r = this.typing.get(roomId);
+    if (!r) return { people: [], count: 0 };
+    for (const [id, v] of r.who) if (v.until <= t) r.who.delete(id);
+    const people = [...r.who].slice(0, 4).map(([userId, v]) => ({ userId, name: v.name }));
+    return { people, count: r.who.size };
+  }
+
+  /** Limpa os mapas de tempo quando crescem demais (só guarda os recentes). */
+  prune(t: number): void {
+    for (const [map, keep] of [
+      [this.lastMessage, 60_000],
+      [this.lastProposal, POLL_PROPOSE_COOLDOWN_MS],
+    ] as const) {
+      if (map.size <= PRUNE_ABOVE) continue;
+      for (const [k, v] of map) if (t - v > keep) map.delete(k);
+    }
+  }
 
   room(id: string) {
     let r = this.rooms.get(id);
@@ -105,6 +175,10 @@ export class ChatState {
     const r = this.rooms.get(roomId);
     if (r?.timer) clearTimeout(r.timer);
     this.rooms.delete(roomId);
+    const ty = this.typing.get(roomId);
+    if (ty?.timer) clearTimeout(ty.timer);
+    this.typing.delete(roomId);
+    this.buckets.delete(roomId);
   }
 }
 
@@ -188,7 +262,15 @@ export function registerChat(deps: ChatDeps): void {
       if (me.mutedByModeration) {
         return reply(fail('MUTED', 'A moderação silenciou você nesta sala.'));
       }
+      if (!state.takeRoomSlot(roomId, t)) {
+        return reply({
+          ...fail('ROOM_BUSY', 'O chat está muito movimentado. Tente de novo em instantes.'),
+          retryInMs: 1_000,
+        });
+      }
       state.lastMessage.set(userId, t);
+      state.stopTyping(roomId, userId);
+      state.prune(t);
       const message = {
         roomId,
         id: randomUUID(),
@@ -220,7 +302,19 @@ export function registerChat(deps: ChatDeps): void {
         name = me.displayName;
         names.set(roomId, name);
       }
-      socket.to(room(roomId)).emit('chat:typing', { roomId, userId, displayName: name });
+      // Junta todo mundo que digita na sala num resumo (1 por segundo, no máximo).
+      if (state.markTyping(roomId, userId, name, t)) {
+        state.setTypingTimer(
+          roomId,
+          setTimeout(() => {
+            state.setTypingTimer(roomId, undefined);
+            io.to(room(roomId)).emit('chat:typing', {
+              roomId,
+              ...state.typingSummary(roomId, now()),
+            });
+          }, TYPING_FLUSH_MS),
+        );
+      }
     } catch (err) {
       logger.error({ err }, 'falha em chat:typing');
     }

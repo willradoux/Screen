@@ -98,18 +98,41 @@ export function useRoomSession(
   const [messages, setMessages] = useState<ChatMessage[]>(() => readChat(chatKey));
   const [poll, setPoll] = useState<Poll | null>(null);
   const [pendingPolls, setPendingPolls] = useState<Poll[]>([]);
-  // Quem está digitando agora (some 3,5 s depois do último aviso).
-  const [typing, setTyping] = useState<{ userId: string; name: string; until: number }[]>([]);
+  // Quem está digitando (resumo da sala que o servidor manda no máximo 1 vez por segundo).
+  const [typing, setTyping] = useState<{
+    people: { userId: string; name: string }[];
+    count: number;
+    until: number;
+  }>({ people: [], count: 0, until: 0 });
   const lastTypingSent = useRef(0);
+  // Grava no navegador só depois de 1 s sem mensagem nova (não a cada mensagem).
+  const writeTimer = useRef(0);
+  const latestMessages = useRef(messages);
   const saveMessages = useCallback(
     (update: (list: ChatMessage[]) => ChatMessage[]) =>
       setMessages((list) => {
         const next = update(list).slice(-CHAT_KEEP);
-        writeChat(chatKey, next);
+        latestMessages.current = next;
+        window.clearTimeout(writeTimer.current);
+        writeTimer.current = window.setTimeout(() => {
+          writeTimer.current = 0;
+          writeChat(chatKey, next);
+        }, 1_000);
         return next;
       }),
     [chatKey],
   );
+  // Fechou a página antes do 1 s: grava agora.
+  useEffect(() => {
+    const flush = () => {
+      if (writeTimer.current) writeChat(chatKey, latestMessages.current);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, [chatKey]);
 
   const mediaRef = useRef<LiveKitRoom | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -192,22 +215,38 @@ export function useRoomSession(
       // Também ao reconectar: a resposta traz o estado atual (docs/backend/eventos-socketio.md).
       socket.on('connect', subscribe);
 
+      // Mensagens que chegam juntas entram de uma vez (um redesenho só, a cada 150 ms).
+      let incoming: ChatMessage[] = [];
+      let flushTimer = 0;
       socket.on('chat:message', (m: ChatMessage) => {
-        // Quem mandou a mensagem parou de digitar.
-        setTyping((list) => list.filter((t) => t.userId !== m.userId));
-        saveMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m]));
+        incoming.push(m);
+        if (flushTimer) return;
+        flushTimer = window.setTimeout(() => {
+          const batch = incoming;
+          incoming = [];
+          flushTimer = 0;
+          // Quem mandou a mensagem parou de digitar.
+          const authors = new Set(batch.map((x) => x.userId));
+          setTyping((t) => ({ ...t, people: t.people.filter((x) => !authors.has(x.userId)) }));
+          saveMessages((list) => {
+            const ids = new Set(list.map((x) => x.id));
+            return [...list, ...batch.filter((x) => !ids.has(x.id))];
+          });
+        }, 150);
       });
       socket.on('chat:deleted', (p: { id: string }) =>
         saveMessages((list) => list.filter((m) => m.id !== p.id)),
       );
       socket.on('poll:state', (p: { poll: Poll | null }) => setPoll(p.poll));
-      socket.on('chat:typing', (p: { userId: string; displayName: string }) => {
-        const until = Date.now() + TYPING_SHOW_MS;
-        setTyping((list) => [
-          ...list.filter((t) => t.userId !== p.userId && t.until > Date.now()),
-          { userId: p.userId, name: p.displayName, until },
-        ]);
-      });
+      socket.on(
+        'chat:typing',
+        (p: { people?: { userId: string; name: string }[]; count?: number }) =>
+          setTyping({
+            people: p.people ?? [],
+            count: p.count ?? 0,
+            until: Date.now() + TYPING_SHOW_MS,
+          }),
+      );
       socket.on('poll:pending', (p: { polls: Poll[] }) => setPendingPolls(p.polls ?? []));
 
       socket.on('room:ended', (p: { reason: EndReason }) => {
@@ -389,13 +428,12 @@ export function useRoomSession(
     [roomId],
   );
 
-  // Tira da lista quem parou de digitar (só roda enquanto tem alguém digitando).
+  // Apaga o "digitando" se o servidor parar de mandar resumo.
   useEffect(() => {
-    if (typing.length === 0) return;
-    const next = Math.min(...typing.map((t) => t.until)) - Date.now();
+    if (typing.count === 0) return;
     const id = window.setTimeout(
-      () => setTyping((list) => list.filter((t) => t.until > Date.now())),
-      Math.max(100, next),
+      () => setTyping({ people: [], count: 0, until: 0 }),
+      Math.max(100, typing.until - Date.now()),
     );
     return () => window.clearTimeout(id);
   }, [typing]);
@@ -427,7 +465,11 @@ export function useRoomSession(
       messages,
       poll,
       pendingPolls,
-      typing: typing.map((t) => t.name),
+      typing: typing.people.filter((p) => p.userId !== myId).map((p) => p.name),
+      typingCount: Math.max(
+        0,
+        typing.count - (typing.people.some((p) => p.userId === myId) ? 1 : 0),
+      ),
       notifyTyping: () => {
         // Avisa no máximo a cada 1,5 s (o servidor também limita).
         const t = Date.now();
@@ -444,7 +486,7 @@ export function useRoomSession(
       close: (pollId) => ask('poll:close', { pollId }),
       clear: (pollId) => ask('poll:clear', { pollId }),
     }),
-    [messages, poll, pendingPolls, typing, ask, roomId],
+    [messages, poll, pendingPolls, typing, ask, roomId, myId],
   );
 
   const retry = useCallback(() => {
@@ -487,8 +529,9 @@ export interface RoomChat {
   poll: Poll | null;
   /** Sugestões esperando a moderação (só a moderação recebe). */
   pendingPolls: Poll[];
-  /** Nomes de quem está digitando agora. */
+  /** Nomes de quem está digitando agora (até alguns) e quantos ao todo. */
   typing: string[];
+  typingCount?: number;
   /** Avisa que você está digitando (limitado). */
   notifyTyping: () => void;
   send: (text: string) => Promise<ChatAck>;

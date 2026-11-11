@@ -58,14 +58,17 @@ const MessageRow = memo(function MessageRow({
 });
 
 /** "Fulano está digitando..." (uma linha só; não mexe na lista de mensagens). */
-function TypingLine({ names }: { names: string[] }) {
-  if (names.length === 0) return <p className="chat-typing" aria-hidden="true" />;
+function TypingLine({ names, count }: { names: string[]; count: number }) {
+  const total = Math.max(count, names.length);
+  if (total === 0) return <p className="chat-typing" aria-hidden="true" />;
   const text =
-    names.length === 1
+    total === 1 && names[0]
       ? `${names[0]} está digitando…`
-      : names.length === 2
+      : total === 2 && names.length >= 2
         ? `${names[0]} e ${names[1]} estão digitando…`
-        : 'Várias pessoas estão digitando…';
+        : names.length > 0 && total <= 4
+          ? `${names.slice(0, 2).join(', ')} e mais ${total - Math.min(2, names.length)} estão digitando…`
+          : `${total} pessoas estão digitando…`;
   return (
     <p className="chat-typing" aria-live="polite">
       <span className="chat-typing-dots" aria-hidden="true">
@@ -245,6 +248,8 @@ export function ChatPanel({
   const [pollForm, setPollForm] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  // Lendo lá em cima e chegou mensagem nova: aparece o botão para descer.
+  const [newBelow, setNewBelow] = useState(false);
   const waiting = waitUntil > now;
   // Função estável para as mensagens memorizadas não redesenharem.
   const chatRef = useRef(chat);
@@ -261,8 +266,17 @@ export function ChatPanel({
   // Chegou mensagem: desce até o fim, se a pessoa já estava no fim (não puxa quem está lendo).
   useLayoutEffect(() => {
     const el = listRef.current;
-    if (el && stick.current) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (stick.current) el.scrollTop = el.scrollHeight;
+    else if (chat.messages.length > 0) setNewBelow(true);
   }, [chat.messages.length]);
+
+  const toBottom = () => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    stick.current = true;
+    setNewBelow(false);
+  };
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -274,7 +288,8 @@ export function ChatPanel({
       stick.current = true;
       setNow(Date.now());
       setWaitUntil(Date.now() + COOLDOWN_MS);
-    } else if (res.error?.code === 'RATE_LIMITED') {
+    } else if (res.error?.code === 'RATE_LIMITED' || res.error?.code === 'ROOM_BUSY') {
+      if (res.error.code === 'ROOM_BUSY') onInfo(res.error.message);
       setNow(Date.now());
       setWaitUntil(Date.now() + (res.retryInMs ?? COOLDOWN_MS));
     } else {
@@ -323,6 +338,7 @@ export function ChatPanel({
         onScroll={(e) => {
           const el = e.currentTarget;
           stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+          if (stick.current) setNewBelow(false);
         }}
       >
         {/* As mensagens começam embaixo e vão subindo; quando enche, a lista rola. */}
@@ -345,7 +361,13 @@ export function ChatPanel({
         </div>
       </div>
 
-      <TypingLine names={chat.typing} />
+      {newBelow && (
+        <button type="button" className="chat-new-below" onClick={toBottom}>
+          Novas mensagens
+          <Icon name="keyboard_arrow_down" size="1rem" />
+        </button>
+      )}
+      <TypingLine names={chat.typing} count={chat.typingCount ?? chat.typing.length} />
 
       {pollsEnabled && pollForm ? (
         <PollForm

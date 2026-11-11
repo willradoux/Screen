@@ -91,21 +91,24 @@ async function joinRoom(
 }
 
 describe('chat da sala', () => {
-  it('"fulano está digitando" chega aos outros (não a quem digita), no máximo 1 a cada 1,5 s', async () => {
+  it('"digitando" sai como resumo da sala (1 por segundo), com quem está digitando', async () => {
     const { ctx, server, room } = await start();
     const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');
     const b = await joinRoom(ctx, server.url, room.id, OTHER, 'Ciclano');
-    let mine = 0;
-    a.socket.on('chat:typing', () => mine++);
-    let theirs = 0;
-    const got = once<{ displayName: string }>(b.socket, 'chat:typing');
-    b.socket.on('chat:typing', () => theirs++);
+    let summaries = 0;
+    b.socket.on('chat:typing', () => summaries++);
+    const got = once<{ people: { userId: string; name: string }[]; count: number }>(
+      b.socket,
+      'chat:typing',
+    );
     a.socket.emit('chat:typing', { roomId: room.id });
     a.socket.emit('chat:typing', { roomId: room.id });
-    expect((await got).displayName).toBe('Fulano');
-    await new Promise((r) => setTimeout(r, 150));
-    expect(theirs).toBe(1);
-    expect(mine).toBe(0);
+    b.socket.emit('chat:typing', { roomId: room.id });
+    const summary = await got;
+    expect(summary.count).toBe(2);
+    expect(summary.people.map((p) => p.name).sort()).toEqual(['Ciclano', 'Fulano']);
+    await new Promise((r) => setTimeout(r, 200));
+    expect(summaries).toBe(1);
   });
 
   it('a mensagem chega a todos da sala, com nome; o texto vem aparado', async () => {
