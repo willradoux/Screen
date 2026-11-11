@@ -43,6 +43,13 @@ body {
   background: var(--v3-bg);
 }
 
+/* A margem de cima da barra do celular não "vaza" para fora do body (empurrava a página
+   8px e criava rolagem à toa em telas curtas). */
+body,
+.hub {
+  display: flow-root;
+}
+
 /* O fundo animado só aparece na sala; nas outras telas o fundo é liso. */
 html:not([data-call]) .backdrop {
   display: none;
@@ -2069,4 +2076,54 @@ html:not([data-call]) .backdrop {
 :root[data-mode='dark'] .switch[data-on] .switch-knob {
   background: #000000;
   box-shadow: none;
+}
+
+/* Barra de rolagem fina e arredondada (como a do Spotify): sem trilho, só a pílula cinza,
+   que clareia ao passar o mouse. Vale para a página toda (no celular quem rola é a página)
+   e para os painéis. Chrome/Edge/Safari usam o ::-webkit-scrollbar; o Firefox, o padrão. */
+@supports selector(::-webkit-scrollbar) {
+  html,
+  .hub-main,
+  .call-screen {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Na rolagem da página, o trilho tem a cor do fundo (no claro não aparece faixa escura). */
+  html::-webkit-scrollbar-track,
+  html::-webkit-scrollbar-corner {
+    background: var(--v3-bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--v3-text) 28%, transparent) padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--v3-text) 45%, transparent);
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--v3-text) 28%, transparent) transparent;
+  }
 }
