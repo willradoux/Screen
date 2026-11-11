@@ -95,15 +95,28 @@ export const HD_MAX_PEOPLE = 30;
 /** Acima disto de pessoas na sala (de verdade, não vagas) vale o modo econômico. */
 export const ECONOMY_MIN_PEOPLE = 100;
 
+/** Até quantos vídeos (câmeras + telas) quem transmite manda a câmera em alta. */
+export const STAGE_MAX_VIDEOS = 4;
+
 /**
  * Qualidade de quem transmite, pelo que está acontecendo na sala agora (não pelas vagas):
- *  - poucos vídeos e pouca gente: alta (60 quadros);
- *  - até 100 pessoas: normal (30 quadros);
- *  - mais de 100: econômica (a VPS manda uma cópia para cada um).
+ *  - sala pequena (até 5 vídeos e 30 pessoas): câmera e tela em alta, a 60 quadros;
+ *  - live/reunião com poucos transmitindo (até 4 vídeos, como apresentador e convidados): a
+ *    câmera sai em alta com camadas (simulcast), e a plateia recebe a camada que o servidor
+ *    aguenta (`cameraQualityFor`); a tela fica leve, porque não tem camadas;
+ *  - muitos transmitindo: normal até 100 pessoas, econômico acima.
  */
 export function profileFor(room: { people: number; videos: number }): PublishProfile {
-  if (room.people > ECONOMY_MIN_PEOPLE) return BIG_ROOM_PROFILE;
   if (room.videos <= HD_MAX_VIDEOS && room.people <= HD_MAX_PEOPLE) return HD_PROFILE;
+  if (room.videos <= STAGE_MAX_VIDEOS) {
+    return {
+      camera: HD_PROFILE.camera,
+      microphone:
+        room.people > ECONOMY_MIN_PEOPLE ? BIG_ROOM_PROFILE.microphone : NORMAL_PROFILE.microphone,
+      screen: room.people > ECONOMY_MIN_PEOPLE ? BIG_ROOM_PROFILE.screen : NORMAL_PROFILE.screen,
+    };
+  }
+  if (room.people > ECONOMY_MIN_PEOPLE) return BIG_ROOM_PROFILE;
   return NORMAL_PROFILE;
 }
 

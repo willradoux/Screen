@@ -37,12 +37,17 @@ describe('sala grande', () => {
     expect(profileFor({ people: 30, videos: 5 })).toBe(HD_PROFILE);
     expect(HD_PROFILE.camera.capture.resolution?.frameRate).toBe(60);
     expect(HD_PROFILE.screen.capture.resolution?.height).toBe(1080);
-    // Muitos vídeos ou mais gente: normal.
+    // Muitos transmitindo: normal até 100 pessoas, econômico acima.
     expect(profileFor({ people: 10, videos: 6 })).toBe(NORMAL_PROFILE);
-    expect(profileFor({ people: 31, videos: 1 })).toBe(NORMAL_PROFILE);
-    expect(profileFor({ people: 100, videos: 1 })).toBe(NORMAL_PROFILE);
-    // Sala cheia de verdade: econômico.
-    expect(profileFor({ people: 101, videos: 1 })).toBe(BIG_ROOM_PROFILE);
+    expect(profileFor({ people: 150, videos: 8 })).toBe(BIG_ROOM_PROFILE);
+    // Live/reunião com poucos no palco: a câmera de quem fala sai em alta (com camadas),
+    // mesmo com 500 assistindo; a tela e o áudio ficam leves.
+    const live = profileFor({ people: 500, videos: 2 });
+    expect(live.camera).toBe(HD_PROFILE.camera);
+    expect(live.camera.publish.simulcast).toBe(true);
+    expect(live.screen).toBe(BIG_ROOM_PROFILE.screen);
+    expect(live.microphone).toBe(BIG_ROOM_PROFILE.microphone);
+    expect(profileFor({ people: 80, videos: 3 }).screen).toBe(NORMAL_PROFILE.screen);
   });
 
   it('conta câmeras e telas ligadas', () => {
