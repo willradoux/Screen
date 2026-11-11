@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { Backdrop } from './components/Backdrop';
 import { Intro } from './components/Intro';
@@ -15,7 +15,27 @@ import { PreferencesPage } from './pages/PreferencesPage';
 // serve para admins: carregam sob demanda, para login e lista de salas abrirem rápido.
 // Laboratório do palco: só em desenvolvimento (o import some do build de produção).
 const StageLab = import.meta.env.DEV ? lazy(() => import('./dev/StageLab')) : null;
-const RoomPage = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomPage })));
+const loadRoomPage = () => import('./pages/RoomPage');
+const RoomPage = lazy(() => loadRoomPage().then((m) => ({ default: m.RoomPage })));
+
+/**
+ * Baixa o código da sala em segundo plano quando o navegador fica ocioso, para entrar numa sala
+ * ser na hora (sem esperar o download do LiveKit). Não faz isso com "economia de dados" ligada.
+ */
+function usePrefetchRoom() {
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') return;
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+    const go = () => void loadRoomPage().catch(() => undefined);
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(go, { timeout: 5000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(go, 2500);
+    return () => window.clearTimeout(id);
+  }, []);
+}
 const AdminMeetingsPage = lazy(() =>
   import('./pages/admin/AdminMeetingsPage').then((m) => ({ default: m.AdminMeetingsPage })),
 );
@@ -62,6 +82,7 @@ function NotFound() {
  * (docs/frontend/README.md).
  */
 export function App() {
+  usePrefetchRoom();
   return (
     <>
       <Backdrop />

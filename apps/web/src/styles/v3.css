@@ -194,11 +194,15 @@ html:not([data-call]) .backdrop {
   gap: 40px;
 }
 
-/* Peças dentro do painel: um tom acima, sem sombra nem desfoque. */
+/* Peças dentro do painel: um tom acima, sem sombra nem desfoque (o fundo é sólido, então o
+   desfoque não aparecia e só pesava ao rolar). */
 .hub-main .surface,
 .hub-main .glass {
   border-radius: var(--v3-r);
   background: var(--v3-card);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* Botões: primário branco, secundário em pílula cinza. */
