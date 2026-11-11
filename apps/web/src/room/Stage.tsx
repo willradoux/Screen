@@ -143,6 +143,7 @@ function PersonTile({
       {...(onPin ? reveal : {})}
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
+      data-voice-id={tile.identity}
       data-size={size}
       style={fitStyle(ratio)}
       className={`stage-tile ${tile.cameraPub ? '' : 'stage-tile-empty'} ${
@@ -183,15 +184,16 @@ function PersonTile({
           className={`ml-auto ${tile.micOn ? 'text-emerald-300' : 'text-red-300'}`}
           title={tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}
         >
-          {tile.micOn && tile.isSpeaking ? (
-            // Falando: o ícone vira três barrinhas de som mexendo.
+          {/* Falando: o ícone vira três barrinhas que seguem o volume (o CSS troca na hora). */}
+          <span aria-hidden="true" className="speak-mic">
+            <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.05rem" />
+          </span>
+          {tile.micOn && (
             <span aria-hidden="true" className="speak-bars">
               <span />
               <span />
               <span />
             </span>
-          ) : (
-            <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.05rem" />
           )}
           <span className="sr-only">
             {tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}

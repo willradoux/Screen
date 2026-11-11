@@ -22,6 +22,8 @@ export interface Tile {
   /** Pode transmitir agora. No palco ligado isto é exatamente "está no palco". */
   canPublish: boolean;
   micOn: boolean;
+  /** Microfone publicado (para medir o volume no navegador). */
+  micPub?: TrackPublication | undefined;
   cameraPub: TrackPublication | undefined;
   screenPub: TrackPublication | undefined;
   /** Há tela publicada (mesmo que este navegador não esteja recebendo o vídeo dela). */
@@ -51,6 +53,7 @@ export function toTile(p: Participant): Tile {
   const meta = parseMetadata(p.metadata);
   const camera = p.getTrackPublication(Track.Source.Camera);
   const screen = p.getTrackPublication(Track.Source.ScreenShare);
+  const mic = p.getTrackPublication(Track.Source.Microphone);
   return {
     identity: p.identity,
     name: p.name || p.identity,
@@ -60,6 +63,7 @@ export function toTile(p: Participant): Tile {
     isSpeaking: p.isSpeaking,
     canPublish: p.permissions?.canPublish ?? false,
     micOn: p.isMicrophoneEnabled,
+    micPub: mic && !mic.isMuted && mic.track ? mic : undefined,
     cameraPub: hasVideo(camera) ? camera : undefined,
     screenPub: hasVideo(screen) ? screen : undefined,
     screenPublished: Boolean(screen && !screen.isMuted),

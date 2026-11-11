@@ -488,7 +488,8 @@ html:not([data-call]) .backdrop {
   background: #1e1f22;
 }
 
-.stage-tile[data-speaking] {
+.stage-tile[data-talking],
+.stage-tile:not([data-voice])[data-speaking] {
   box-shadow: inset 0 0 0 2px #23a55a;
 }
 
@@ -779,12 +780,15 @@ html:not([data-call]) .backdrop {
   color: var(--v3-text);
 }
 
-.rail-people li[data-speaking] {
+.rail-people li[data-talking],
+.rail-people li:not([data-voice])[data-speaking] {
   color: var(--v3-text);
 }
 
-.rail-people li[data-speaking] .avatar,
-.rail-people li[data-speaking] img {
+.rail-people li[data-talking] .avatar,
+.rail-people li:not([data-voice])[data-speaking] .avatar,
+.rail-people li[data-talking] img,
+.rail-people li:not([data-voice])[data-speaking] img {
   box-shadow: 0 0 0 2px #23a55a;
 }
 
@@ -2158,7 +2162,8 @@ html:not([data-call]) .backdrop {
    Card: borda verde que entra rápido, sai devagar e pulsa de leve. Sem câmera: anel em volta do
    avatar que "respira" em ondas. Legenda: o microfone vira três barrinhas de som. Lista da barra:
    anel no avatar. Só opacity/transform; com animações desligadas fica aceso, parado. */
-.stage-tile[data-speaking] {
+.stage-tile[data-talking],
+.stage-tile:not([data-voice])[data-speaking] {
   box-shadow: none;
 }
 
@@ -2176,7 +2181,8 @@ html:not([data-call]) .backdrop {
   transition: opacity 320ms var(--ease-out);
 }
 
-.stage-tile[data-speaking]::after {
+.stage-tile[data-talking]::after,
+.stage-tile:not([data-voice])[data-speaking]::after {
   opacity: 1;
   transition-duration: 90ms;
   animation: v3-speak-glow 1.4s ease-in-out infinite;
@@ -2212,17 +2218,20 @@ html:not([data-call]) .backdrop {
     transform 280ms var(--ease-out);
 }
 
-[data-speaking] .speak-ring {
+[data-talking] .speak-ring,
+:not([data-voice])[data-speaking] .speak-ring {
   opacity: 1;
   transform: none;
   transition-duration: 90ms;
 }
 
-[data-speaking] .speak-ring-2 {
+[data-talking] .speak-ring-2,
+:not([data-voice])[data-speaking] .speak-ring-2 {
   animation: v3-speak-wave 1.5s ease-out infinite;
 }
 
-[data-speaking] .speak-avatar > :last-child {
+[data-talking] .speak-avatar > :last-child,
+:not([data-voice])[data-speaking] .speak-avatar > :last-child {
   transform: scale(1.04);
 }
 
@@ -2279,13 +2288,17 @@ html:not([data-call]) .backdrop {
   transition: box-shadow 280ms var(--ease-out);
 }
 
-.rail-people li[data-speaking] .avatar,
-.rail-people li[data-speaking] img {
+.rail-people li[data-talking] .avatar,
+.rail-people li:not([data-voice])[data-speaking] .avatar,
+.rail-people li[data-talking] img,
+.rail-people li:not([data-voice])[data-speaking] img {
   transition-duration: 90ms;
 }
 
-:root[data-motion='off'] .stage-tile[data-speaking]::after,
-:root[data-motion='off'] [data-speaking] .speak-ring-2,
+:root[data-motion='off'] .stage-tile[data-talking]::after,
+:root[data-motion='off'] .stage-tile:not([data-voice])[data-speaking]::after,
+:root[data-motion='off'] [data-talking] .speak-ring-2,
+:root[data-motion='off'] :not([data-voice])[data-speaking] .speak-ring-2,
 :root[data-motion='off'] .speak-bars > span {
   animation: none;
 }
@@ -2295,8 +2308,10 @@ html:not([data-call]) .backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage-tile[data-speaking]::after,
-  [data-speaking] .speak-ring-2,
+  .stage-tile[data-talking]::after,
+  .stage-tile:not([data-voice])[data-speaking]::after,
+  [data-talking] .speak-ring-2,
+  :not([data-voice])[data-speaking] .speak-ring-2,
   .speak-bars > span {
     animation: none;
   }
@@ -2418,4 +2433,109 @@ html:not([data-call]) .backdrop {
   background: #0a0a0a;
   transform: rotate(-16deg);
   transform-origin: 50% 100%;
+}
+
+/* ---- Some devagar, volta na hora ----
+   Ao mexer o mouse (ou tocar), a barra e a pílula voltam rápido (160–200 ms); só a saída é
+   lenta. No celular o palco não muda de tamanho quando os controles somem (redimensionar o
+   vídeo a cada quadro travava a volta). */
+.call-rail {
+  transition:
+    width 220ms var(--ease-out),
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.call-rail[data-idle] {
+  transition:
+    width 420ms var(--ease-glide),
+    opacity 320ms var(--ease-out),
+    transform 420ms var(--ease-glide);
+}
+
+.call-float {
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.call-float[data-idle] {
+  transition:
+    opacity 360ms var(--ease-out),
+    transform 420ms var(--ease-glide);
+}
+
+@media (max-width: 640px) {
+  .call-screen,
+  .call-frame[data-idle] .call-screen {
+    padding-bottom: 84px;
+    transition: none;
+  }
+
+  /* O botão flutuante da barra só some/volta com opacidade (sem mexer no tamanho). */
+  .call-rail,
+  .call-rail[data-idle] {
+    transition:
+      opacity 160ms var(--ease-out),
+      transform 200ms var(--ease-out);
+  }
+
+  .call-rail[data-idle] {
+    transition-duration: 320ms;
+  }
+}
+
+/* ---- Voz em tempo real (room/useVoiceLevels.ts) ----
+   Com o medidor do navegador, o card acende na hora (data-talking) e as barrinhas e o anel
+   seguem o volume (--voice, de 0 a 1). Sem medidor, vale o aviso do servidor (data-speaking)
+   com a animação de antes. */
+.speak-mic {
+  display: inline-flex;
+}
+
+.speak-bars {
+  display: none;
+}
+
+[data-talking] .speak-bars,
+:not([data-voice])[data-speaking] .speak-bars {
+  display: inline-flex;
+}
+
+[data-talking] .speak-mic,
+:not([data-voice])[data-speaking] .speak-mic {
+  display: none;
+}
+
+/* Barrinhas guiadas pelo volume: cada uma com um peso, para parecer um equalizador. */
+[data-voice] .speak-bars > span {
+  animation: none;
+  transition: transform 70ms linear;
+  transform: scaleY(calc(0.3 + var(--voice, 0) * 0.75));
+}
+
+[data-voice] .speak-bars > span:nth-child(2) {
+  transform: scaleY(calc(0.35 + var(--voice, 0) * 0.95));
+}
+
+[data-voice] .speak-bars > span:nth-child(3) {
+  transform: scaleY(calc(0.3 + var(--voice, 0) * 0.6));
+}
+
+/* O anel do avatar cresce com a voz, e a borda do card fica mais forte quanto mais alto. */
+[data-voice][data-talking] .speak-ring {
+  transform: scale(calc(1 + var(--voice, 0) * 0.12));
+  transition:
+    opacity 90ms var(--ease-out),
+    transform 70ms linear;
+}
+
+.stage-tile[data-voice][data-talking]::after {
+  animation: none;
+  opacity: calc(0.65 + var(--voice, 0) * 0.5);
+}
+
+[data-voice][data-talking] .speak-avatar > :last-child {
+  transform: scale(calc(1 + var(--voice, 0) * 0.06));
+  transition: transform 70ms linear;
 }

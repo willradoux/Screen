@@ -24,6 +24,7 @@ import {
 } from '../room/Screens';
 import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Stage';
 import { useIdle } from '../room/useIdle';
+import { useVoiceLevels } from '../room/useVoiceLevels';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { StatusBadge } from '../components/RoomCard';
@@ -112,12 +113,16 @@ function ConnectedRoom({
   });
   const [handBusy, setHandBusy] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(false);
-  // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 3 s.
+  // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 5 s.
   // "Mais opções" abre a barra preta completa embaixo, que fica até a pessoa minimizar.
   // Com o ponteiro ou o foco nos controles (ou um painel aberto), eles não somem.
   const [holdBar, setHoldBar] = useState(false);
-  const idle = useIdle(3000, { hold: holdBar || side !== null });
+  const idle = useIdle(IDLE_MS, { hold: holdBar || side !== null });
   const hideFloating = idle;
+  // A barra da direita aberta (expandida) não some sozinha: só a recolhida some com o mouse parado.
+  const hideRail = idle && !expanded;
+  // Quem fala acende na hora: volume medido no navegador (o aviso do servidor chega atrasado).
+  useVoiceLevels(tiles);
   const holdHandlers = {
     onPointerEnter: () => setHoldBar(true),
     onPointerLeave: () => setHoldBar(false),
@@ -223,7 +228,7 @@ function ConnectedRoom({
       <div
         className="call-rail"
         data-open={expanded || undefined}
-        data-idle={hideFloating || undefined}
+        data-idle={hideRail || undefined}
       >
         <div className="call-rail-inner" {...holdHandlers}>
           <button
@@ -257,7 +262,11 @@ function ConnectedRoom({
             <p className="rail-heading">Na chamada · {tiles.length}</p>
             <ul aria-label="Na chamada">
               {tiles.slice(0, 40).map((t) => (
-                <li key={t.identity} data-speaking={t.isSpeaking || undefined}>
+                <li
+                  key={t.identity}
+                  data-speaking={t.isSpeaking || undefined}
+                  data-voice-id={t.identity}
+                >
                   <Avatar name={t.name} url={t.avatarUrl} size="sm" />
                   <span className="min-w-0 flex-1 truncate">
                     {t.name}
@@ -370,6 +379,9 @@ function ConnectedRoom({
  * docs/frontend/README.md: checa o acesso, mostra o motivo de qualquer bloqueio e só
  * então conecta.
  */
+/** Quanto tempo com o mouse parado até os controles sumirem. */
+const IDLE_MS = 5000;
+
 export function RoomPage({ deps = defaultSessionDeps }: { deps?: SessionDeps }) {
   const { roomId = '' } = useParams();
   const { user } = useAuth();
