@@ -2127,3 +2127,18 @@ html:not([data-call]) .backdrop {
     scrollbar-color: color-mix(in srgb, var(--v3-text) 28%, transparent) transparent;
   }
 }
+
+/* Chave liga/desliga no celular: a regra geral de toque (min-height: 40px nos botões) esticava
+   a chave e deixava o botão fora do lugar. A chave mantém o tamanho, e a área de toque cresce
+   por fora, invisível. */
+.switch {
+  min-height: 0;
+}
+
+@media (pointer: coarse) {
+  .switch::before {
+    content: '';
+    position: absolute;
+    inset: -8px -4px;
+  }
+}

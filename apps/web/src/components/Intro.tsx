@@ -15,7 +15,7 @@ const VIEW_W = LOGO_W + GROW * 2;
 const CAPSULE_R = LOGO_H / 2;
 
 /**
- * Abertura: sobre o fundo do tema, o logo do Screen (preto, com o "|<" vazado) salta, pisca,
+ * Abertura: sobre o fundo do tema, o logo do Screen (laranja/rosa, com o "|<" vazado) salta, pisca,
  * olha para os lados e pisca de novo; então o retângulo se estica e vira uma cápsula, o "|<"
  * some e o logo da Acelera DEV aparece dentro dela. Depois tudo some e o app entra. A cada carregamento
  * da página, ~3,8 s; pula com clique ou tecla; não existe com movimento reduzido ou com as
@@ -119,11 +119,17 @@ export function Intro() {
 
   if (!playing) return null;
   const mask = `intro-glyph-${id}`;
+  const fill = `intro-fill-${id}`;
   return (
     <div aria-hidden="true" className="intro-stage" data-leaving={leaving || undefined}>
       <div ref={popRef} className="intro-figure" style={{ transform: 'scale(0)', opacity: 0 }}>
         <svg viewBox={`${VIEW_X} 0 ${VIEW_W} ${LOGO_H}`} className="intro-svg">
           <defs>
+            {/* As cores do logo do Screen (laranja para rosa), visíveis no escuro e no claro. */}
+            <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#ffb347" />
+              <stop offset="1" stopColor="#ff4f93" />
+            </linearGradient>
             <mask
               id={mask}
               maskUnits="userSpaceOnUse"
@@ -160,7 +166,7 @@ export function Intro() {
             width={LOGO_W}
             height={LOGO_H}
             rx="62"
-            fill="#0a0a0a"
+            fill={`url(#${fill})`}
             mask={`url(#${mask})`}
           />
         </svg>
