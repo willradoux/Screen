@@ -400,6 +400,26 @@ describe('Stage (layout dos vídeos)', () => {
     expect(document.querySelector('.stage-max')).not.toBeInTheDocument();
   });
 
+  it('a sua própria tela: aviso no lugar do vídeo (sem espelho infinito) e sem tela cheia', async () => {
+    render(
+      <Stage
+        layout="mosaic"
+        tiles={[
+          tile({ identity: 'me', name: 'Eu', isLocal: true, screenPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', screenPub: pub() }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('Você está compartilhando a sua tela')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tela de Eu')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Tela cheia: tela de Eu' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tela cheia: tela de Beto' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver prévia' }));
+    expect(screen.getByLabelText('Tela de Eu')).toBeInTheDocument();
+  });
+
   it('solta o vídeo do elemento quando o componente sai da tela', () => {
     const camera = pub();
     const { unmount } = render(<Stage tiles={[tile({ cameraPub: camera })]} />);

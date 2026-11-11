@@ -250,6 +250,9 @@ function ScreenTile({
   maximized = false,
 }: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
+  // A sua própria tela não aparece por padrão: mostrar o que você compartilha dentro do que você
+  // compartilha cria o "espelho infinito". Dá para ver uma prévia pequena, se quiser.
+  const [preview, setPreview] = useState(false);
   const reveal = useTouchReveal();
   if (!tile.screenPub) return null;
   return (
@@ -258,15 +261,34 @@ function ScreenTile({
       data-testid="screen-tile"
       style={fitStyle(natural ?? 16 / 9)}
       className="stage-tile stage-tile-screen"
+      data-own={tile.isLocal || undefined}
     >
       {tile.isLocal ? (
-        <Video
-          pub={tile.screenPub}
-          fit="contain"
-          label={`Tela de ${tile.name}`}
-          onNaturalAspect={setNatural}
-          quality={quality}
-        />
+        preview ? (
+          <>
+            <Video
+              pub={tile.screenPub}
+              fit="contain"
+              label={`Tela de ${tile.name}`}
+              onNaturalAspect={setNatural}
+              quality={quality}
+            />
+            <button type="button" className="own-screen-hide" onClick={() => setPreview(false)}>
+              Esconder prévia
+            </button>
+          </>
+        ) : (
+          <div className="own-screen">
+            <Icon name="screen_share" size="1.8rem" />
+            <p className="text-sm font-bold text-zinc-50">Você está compartilhando a sua tela</p>
+            <p className="max-w-[18rem] text-xs text-zinc-400">
+              Todo mundo está vendo. Ela não aparece aqui para não virar um espelho infinito.
+            </p>
+            <button type="button" className="own-screen-btn" onClick={() => setPreview(true)}>
+              Ver prévia
+            </button>
+          </div>
+        )
       ) : (
         // Quem assiste pode dar zoom na tela dos outros (só na própria tela).
         <ZoomPan name={`tela de ${tile.name}`}>
@@ -287,7 +309,8 @@ function ScreenTile({
           onPin={onPin}
         />
       )}
-      {onMaximize && (
+      {/* Tela cheia da própria tela não existe (seria o espelho infinito). */}
+      {onMaximize && !tile.isLocal && (
         <MaxButton name={`tela de ${tile.name}`} on={maximized} onClick={onMaximize} />
       )}
       <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
