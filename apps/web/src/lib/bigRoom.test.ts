@@ -7,6 +7,8 @@ import {
   cameraQualityFor,
   isBigRoom,
   profileFor,
+  HD_PROFILE,
+  countVideos,
   screenQualityFor,
   wantedVideo,
 } from './bigRoom';
@@ -27,11 +29,31 @@ const tile = (over: Partial<Tile>): Tile => ({
 });
 
 describe('sala grande', () => {
-  it('só salas de 100 pessoas ou mais usam o perfil econômico', () => {
+  it('a qualidade de quem transmite segue a sala de verdade (pessoas e vídeos), não as vagas', () => {
     expect(isBigRoom(99)).toBe(false);
     expect(isBigRoom(100)).toBe(true);
-    expect(profileFor(25)).toBe(NORMAL_PROFILE);
-    expect(profileFor(500)).toBe(BIG_ROOM_PROFILE);
+    // Pouca gente e até 5 vídeos: alta, a 60 quadros.
+    expect(profileFor({ people: 3, videos: 2 })).toBe(HD_PROFILE);
+    expect(profileFor({ people: 30, videos: 5 })).toBe(HD_PROFILE);
+    expect(HD_PROFILE.camera.capture.resolution?.frameRate).toBe(60);
+    expect(HD_PROFILE.screen.capture.resolution?.height).toBe(1080);
+    // Muitos vídeos ou mais gente: normal.
+    expect(profileFor({ people: 10, videos: 6 })).toBe(NORMAL_PROFILE);
+    expect(profileFor({ people: 31, videos: 1 })).toBe(NORMAL_PROFILE);
+    expect(profileFor({ people: 100, videos: 1 })).toBe(NORMAL_PROFILE);
+    // Sala cheia de verdade: econômico.
+    expect(profileFor({ people: 101, videos: 1 })).toBe(BIG_ROOM_PROFILE);
+  });
+
+  it('conta câmeras e telas ligadas', () => {
+    const pub = {} as never;
+    expect(
+      countVideos([
+        tile({ cameraPub: pub }),
+        tile({ identity: 'b', cameraPub: pub, screenPub: pub }),
+        tile({ identity: 'c' }),
+      ]),
+    ).toBe(3);
   });
 
   it('perfil econômico: câmera 360p, tela de slides a 10 quadros, voz sem redundância', () => {

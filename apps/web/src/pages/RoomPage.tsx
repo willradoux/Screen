@@ -26,6 +26,8 @@ import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Sta
 import { useIdle } from '../room/useIdle';
 import { useVoiceLevels } from '../room/useVoiceLevels';
 import { withPinTransition } from '../room/pin';
+import { PersonAudio } from '../room/PersonAudio';
+import { useAudioPrefs } from '../lib/audioPrefs';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { StatusBadge } from '../components/RoomCard';
@@ -33,7 +35,7 @@ import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
 import { useParticipants } from '../room/useParticipants';
-import { isBigRoom, profileFor, wantedVideo } from '../lib/bigRoom';
+import { countVideos, isBigRoom, profileFor, wantedVideo } from '../lib/bigRoom';
 
 /** Avisa que a pessoa saiu da call e será removida da live em instantes. */
 function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt: number } }) {
@@ -122,6 +124,9 @@ function ConnectedRoom({
   const hideFloating = idle;
   // A barra da direita aberta (expandida) não some sozinha: só a recolhida some com o mouse parado.
   const hideRail = idle && !expanded;
+  // Volume de quem (na lista da barra), como no Discord.
+  const [audioOf, setAudioOf] = useState<string | null>(null);
+  const audio = useAudioPrefs();
   // Quem fala acende na hora: volume medido no navegador (o aviso do servidor chega atrasado).
   useVoiceLevels(tiles);
   const holdHandlers = {
@@ -198,7 +203,7 @@ function ConnectedRoom({
       }
       captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
       local={local}
-      profile={profileFor(room.maxParticipants)}
+      profile={profileFor({ people: tiles.length, videos: countVideos(tiles) })}
       allowedSources={allowedSources}
       screenLocked={room.screenLock}
       restriction={restriction}
@@ -271,17 +276,42 @@ function ConnectedRoom({
                   key={t.identity}
                   data-speaking={t.isSpeaking || undefined}
                   data-voice-id={t.identity}
+                  data-open={audioOf === t.identity || undefined}
                 >
                   <Avatar name={t.name} url={t.avatarUrl} size="sm" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {t.name}
-                    {t.isLocal && ' (você)'}
-                  </span>
+                  {t.isLocal ? (
+                    <span className="min-w-0 flex-1 truncate">{t.name} (você)</span>
+                  ) : (
+                    // Como no Discord: clicar na pessoa abre o volume dela (só para você).
+                    <button
+                      type="button"
+                      className="rail-person min-w-0 flex-1 truncate text-left"
+                      aria-expanded={audioOf === t.identity}
+                      onClick={() => setAudioOf((v) => (v === t.identity ? null : t.identity))}
+                      title="Volume (só para você)"
+                    >
+                      {t.name}
+                      {audio.muted[t.identity] && (
+                        <span className="sr-only"> (mutada para você)</span>
+                      )}
+                    </button>
+                  )}
                   <Icon
-                    name={t.micOn ? 'mic' : 'mic_off'}
+                    name={audio.muted[t.identity] ? 'volume_off' : t.micOn ? 'mic' : 'mic_off'}
                     size="0.95rem"
-                    label={t.micOn ? 'microfone ligado' : 'microfone desligado'}
+                    label={
+                      audio.muted[t.identity]
+                        ? 'mutada para você'
+                        : t.micOn
+                          ? 'microfone ligado'
+                          : 'microfone desligado'
+                    }
                   />
+                  {audioOf === t.identity && (
+                    <div className="rail-audio">
+                      <PersonAudio id={t.identity} name={t.name} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -69,8 +69,47 @@ export const BIG_ROOM_PROFILE: PublishProfile = {
   },
 };
 
-export const profileFor = (maxParticipants: number): PublishProfile =>
-  isBigRoom(maxParticipants) ? BIG_ROOM_PROFILE : NORMAL_PROFILE;
+/**
+ * Qualidade alta: câmera 720p e tela 1080p, as duas a 60 quadros. Para salas com pouca gente
+ * transmitindo e assistindo (a VPS manda uma cópia de cada vídeo para cada pessoa).
+ */
+export const HD_PROFILE: PublishProfile = {
+  camera: {
+    capture: { resolution: { width: 1280, height: 720, frameRate: 60 } },
+    publish: { simulcast: true, videoEncoding: { maxBitrate: 2_500_000, maxFramerate: 60 } },
+  },
+  microphone: { capture: {}, publish: {} },
+  screen: {
+    capture: {
+      audio: true,
+      contentHint: 'detail',
+      resolution: { width: 1920, height: 1080, frameRate: 60 },
+    },
+    publish: { screenShareEncoding: { maxBitrate: 6_000_000, maxFramerate: 60 } },
+  },
+};
+
+/** Até quantos vídeos ligados (câmeras + telas) e quantas pessoas a qualidade fica alta. */
+export const HD_MAX_VIDEOS = 5;
+export const HD_MAX_PEOPLE = 30;
+/** Acima disto de pessoas na sala (de verdade, não vagas) vale o modo econômico. */
+export const ECONOMY_MIN_PEOPLE = 100;
+
+/**
+ * Qualidade de quem transmite, pelo que está acontecendo na sala agora (não pelas vagas):
+ *  - poucos vídeos e pouca gente: alta (60 quadros);
+ *  - até 100 pessoas: normal (30 quadros);
+ *  - mais de 100: econômica (a VPS manda uma cópia para cada um).
+ */
+export function profileFor(room: { people: number; videos: number }): PublishProfile {
+  if (room.people > ECONOMY_MIN_PEOPLE) return BIG_ROOM_PROFILE;
+  if (room.videos <= HD_MAX_VIDEOS && room.people <= HD_MAX_PEOPLE) return HD_PROFILE;
+  return NORMAL_PROFILE;
+}
+
+/** Quantos vídeos estão ligados agora (cada câmera e cada tela conta um). */
+export const countVideos = (tiles: Tile[]): number =>
+  tiles.reduce((n, t) => n + (t.cameraPub ? 1 : 0) + (t.screenPub || t.screenPublished ? 1 : 0), 0);
 
 /** Câmeras que a plateia recebe: quanto mais gente, mais fraca a camada pedida. */
 export function cameraQualityFor(people: number): VideoQuality | undefined {

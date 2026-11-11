@@ -4,6 +4,7 @@ import type { Room as LkRoom } from 'livekit-client';
 import type { Socket } from 'socket.io-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../lib/api';
+import { HD_PROFILE } from '../lib/bigRoom';
 import type { AccessResult, JoinResult } from '../lib/types';
 import type { SessionDeps } from '../room/useRoomSession';
 import {
@@ -319,7 +320,12 @@ describe('RoomPage: entrar e usar a sala', () => {
     await userEvent.click(screen.getByRole('button', { name: /microfone: desligado/i }));
     expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true, {}, {});
     await userEvent.click(screen.getByRole('button', { name: /câmera: desligada/i }));
-    expect(lk.localParticipant.setCameraEnabled).toHaveBeenCalledWith(true, {}, {});
+    // Sala pequena: a câmera sai em alta qualidade (720p a 60 quadros).
+    expect(lk.localParticipant.setCameraEnabled).toHaveBeenCalledWith(
+      true,
+      HD_PROFILE.camera.capture,
+      HD_PROFILE.camera.publish,
+    );
 
     await userEvent.click(await screen.findByRole('button', { name: /microfone: ligado/i }));
     expect(lk.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false, {}, {});

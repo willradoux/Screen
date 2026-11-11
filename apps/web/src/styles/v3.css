@@ -2736,3 +2736,29 @@ html[data-pinning]::view-transition-new(*) {
   font-weight: 700;
   color: var(--v3-text-3);
 }
+
+/* Lista "Na chamada": clicar na pessoa abre o volume dela embaixo (como no Discord). */
+.rail-people li {
+  flex-wrap: wrap;
+}
+
+.rail-person {
+  min-height: 0;
+  border-radius: 4px;
+  color: inherit;
+}
+
+.rail-person:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rail-audio {
+  flex-basis: 100%;
+  animation: v3-rise 200ms var(--v3-spring) both;
+}
+
+.rail-audio .person-audio {
+  margin-top: 4px;
+  padding-left: 0;
+}
