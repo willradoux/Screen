@@ -81,6 +81,33 @@ export interface Caption {
   at: number;
 }
 
+/** Mensagem do chat da sala (não é gravada no servidor; fica no navegador até a sala fechar). */
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: Role;
+  text: string;
+  at: string;
+}
+
+/** Enquete do topo do chat (ou sugestão esperando a moderação). */
+export interface Poll {
+  id: string;
+  question: string;
+  options: { text: string; votes: number }[];
+  total: number;
+  status: 'pending' | 'open' | 'closed';
+  proposedBy: string;
+}
+
+/** Resposta de uma ação do chat/enquete (o servidor confirma ou diz por que não). */
+export interface ChatAck {
+  ok: boolean;
+  error?: { code: string; message: string };
+}
+
 /** Alguém com a mão levantada (pedindo a palavra) numa reunião. */
 export interface RaisedHand {
   userId: string;

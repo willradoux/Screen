@@ -25,6 +25,7 @@ import { useIdle } from '../room/useIdle';
 import { useVoiceLevels } from '../room/useVoiceLevels';
 import { withPinTransition } from '../room/pin';
 import { PersonAudio } from '../room/PersonAudio';
+import { ChatPanel } from '../room/ChatPanel';
 import { useAudioPrefs } from '../lib/audioPrefs';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
@@ -102,7 +103,7 @@ function ConnectedRoom({
     lastCount.current = remoteCount;
   }, [remoteCount, media]);
   // Painel de pessoas: fechado por padrão, para o palco ficar limpo.
-  const [side, setSide] = useState<'people' | null>(null);
+  const [side, setSide] = useState<'people' | 'chat' | null>(null);
   // Sempre começa minimizada (só o essencial, flutuando).
   const [expanded, setExpanded] = useState(
     () =>
@@ -121,6 +122,10 @@ function ConnectedRoom({
   const hideFloating = idle;
   // A barra da direita aberta (expandida) não some sozinha: só a recolhida some com o mouse parado.
   const hideRail = idle && !expanded;
+  // Mensagens novas desde que o chat foi fechado (a bolinha no botão).
+  const seenChat = useRef(session.chat.messages.length);
+  if (side === 'chat') seenChat.current = session.chat.messages.length;
+  const unread = Math.max(0, session.chat.messages.length - seenChat.current);
   // Volume de quem (na lista da barra), como no Discord.
   const [audioOf, setAudioOf] = useState<string | null>(null);
   const audio = useAudioPrefs();
@@ -198,6 +203,9 @@ function ConnectedRoom({
       restriction={restriction}
       panelOpen={side === 'people'}
       onTogglePanel={() => setSide((v) => (v === 'people' ? null : 'people'))}
+      chatOpen={side === 'chat'}
+      chatUnread={unread}
+      onToggleChat={() => setSide((v) => (v === 'chat' ? null : 'chat'))}
       layout={{
         value: layout,
         onChange: (next) => {
@@ -361,7 +369,7 @@ function ConnectedRoom({
         </section>
 
         {side && (
-          <aside aria-label="Pessoas" className="call-panel">
+          <aside aria-label={side === 'chat' ? 'Chat' : 'Pessoas'} className="call-panel">
             <div className="flex items-center justify-end gap-1 pb-1">
               <button
                 type="button"
@@ -372,21 +380,25 @@ function ConnectedRoom({
                 <Icon name="close" size="1.1rem" />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <ParticipantsPanel
-                room={room}
-                me={me}
-                version={participantsVersion}
-                lectureMode={state.lectureMode}
-                hands={session.hands}
-                recording={session.recording}
-                onInfo={toast.info}
-                onError={toast.error}
-                pinnedId={effectivePin}
-                onPin={togglePin}
-                sharingIds={sharingIds}
-              />
-            </div>
+            {side === 'chat' ? (
+              <ChatPanel chat={session.chat} me={me} onError={toast.error} onInfo={toast.info} />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <ParticipantsPanel
+                  room={room}
+                  me={me}
+                  version={participantsVersion}
+                  lectureMode={state.lectureMode}
+                  hands={session.hands}
+                  recording={session.recording}
+                  onInfo={toast.info}
+                  onError={toast.error}
+                  pinnedId={effectivePin}
+                  onPin={togglePin}
+                  sharingIds={sharingIds}
+                />
+              </div>
+            )}
           </aside>
         )}
       </div>

@@ -1,10 +1,13 @@
 import { Room as LiveKitRoom, RoomEvent, VideoPresets, type RoomOptions } from 'livekit-client';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { api as realApi, ApiError } from '../lib/api';
 import { SOCKET_URL } from '../lib/config';
 import { describeError } from '../lib/errors';
 import type {
+  ChatAck,
+  ChatMessage,
+  Poll,
   Caption,
   EndReason,
   JoinResult,
@@ -63,6 +66,8 @@ export interface RoomSession {
   captions: Caption[];
   /** Manda o que a pessoa acabou de falar para a sala. */
   sendCaption: (text: string, final: boolean) => void;
+  /** Chat e enquete da sala (docs/backend/eventos-socketio.md). */
+  chat: RoomChat;
   join: () => Promise<void>;
   leave: () => Promise<void>;
   retry: () => void;
@@ -88,6 +93,20 @@ export function useRoomSession(
   const [hands, setHands] = useState<RaisedHand[]>([]);
   const [recording, setRecording] = useState(false);
   const [captions, setCaptions] = useState<Caption[]>([]);
+  // Chat: as mensagens ficam no navegador (localStorage) enquanto a sala está aberta.
+  const chatKey = `screem-chat:${roomId}`;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => readChat(chatKey));
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [pendingPolls, setPendingPolls] = useState<Poll[]>([]);
+  const saveMessages = useCallback(
+    (update: (list: ChatMessage[]) => ChatMessage[]) =>
+      setMessages((list) => {
+        const next = update(list).slice(-CHAT_KEEP);
+        writeChat(chatKey, next);
+        return next;
+      }),
+    [chatKey],
+  );
 
   const mediaRef = useRef<LiveKitRoom | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -146,7 +165,15 @@ export function useRoomSession(
         socket.emit(
           'room:subscribe',
           { roomId },
-          (res: { ok: boolean; error?: { code: string; message: string } }) => {
+          (res: {
+            ok: boolean;
+            data?: { poll?: Poll | null; pendingPolls?: Poll[] };
+            error?: { code: string; message: string };
+          }) => {
+            if (res?.ok) {
+              setPoll(res.data?.poll ?? null);
+              setPendingPolls(res.data?.pendingPolls ?? []);
+            }
             if (!res?.ok) {
               dispatch({
                 type: 'FAILED',
@@ -162,7 +189,20 @@ export function useRoomSession(
       // Também ao reconectar: a resposta traz o estado atual (docs/backend/eventos-socketio.md).
       socket.on('connect', subscribe);
 
+      socket.on('chat:message', (m: ChatMessage) =>
+        saveMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m])),
+      );
+      socket.on('chat:deleted', (p: { id: string }) =>
+        saveMessages((list) => list.filter((m) => m.id !== p.id)),
+      );
+      socket.on('poll:state', (p: { poll: Poll | null }) => setPoll(p.poll));
+      socket.on('poll:pending', (p: { polls: Poll[] }) => setPendingPolls(p.polls ?? []));
+
       socket.on('room:ended', (p: { reason: EndReason }) => {
+        // A sala fechou: o chat some de vez.
+        clearChat(chatKey);
+        setMessages([]);
+        setPoll(null);
         dispatch({ type: 'ENDED', reason: p.reason });
         teardown();
       });
@@ -337,6 +377,45 @@ export function useRoomSession(
     [roomId],
   );
 
+  /** Manda um evento do chat/enquete e espera a confirmação do servidor. */
+  const ask = useCallback(
+    (event: string, payload: Record<string, unknown>) =>
+      new Promise<ChatAck>((resolve) => {
+        const socket = socketRef.current;
+        if (!socket?.connected) {
+          resolve({ ok: false, error: { code: 'OFFLINE', message: 'Sem conexão com a sala.' } });
+          return;
+        }
+        socket
+          .timeout(8000)
+          .emit(event, { roomId, ...payload }, (err: unknown, res: ChatAck) =>
+            resolve(
+              err
+                ? { ok: false, error: { code: 'TIMEOUT', message: 'O servidor não respondeu.' } }
+                : (res ?? { ok: false }),
+            ),
+          );
+      }),
+    [roomId],
+  );
+
+  const chat: RoomChat = useMemo(
+    () => ({
+      messages,
+      poll,
+      pendingPolls,
+      send: (text) => ask('chat:send', { text }),
+      remove: (id) => ask('chat:delete', { id }),
+      propose: (question, options) => ask('poll:propose', { question, options }),
+      approve: (pollId) => ask('poll:approve', { pollId }),
+      reject: (pollId) => ask('poll:reject', { pollId }),
+      vote: (pollId, option) => ask('poll:vote', { pollId, option }),
+      close: (pollId) => ask('poll:close', { pollId }),
+      clear: (pollId) => ask('poll:clear', { pollId }),
+    }),
+    [messages, poll, pendingPolls, ask],
+  );
+
   const retry = useCallback(() => {
     joinedRef.current = false;
     dispatch({ type: 'RETRY' });
@@ -363,8 +442,54 @@ export function useRoomSession(
     recording,
     captions,
     sendCaption,
+    chat,
     join,
     leave,
     retry,
   };
+}
+
+/** O chat da sala, como a tela usa. */
+export interface RoomChat {
+  messages: ChatMessage[];
+  /** Enquete do topo (ou null). */
+  poll: Poll | null;
+  /** Sugestões esperando a moderação (só a moderação recebe). */
+  pendingPolls: Poll[];
+  send: (text: string) => Promise<ChatAck>;
+  remove: (id: string) => Promise<ChatAck>;
+  propose: (question: string, options: string[]) => Promise<ChatAck>;
+  approve: (pollId: string) => Promise<ChatAck>;
+  reject: (pollId: string) => Promise<ChatAck>;
+  vote: (pollId: string, option: number) => Promise<ChatAck>;
+  close: (pollId: string) => Promise<ChatAck>;
+  clear: (pollId: string) => Promise<ChatAck>;
+}
+
+/** Quantas mensagens o navegador guarda por sala (as mais antigas saem). */
+const CHAT_KEEP = 200;
+
+function readChat(key: string): ChatMessage[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(key) || '[]') as unknown;
+    return Array.isArray(list) ? (list as ChatMessage[]).slice(-CHAT_KEEP) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeChat(key: string, list: ChatMessage[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // Sem armazenamento: vale só enquanto a página está aberta.
+  }
+}
+
+function clearChat(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // nada a fazer
+  }
 }

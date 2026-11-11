@@ -1,3 +1,4 @@
+import chatIcon from '@material-symbols/svg-400/rounded/chat.svg?url';
 import fullscreenIcon from '@material-symbols/svg-400/rounded/fullscreen.svg?url';
 import fullscreenExitIcon from '@material-symbols/svg-400/rounded/fullscreen_exit.svg?url';
 import headphonesIcon from '@material-symbols/svg-400/rounded/headphones.svg?url';
@@ -77,6 +78,7 @@ import wifiOff from '@material-symbols/svg-400/rounded/wifi_off.svg?url';
  * (só entram no site os que estão nesta lista). Sem emoji em nenhum lugar da interface.
  */
 const ICONS = {
+  chat: chatIcon,
   fullscreen: fullscreenIcon,
   fullscreen_exit: fullscreenExitIcon,
   headphones: headphonesIcon,

@@ -34,6 +34,10 @@ interface Props {
   /** Painel de pessoas aberto. */
   panelOpen: boolean;
   onTogglePanel: () => void;
+  /** Chat da sala: aberto e quantas mensagens novas desde que fechou. */
+  chatOpen?: boolean;
+  chatUnread?: number;
+  onToggleChat?: () => void;
   /** Organização do palco (escolhida numa janela com desenhos). */
   layout?: { value: StageLayout; onChange: (next: StageLayout) => void };
   /** `media`: a pílula de baixo; `rail`: o trilho de opções da esquerda. */
@@ -117,6 +121,9 @@ export function Controls({
   screenLocked = false,
   panelOpen,
   onTogglePanel,
+  chatOpen = false,
+  chatUnread = 0,
+  onToggleChat,
   onLeave,
   onError,
   hand,
@@ -218,6 +225,22 @@ export function Controls({
           active={panelOpen}
           onClick={onTogglePanel}
         />
+        {onToggleChat && (
+          <span className="relative">
+            <RoundButton
+              icon="chat"
+              short="Chat"
+              fullLabel={chatUnread > 0 ? `Chat (${chatUnread} novas)` : 'Chat'}
+              active={chatOpen}
+              onClick={onToggleChat}
+            />
+            {chatUnread > 0 && !chatOpen && (
+              <span aria-hidden="true" className="chat-badge tabular">
+                {chatUnread > 99 ? '99+' : chatUnread}
+              </span>
+            )}
+          </span>
+        )}
         {hand && (
           <RoundButton
             icon="front_hand"
