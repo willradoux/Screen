@@ -9,6 +9,7 @@ import { describeError } from '../lib/errors';
 import { formatDateTime, formatDuration, formatReminder, timeUntil } from '../lib/format';
 import type { Meeting } from '../lib/types';
 import { useAsync } from '../lib/useAsync';
+import { usePolling } from '../lib/usePolling';
 
 /** Relógio que atualiza a cada segundo (para a contagem regressiva). */
 export function useNow(intervalMs = 1000): number {
@@ -104,6 +105,8 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
 /** Reuniões abertas e agendadas, para qualquer membro. */
 export function MeetingsPage() {
   const { state, reload } = useAsync(() => api.meetings.list({ limit: 50 }));
+  // Reunião nova, aberta ou cancelada aparece sozinha (a cada 60 s, só com a aba visível).
+  usePolling(() => void reload({ silent: true }), 60_000);
   const next =
     state.status === 'ready' ? state.data.find((m) => m.status === 'SCHEDULED') : undefined;
 

@@ -20,7 +20,11 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[] = []) {
       const data = await loader.current();
       if (id === run.current) setState({ status: 'ready', data });
     } catch (error) {
-      if (id === run.current) setState({ status: 'error', error });
+      // Atualização silenciosa (automática) que falha não apaga o que já está na tela.
+      if (id === run.current)
+        setState((prev) =>
+          opts.silent && prev.status === 'ready' ? prev : { status: 'error', error },
+        );
     }
   }, []);
 
