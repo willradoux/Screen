@@ -1,7 +1,7 @@
-import { ScreenLogo } from './ScreenLogo';
-/** Ícone do Screen (SVG, nas cores do tema) com o "|<" piscando de vez em quando. Decorativo. */
+import { LiveLogo } from './LiveLogo';
+/** Ícone do Screen vivo (olhos que seguem o mouse e piscadinha em "<"). Decorativo. */
 export function LogoMark({ className = 'h-8' }: { className?: string }) {
-  return <ScreenLogo brand className={`brand-logo w-auto shrink-0 select-none ${className}`} />;
+  return <LiveLogo className={`brand-logo w-auto shrink-0 select-none ${className}`} />;
 }
 
 /**

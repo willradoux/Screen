@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { animateSpring, prefersReducedMotion } from '../lib/motion';
 import { AceleraMark } from './AceleraMark';
+import { LEFT_EYE, eyePath, wink } from './LiveLogo';
 import { LOGO_H, LOGO_W } from './ScreenLogo';
 
 /** Toca a cada carregamento da página (inclusive reload); trocar de tela dentro do app não. */
@@ -9,8 +10,9 @@ function shouldPlay(): boolean {
 }
 
 /**
- * Abertura: sobre o fundo do tema, o logo do Screen (laranja/rosa, com o "|<" vazado) salta, pisca,
- * olha para os lados e pisca de novo; então o logo sai de cena e fica só o nome da Acelera DEV,
+ * Abertura: sobre o fundo do tema, o bonequinho do Screen (laranja/rosa, com os olhos "| |"
+ * vazados) salta, dá a piscadinha (o olho direito dobra em "<", o "|<" do logo), olha para os
+ * lados e pisca de novo; então o logo sai de cena e fica só o nome da Acelera DEV,
  * sem fundo nenhum. Depois tudo some e o app entra. A cada carregamento
  * da página, ~3,8 s; pula com clique ou tecla; não existe com movimento reduzido ou com as
  * animações desligadas. Decorativa.
@@ -23,7 +25,7 @@ export function Intro() {
   const popRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const glyphRef = useRef<SVGGElement>(null);
-  const eyeRef = useRef<SVGRectElement>(null);
+  const eyeRef = useRef<SVGPathElement>(null);
 
   useLayoutEffect(() => {
     if (!playing) return;
@@ -40,10 +42,7 @@ export function Intro() {
     let done = false;
     const at = (s: number, fn: () => void) => timers.push(window.setTimeout(fn, s * 1000));
 
-    const blink = () => {
-      eye.style.transform = 'scaleY(0.1)';
-      at(0.11, () => (eye.style.transform = 'scaleY(1)'));
-    };
+    const blink = () => cancels.push(wink(eye, 420));
     const look = (x: number) => (glyph.style.transform = `translateX(${x}px)`);
 
     const finish = () => {
@@ -111,24 +110,16 @@ export function Intro() {
             <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
               <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
               <g ref={glyphRef} className="intro-glyph">
-                <rect
-                  ref={eyeRef}
-                  className="intro-eye"
-                  x="84"
-                  y="74"
-                  width="32"
-                  height="90"
-                  rx="16"
-                  fill="#000"
-                />
-                <path
-                  d="M208 97 175 123 208 149"
+                <g
                   fill="none"
                   stroke="#000"
                   strokeWidth="32"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                />
+                >
+                  <path d={LEFT_EYE} />
+                  <path ref={eyeRef} d={eyePath(0)} />
+                </g>
               </g>
             </mask>
           </defs>

@@ -15,17 +15,13 @@ export const LOGO_H = 238;
 export function ScreenLogo({
   className = 'h-10 w-auto',
   title,
-  brand = false,
 }: {
   className?: string;
-  /** Com o degradê do ícone (as cores do tema; laranja → rosa no padrão) em vez da cor do texto. */
-  brand?: boolean;
   /** Nome para leitores de tela; sem ele o logo é decorativo. */
   title?: string;
 }) {
   const id = useId().replace(/:/g, '');
   const mask = `screen-glyph-${id}`;
-  const fill = `screen-fill-${id}`;
   const a11y = title
     ? { role: 'img' as const, 'aria-label': title }
     : { 'aria-hidden': true as const };
@@ -33,13 +29,6 @@ export function ScreenLogo({
   return (
     <svg viewBox={`0 0 ${LOGO_W} ${LOGO_H}`} className={`screen-logo ${className}`} {...a11y}>
       <defs>
-        {brand && (
-          <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-            {/* As cores seguem o tema escolhido (--logo-1/--logo-2); sem tema, laranja → rosa. */}
-            <stop offset="0" style={{ stopColor: 'var(--logo-1, #ffb347)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--logo-2, #ff4f93)' }} />
-          </linearGradient>
-        )}
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
           <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
           <g className="logo-glyph">
@@ -56,13 +45,7 @@ export function ScreenLogo({
           </g>
         </mask>
       </defs>
-      <rect
-        width={LOGO_W}
-        height={LOGO_H}
-        rx="62"
-        fill={brand ? `url(#${fill})` : 'currentColor'}
-        mask={`url(#${mask})`}
-      />
+      <rect width={LOGO_W} height={LOGO_H} rx="62" fill="currentColor" mask={`url(#${mask})`} />
     </svg>
   );
 }

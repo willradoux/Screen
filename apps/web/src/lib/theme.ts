@@ -8,7 +8,7 @@
  * Para criar uma cor: adicione aqui, em `public/theme-init.js` e as cores em `styles/v3.css`.
  */
 export type Mode = 'dark' | 'light';
-export type Theme = 'screem' | 'verde' | 'acelera';
+export type Theme = 'screem' | 'acelera';
 
 export interface ThemeInfo {
   value: Theme;
@@ -28,13 +28,6 @@ export const THEMES: ThemeInfo[] = [
     label: 'Screen',
     text: 'Laranja e rosa, como o logo. É o padrão.',
     swatch: ['#ffb347', '#ff4f93'],
-    bar: '#000000',
-  },
-  {
-    value: 'verde',
-    label: 'Verde',
-    text: 'Verde vivo.',
-    swatch: ['#6ee7a0', '#1db954'],
     bar: '#000000',
   },
   {

@@ -131,7 +131,7 @@ describe('Preferências', () => {
     await userEvent.click(within(modes).getByRole('radio', { name: 'Claro' }));
     expect(document.documentElement.dataset.mode).toBe('light');
     const colors = screen.getByRole('radiogroup', { name: 'Cor dos detalhes' });
-    expect(within(colors).getAllByRole('radio')).toHaveLength(3);
+    expect(within(colors).getAllByRole('radio')).toHaveLength(2);
   });
 });
 

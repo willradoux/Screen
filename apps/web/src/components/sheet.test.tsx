@@ -56,7 +56,17 @@ describe('tema', () => {
   });
 
   it('fundos que deixaram de existir voltam ao padrão', () => {
-    for (const old of ['dark', 'light', 'claro', 'nuvens', 'azul', 'brasil', 'preto', 'mono']) {
+    for (const old of [
+      'dark',
+      'light',
+      'claro',
+      'nuvens',
+      'azul',
+      'brasil',
+      'preto',
+      'mono',
+      'verde',
+    ]) {
       localStorage.setItem('screem-theme', old);
       expect(readTheme()).toBe('screem');
     }
@@ -67,12 +77,13 @@ describe('tema', () => {
     localStorage.clear();
     render(<PreferencesPage />);
     expect(screen.getByRole('radio', { name: /Screen/ })).toHaveAttribute('aria-checked', 'true');
-    await userEvent.click(screen.getByRole('radio', { name: /Verde/ }));
-    expect(document.documentElement.dataset.theme).toBe('verde');
-    expect(readTheme()).toBe('verde');
+    expect(screen.queryByRole('radio', { name: /Verde/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: /Acelera/ }));
+    expect(document.documentElement.dataset.theme).toBe('acelera');
+    expect(readTheme()).toBe('acelera');
     await userEvent.click(screen.getByRole('radio', { name: 'Claro' }));
     expect(document.documentElement.dataset.mode).toBe('light');
-    expect(document.documentElement.dataset.theme).toBe('verde');
+    expect(document.documentElement.dataset.theme).toBe('acelera');
     await userEvent.click(screen.getByRole('radio', { name: /Screen/ }));
     expect(document.documentElement.dataset.theme).toBe('screem');
   });

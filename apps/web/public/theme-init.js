@@ -2,7 +2,7 @@
 // É um arquivo à parte porque a CSP do site não permite script dentro do HTML.
 // Padrão: modo escuro e a cor do Screen (laranja e rosa).
 (function () {
-  var colors = { screem: 1, verde: 1, acelera: 1 };
+  var colors = { screem: 1, acelera: 1 };
   var theme = 'screem';
   var mode = 'dark';
   var motion = 'on';

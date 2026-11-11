@@ -972,20 +972,6 @@ html:not([data-call]) .backdrop {
   --logo-2: #ff4f93;
 }
 
-:root[data-theme='verde'] {
-  --brand-200: #b9f6cf;
-  --brand-300: #6ee7a0;
-  --brand-400: #1ed760;
-  --brand-500: #1db954;
-  --brand-600: #15803d;
-  --bg-1: #9cf0bd;
-  --bg-3: #1db954;
-  --bg-2: #0b5a2e;
-  --grain-opacity: 0.3;
-  --logo-1: #6ee7a0;
-  --logo-2: #1db954;
-}
-
 :root[data-theme='acelera'] {
   --brand-200: #c6fbef;
   --brand-300: #7ff3d9;
@@ -1025,13 +1011,13 @@ html:not([data-call]) .backdrop {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
 }
 
-/* Botão de entrar (laranja/verde) com texto preto: contraste alto nos dois. */
+/* Botão de entrar (laranja/turquesa) com texto preto: contraste alto nos dois. */
 :root[data-mode='light'] .sp-play[data-open] {
   background: var(--brand-600);
   color: #fff;
 }
 
-/* O bichinho do carregamento na cor do tema (laranja no Screen e no Light, verde no Dark). */
+/* O bichinho do carregamento na cor do tema (laranja no Screen, turquesa no Acelera). */
 .loader-pet {
   color: var(--v3-accent);
 }
@@ -2318,69 +2304,11 @@ html:not([data-call]) .backdrop {
   }
 }
 
-/* Ícone do topo vivo: o "|<" pisca de vez em quando (às vezes duas vezes seguidas) e, no hover,
-   o ícone dá uma inclinadinha. Some com animações desligadas ou movimento reduzido. */
-.brand-logo .logo-eye {
-  animation: v3-brand-blink 5.2s ease-in-out infinite;
-}
-
-.brand-logo .logo-glyph {
-  animation: v3-brand-look 10.4s ease-in-out infinite;
-}
-
-@keyframes v3-brand-blink {
-  0%,
-  86%,
-  100% {
-    transform: scaleY(1);
-  }
-  88% {
-    transform: scaleY(0.1);
-  }
-  90% {
-    transform: scaleY(1);
-  }
-  93% {
-    transform: scaleY(0.1);
-  }
-  95% {
-    transform: scaleY(1);
-  }
-}
-
-@keyframes v3-brand-look {
-  0%,
-  40%,
-  58%,
-  100% {
-    transform: translateX(0);
-  }
-  44%,
-  48% {
-    transform: translateX(-12px);
-  }
-  52%,
-  55% {
-    transform: translateX(12px);
-  }
-}
-
+/* Ícone do topo vivo (olhos e piscadinha em components/LiveLogo.tsx); no hover, inclina. */
 .hub-brand .brand-logo {
   transition: transform 320ms var(--v3-spring);
 }
 
 .hub-brand:hover .brand-logo {
   transform: rotate(-6deg) scale(1.06);
-}
-
-:root[data-motion='off'] .brand-logo .logo-eye,
-:root[data-motion='off'] .brand-logo .logo-glyph {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .brand-logo .logo-eye,
-  .brand-logo .logo-glyph {
-    animation: none;
-  }
 }

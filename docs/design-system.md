@@ -78,22 +78,20 @@ Escolhas independentes, em Preferências e no botão de tema (que abre uma janel
 | Preferência | Valores | Padrão | Chave |
 |---|---|---|---|
 | Modo (`data-mode`) | Escuro, Claro | Escuro | `screem-mode` |
-| Fundo (`data-theme`) | ver abaixo | Screen | `screem-theme` |
+| Cor dos detalhes (`data-theme`) | Screen, Acelera | Screen | `screem-theme` |
 | Animações (`data-motion`) | ligadas, desligadas | ligadas | `screem-motion` |
 | Sons | ligados, desligados | ligados | `screem-sounds` |
 | Layout do palco | Automático, Mosaico, Destaque | Automático | `screem-stage-layout` |
 | Como ver o vídeo | formato, encaixe, posição | — | `screem-video-prefs` |
 
-| Fundo | Cores |
+| Cor | Cores |
 |---|---|
-| Screen | As do logo: pêssego e rosa (`#ffaa7f`, `#ff4f93`) |
-| Acelera | A Acelera UI: menta e turquesa (`#00c8b2`, `#00e0a4`) |
-| Brasil | Verde, amarelo e azul, suaves |
-| Portugal | Verde e vermelho sobre creme |
-| Alemanha | Dourado e vermelho |
-| Preto e branco | Só tons de cinza |
+| Screen (padrão) | Laranja e rosa do logo (`#ffb347` → `#ff4f93`) |
+| Acelera | Menta e turquesa da Acelera DEV (`#5ef0d0` → `#00b39c`) |
 
-**Criar um fundo:** adicione em `THEMES` (`lib/theme.ts`) e em `public/theme-init.js`, e defina `--bg-1..3`, `--ink`, `--ink-soft` e `--brand-*` em `index.css` (`:root[data-theme='nome']`).
+Valores antigos salvos (Verde, Brasil, Preto etc.) voltam para Screen.
+
+**Criar uma cor:** adicione em `THEMES` (`lib/theme.ts`) e em `public/theme-init.js`, e defina `--brand-*`, `--bg-1..3` e `--logo-1/--logo-2` em `styles/v3.css` (`:root[data-theme='nome']`).
 
 O degradê é o shader do AWS Hub: 40% da resolução, 30 fps, para com a aba escondida e fica parado com movimento reduzido ou animações desligadas. O granulado vai por cima.
 
@@ -145,5 +143,7 @@ Registro do trabalho feito sozinho à noite (só front, só commits locais, sem 
 - **Carregamentos só quando precisa**: a sala não segura mais 1,4 s de carregamento à toa; o bichinho só aparece se a espera passar de 0,3 s (e entra em 0,2 s); entradas de página e cards em 280 ms com metade do atraso entre eles.
 - **Correção**: 95 arquivos `.js` compilados (de um `tsc -b` rodado sem querer) tinham entrado no commit `86fadbe`; o Vite preferia o `.js` ao `.tsx` e escondia mudanças. Saíram em `bb76e6f`. A suíte real tem 309 testes (os 618 de antes contavam as cópias).
 - **Setinha do aparelho** (ao lado do mic e da câmera) agora é botão de verdade: abre e fecha o menu; antes o toque nela fechava o menu como "clique fora" e o clique abria de novo. **Minha câmera**: por padrão aparece como os outros veem (sem espelhar); em "Como ver o vídeo" dá para escolher "Espelhada".
-- **Ícone do topo vivo**: o `LogoMark` virou SVG (o mesmo `ScreenLogo`, com `brand` para o degradê nas cores do tema: `--logo-1`/`--logo-2`, laranja → rosa no Screen, verdes no Verde, turquesas no Acelera) em vez da imagem webp, e o "|<" pisca de vez em quando (às vezes duas vezes) e olha para os lados a cada ~10 s. Para com animações desligadas ou movimento reduzido.
+- **Bonequinho do topo** (`components/LiveLogo.tsx`, usado pelo `LogoMark`): SVG no degradê da cor escolhida (`--logo-1`/`--logo-2`) com dois olhos "| |". A piscadinha é o olho direito dobrando em "<" (o "|<" do logo) e voltando, a cada 2,6–6 s; os olhos seguem o mouse (sem mouse, de vez em quando olha para um lado). Um `pointermove` passivo e um `requestAnimationFrame` que só roda enquanto há movimento. Fica parado com animações desligadas ou movimento reduzido.
+- **Tema Verde saiu**: ficam só Screen e Acelera (quem tinha Verde salvo volta para Screen).
 - **Mais leve**: o código da sala (LiveKit, ~200 kB comprimido) é baixado em segundo plano quando o navegador fica ocioso, então entrar numa sala não espera download (não baixa com "economia de dados"); os cards dentro do painel perderam o desfoque de vidro (o fundo é sólido: não aparecia e pesava ao rolar). O resto do pacote já estava dividido por página.
+- **Abertura com a piscadinha nova**: o bonequinho entra com os olhos "| |" e a piscada é o olho direito dobrando em "<" (mesma função `wink` do `LiveLogo`), em vez da barra achatando.
