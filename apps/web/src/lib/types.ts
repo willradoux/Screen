@@ -25,6 +25,10 @@ export interface Room {
   createdBy: string;
   maxParticipants: number;
   lectureMode: boolean;
+  /** Tela travada: só o palco (e o admin) compartilha tela; câmera segue livre. */
+  screenLock: boolean;
+  /** Quem a administração fixou em destaque para todos. */
+  spotlightId: string | null;
   /** Só lives: em uso (ACTIVE) ou em espera (IDLE; ativa quando alguém entra pelo link). */
   mediaState: 'ACTIVE' | 'IDLE';
   participantCount: number;

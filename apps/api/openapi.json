@@ -46,7 +46,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Liveness",
         "description": "Responde 200 se o processo está de pé. Não consulta dependências.",
         "operationId": "getHealth",
@@ -57,15 +59,22 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["status", "uptime"],
+                      "required": [
+                        "status",
+                        "uptime"
+                      ],
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["ok"]
+                          "enum": [
+                            "ok"
+                          ]
                         },
                         "uptime": {
                           "type": "integer",
@@ -83,7 +92,9 @@
     },
     "/ready": {
       "get": {
-        "tags": ["Health"],
+        "tags": [
+          "Health"
+        ],
         "summary": "Readiness",
         "description": "Verifica as dependências (hoje: MongoDB). 200 se todas ok, 503 se alguma falhar. O corpo traz o estado de cada uma.",
         "operationId": "getReady",
@@ -94,21 +105,31 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["status", "checks"],
+                      "required": [
+                        "status",
+                        "checks"
+                      ],
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["ok"]
+                          "enum": [
+                            "ok"
+                          ]
                         },
                         "checks": {
                           "type": "object",
                           "additionalProperties": {
                             "type": "string",
-                            "enum": ["ok", "fail"]
+                            "enum": [
+                              "ok",
+                              "fail"
+                            ]
                           },
                           "example": {
                             "mongo": "ok"
@@ -127,21 +148,31 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["status", "checks"],
+                      "required": [
+                        "status",
+                        "checks"
+                      ],
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["unavailable"]
+                          "enum": [
+                            "unavailable"
+                          ]
                         },
                         "checks": {
                           "type": "object",
                           "additionalProperties": {
                             "type": "string",
-                            "enum": ["ok", "fail"]
+                            "enum": [
+                              "ok",
+                              "fail"
+                            ]
                           },
                           "example": {
                             "mongo": "fail"
@@ -159,7 +190,9 @@
     },
     "/auth/discord": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Inicia o login com Discord",
         "description": "Gera o `state`, guarda-o (com o `redirect`) num cookie assinado de 10 min e redireciona (302) ao Discord.",
         "operationId": "startDiscordLogin",
@@ -184,7 +217,9 @@
     },
     "/auth/discord/callback": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Retorno do Discord",
         "description": "Troca o `code` por tokens, confirma que o usuário está na guilda e cria a sessão (cookie `screem_sid`). Sempre responde 302: em sucesso para o `redirect` pedido; em falha para `{WEB_URL}/login?error=<CODE>`, com `CODE` em `INVALID_STATE`, `ACCESS_DENIED`, `NOT_IN_GUILD`, `ACCOUNT_BLOCKED`, `DISCORD_OAUTH_FAILED` ou `DISCORD_UNAVAILABLE`.",
         "operationId": "discordLoginCallback",
@@ -228,7 +263,9 @@
     },
     "/auth/me": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Usuário logado e papel",
         "description": "O papel é recalculado a partir dos cargos no Discord (cache de 60 s).",
         "operationId": "getMe",
@@ -244,7 +281,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/User"
@@ -289,7 +328,9 @@
     },
     "/auth/logout": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Encerra a sessão",
         "description": "Exige cabeçalho `Origin` de uma origem permitida (proteção CSRF).",
         "operationId": "logout",
@@ -327,7 +368,9 @@
     },
     "/rooms": {
       "get": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Lista salas",
         "description": "Das mais novas para as mais antigas. Sem `status`, devolve só as abertas e as agendadas. Paginação por cursor opaco.",
         "operationId": "listRooms",
@@ -376,7 +419,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data", "page"],
+                  "required": [
+                    "data",
+                    "page"
+                  ],
                   "properties": {
                     "data": {
                       "type": "array",
@@ -388,7 +434,10 @@
                       "type": "object",
                       "properties": {
                         "next": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "limit": {
                           "type": "integer"
@@ -425,9 +474,11 @@
     },
     "/rooms/{id}": {
       "patch": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Edita a sala",
-        "description": "`lectureMode` (modo palestra) é de MOD ou ADMIN. `title`, `description` e `maxParticipants` são só de ADMIN. Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e nada é aplicado. Só salas abertas ou agendadas.",
+        "description": "`lectureMode` (modo palestra) e `screenLock` (tela só para o palco e o admin) são de MOD ou ADMIN; `spotlightId` (destaque para todos) é só de ADMIN. `title`, `description` e `maxParticipants` são só de ADMIN. Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e nada é aplicado. Só salas abertas ou agendadas.",
         "operationId": "updateRoom",
         "security": [
           {
@@ -461,7 +512,10 @@
                     "maxLength": 100
                   },
                   "description": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 1000
                   },
                   "maxParticipants": {
@@ -471,6 +525,15 @@
                   },
                   "lectureMode": {
                     "type": "boolean"
+                  },
+                  "screenLock": {
+                    "type": "boolean"
+                  },
+                  "spotlightId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 }
               }
@@ -484,7 +547,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Room"
@@ -547,7 +612,9 @@
         }
       },
       "get": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Detalhes de uma sala",
         "description": "Dados públicos da sala. Ver a sala não dá acesso a ela: para entrar use `join`.",
         "operationId": "getRoom",
@@ -575,7 +642,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Room"
@@ -610,7 +679,9 @@
     },
     "/rooms/{id}/access": {
       "get": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Posso entrar agora?",
         "description": "Sem efeitos colaterais. Útil para o frontend escolher a tela (ex.: \"entre no canal de voz\"). `reason` é `null` quando pode entrar.",
         "operationId": "getRoomAccess",
@@ -638,11 +709,17 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["canJoin", "reason", "hint"],
+                      "required": [
+                        "canJoin",
+                        "reason",
+                        "hint"
+                      ],
                       "properties": {
                         "canJoin": {
                           "type": "boolean"
@@ -658,17 +735,26 @@
                           ]
                         },
                         "hint": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "voiceChannelName": {
                           "type": "string"
                         },
                         "startsAt": {
-                          "type": ["string", "null"],
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "format": "date-time"
                         },
                         "expiresAt": {
-                          "type": ["string", "null"],
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "format": "date-time"
                         }
                       }
@@ -703,7 +789,9 @@
     },
     "/rooms/{id}/join": {
       "post": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Entra na sala e recebe o token do LiveKit",
         "description": "Valida no servidor: sala aberta, não banido, cargo (reuniões), **presença no canal de voz (lives)** e lotação. O token vale só para conectar (TTL curto); para reconectar, chame de novo. Limite de 20 chamadas por minuto por usuário.",
         "operationId": "joinRoom",
@@ -731,7 +819,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/JoinResult"
@@ -806,7 +896,9 @@
     },
     "/rooms/{id}/leave": {
       "post": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Sai da sala",
         "description": "Registra a saída e derruba a conexão no LiveKit. Idempotente.",
         "operationId": "leaveRoom",
@@ -856,7 +948,9 @@
     },
     "/rooms/{id}/end": {
       "post": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Encerra a sala (MOD ou ADMIN)",
         "description": "Avisa os participantes (`room:ended`), derruba a sala no LiveKit e edita o embed no Discord.",
         "operationId": "endRoom",
@@ -926,7 +1020,9 @@
     },
     "/livekit/webhook": {
       "post": {
-        "tags": ["LiveKit"],
+        "tags": [
+          "LiveKit"
+        ],
         "summary": "Webhook do LiveKit (uso interno)",
         "description": "Chamado pelo servidor de mídia, autenticado pelo cabeçalho `Authorization` (JWT assinado com a chave da API do LiveKit, com o SHA-256 do corpo). Não é para frontends nem exige `Origin`. Trata `participant_joined`, `participant_left` e `room_finished`; os demais eventos são aceitos e ignorados.",
         "operationId": "livekitWebhook",
@@ -959,7 +1055,9 @@
     },
     "/rooms/{id}/participants": {
       "get": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Lista quem está conectado na sala",
         "description": "Visível para moderação e para quem tem acesso à sala (ou já está nela).",
         "operationId": "listParticipants",
@@ -987,7 +1085,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "array",
@@ -1035,7 +1135,9 @@
     },
     "/rooms/{id}/participants/{userId}/mute": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Silencia um participante",
         "description": "Revoga as fontes indicadas (padrão: todas), silencia o que já estava no ar e avisa a pessoa. Vale também se ela sair e voltar. Silenciamentos se acumulam; para desfazer use `unmute`. Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "muteParticipant",
@@ -1078,11 +1180,19 @@
                     "minItems": 1,
                     "items": {
                       "type": "string",
-                      "enum": ["microphone", "camera", "screen_share", "screen_share_audio"]
+                      "enum": [
+                        "microphone",
+                        "camera",
+                        "screen_share",
+                        "screen_share_audio"
+                      ]
                     }
                   },
                   "reason": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   }
                 }
@@ -1169,7 +1279,9 @@
     },
     "/rooms/{id}/participants/{userId}/unmute": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Libera um participante silenciado",
         "description": "Devolve a permissão de publicar, respeitando o modo palestra. Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "unmuteParticipant",
@@ -1208,7 +1320,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "reason": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   }
                 }
@@ -1295,7 +1410,9 @@
     },
     "/rooms/{id}/participants/{userId}/kick": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Expulsa um participante da sala",
         "description": "Remove da sala e do LiveKit. A pessoa pode voltar (para banir use `ban`). Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "kickParticipant",
@@ -1334,7 +1451,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "reason": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   }
                 }
@@ -1421,7 +1541,9 @@
     },
     "/rooms/{id}/participants/{userId}/ban": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Bane um participante da sala",
         "description": "Remove e impede a volta por `durationMinutes` (padrão 60, máximo 1440). `0` vale até o fim da sala e só ADMIN pode usar. Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "banParticipant",
@@ -1466,7 +1588,10 @@
                     "default": 60
                   },
                   "reason": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 200
                   }
                 }
@@ -1553,7 +1678,9 @@
     },
     "/rooms/{id}/participants/{userId}/promote": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Torna palestrante",
         "description": "No modo palestra, palestrantes são os únicos membros que podem publicar. Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "promoteParticipant",
@@ -1662,7 +1789,9 @@
     },
     "/rooms/{id}/participants/{userId}/demote": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Remove de palestrante",
         "description": "No modo palestra, a pessoa perde a permissão de publicar na hora. Exige papel superior ao do alvo (ninguém age sobre papel igual ou superior, nem sobre si) e gera auditoria. Limite de 60 ações por minuto.",
         "operationId": "demoteParticipant",
@@ -1771,7 +1900,9 @@
     },
     "/rooms/{id}/bans/{userId}": {
       "delete": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Remove um banimento",
         "description": "Idempotente: remover um banimento que não existe também responde 204.",
         "operationId": "removeBan",
@@ -1840,7 +1971,9 @@
     },
     "/settings": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Configuração da guilda (ADMIN)",
         "operationId": "getSettings",
         "security": [
@@ -1855,7 +1988,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Settings"
@@ -1888,7 +2023,9 @@
         }
       },
       "patch": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Altera a configuração da guilda (ADMIN)",
         "description": "Qualquer subconjunto dos campos. Canais e cargos precisam existir no Discord. Listas de cargos são substituídas por inteiro; `null` limpa um canal. Gera auditoria e o evento `settings:updated` para admins conectados.",
         "operationId": "updateSettings",
@@ -1914,7 +2051,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Settings"
@@ -1959,7 +2098,9 @@
     },
     "/audit": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Auditoria de ações (ADMIN)",
         "description": "Registro somente de inserção das ações de moderação e administração, do mais novo para o mais antigo.",
         "operationId": "listAudit",
@@ -2038,7 +2179,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data", "page"],
+                  "required": [
+                    "data",
+                    "page"
+                  ],
                   "properties": {
                     "data": {
                       "type": "array",
@@ -2050,7 +2194,10 @@
                       "type": "object",
                       "properties": {
                         "next": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "limit": {
                           "type": "integer"
@@ -2097,7 +2244,9 @@
     },
     "/meetings": {
       "get": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Lista reuniões",
         "description": "Qualquer membro vê. Sem `status`, devolve as abertas e as agendadas, da mais próxima para a mais distante. `from` e `to` filtram pelo horário de início.",
         "operationId": "listMeetings",
@@ -2148,7 +2297,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "array",
@@ -2184,7 +2335,9 @@
         }
       },
       "post": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Cria uma reunião (ADMIN)",
         "description": "Sem `startsAt` a reunião abre agora; com `startsAt` ela é agendada, abre sozinha no horário e manda lembretes. `reminders` são minutos antes do início (padrão 1440, 60 e 5; até 5; `[]` = nenhum); os que já passaram são descartados. `announce` (padrão `false`) publica o aviso já na criação; senão o admin divulga depois com `POST /meetings/{id}/announce`. Se `allowedRoleIds` não vier, vale o `/config cargo-reuniao`.",
         "operationId": "createMeeting",
@@ -2210,7 +2363,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Meeting"
@@ -2265,7 +2420,9 @@
     },
     "/meetings/{id}": {
       "get": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Detalhes de uma reunião",
         "operationId": "getMeeting",
         "security": [
@@ -2292,7 +2449,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Meeting"
@@ -2325,7 +2484,9 @@
         }
       },
       "patch": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Edita ou reagenda uma reunião agendada (ADMIN)",
         "description": "Só enquanto `SCHEDULED`. Mudar `startsAt` reagenda: os lembretes voltam a ser pendentes (só os que ainda fazem sentido), o aviso é editado e o canal recebe uma mensagem de reagendamento. Mudar só os demais campos edita o aviso sem mensagem nova.",
         "operationId": "updateMeeting",
@@ -2363,7 +2524,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Meeting"
@@ -2428,7 +2591,9 @@
     },
     "/meetings/{id}/open": {
       "post": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Abre uma reunião agendada antes do horário (ADMIN)",
         "operationId": "openMeeting",
         "security": [
@@ -2455,7 +2620,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Meeting"
@@ -2510,7 +2677,9 @@
     },
     "/meetings/{id}/announce": {
       "post": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Divulga a reunião no canal de avisos (ADMIN)",
         "description": "O admin escolhe o momento: no dia ou antes, já com data e hora. Sem `resend`, divulgar duas vezes dá `ALREADY_ANNOUNCED`. Lembretes e avisos de reagendamento/cancelamento só existem depois da divulgação.",
         "operationId": "announceMeeting",
@@ -2607,7 +2776,9 @@
     },
     "/rooms/{id}/mute-all": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Desliga o microfone de todos na reunião (MOD ou ADMIN)",
         "description": "Só reuniões. Como o \"silenciar todos\" do Meet: desliga o que está no ar agora, mas cada pessoa pode ligar de novo. Não atinge papel igual ou superior ao seu nem você mesmo. Para impedir de falar, use o modo palestra.",
         "operationId": "muteAll",
@@ -2657,7 +2828,9 @@
     },
     "/rooms/{id}/cameras-off": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Desliga câmera e tela de todos na reunião (MOD ou ADMIN)",
         "description": "Mesmas regras de `mute-all`, para câmera, tela e áudio da tela.",
         "operationId": "camerasOff",
@@ -2707,7 +2880,9 @@
     },
     "/guild": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Canais e cargos do servidor (ADMIN)",
         "description": "Para o painel montar as listas de escolha (calls, canais de texto, cargos).",
         "operationId": "getGuildCatalog",
@@ -2735,7 +2910,9 @@
     },
     "/panel-users": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Pessoas com acesso ao painel concedido manualmente (ADMIN)",
         "operationId": "listPanelUsers",
         "security": [
@@ -2760,7 +2937,9 @@
         }
       },
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Dá acesso ao painel a alguém, com ou sem cargo (ADMIN)",
         "description": "A pessoa vira ADMIN ou MOD na hora, mesmo sem cargo no Discord. Já na lista = troca o nível. Quem não está no servidor consegue entrar, só com esse acesso.",
         "operationId": "addPanelUser",
@@ -2775,7 +2954,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["userId", "role"],
+                "required": [
+                  "userId",
+                  "role"
+                ],
                 "additionalProperties": false,
                 "properties": {
                   "userId": {
@@ -2784,10 +2966,16 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": ["ADMIN", "MOD"]
+                    "enum": [
+                      "ADMIN",
+                      "MOD"
+                    ]
                   },
                   "note": {
-                    "type": ["string", "null"],
+                    "type": [
+                      "string",
+                      "null"
+                    ],
                     "maxLength": 100
                   }
                 }
@@ -2824,7 +3012,9 @@
     },
     "/panel-users/{userId}": {
       "delete": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Tira o acesso manual ao painel (ADMIN)",
         "description": "Não mexe nos cargos do Discord: quem tem cargo de admin continua com acesso.",
         "operationId": "removePanelUser",
@@ -2862,7 +3052,9 @@
     },
     "/rooms/{id}/recordings": {
       "post": {
-        "tags": ["Recordings"],
+        "tags": [
+          "Recordings"
+        ],
         "summary": "Começa a gravar a reunião (ADMIN)",
         "description": "Só reuniões abertas, uma gravação por vez. `mode`: GRID (todos), SPEAKER (quem fala ou a tela em destaque), AUDIO (só áudio, .ogg), PARTICIPANT (câmera e microfone de uma pessoa) ou SCREEN (a tela de uma pessoa); os dois últimos pedem `userId`. Todos na sala recebem `recording:state` e veem o aviso de gravação.",
         "operationId": "startRecording",
@@ -2889,12 +3081,20 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["mode"],
+                "required": [
+                  "mode"
+                ],
                 "additionalProperties": false,
                 "properties": {
                   "mode": {
                     "type": "string",
-                    "enum": ["GRID", "SPEAKER", "AUDIO", "PARTICIPANT", "SCREEN"]
+                    "enum": [
+                      "GRID",
+                      "SPEAKER",
+                      "AUDIO",
+                      "PARTICIPANT",
+                      "SCREEN"
+                    ]
                   },
                   "userId": {
                     "type": "string"
@@ -2933,7 +3133,9 @@
     },
     "/recordings": {
       "get": {
-        "tags": ["Recordings"],
+        "tags": [
+          "Recordings"
+        ],
         "summary": "Lista as gravações (ADMIN)",
         "description": "Status: STARTING, RECORDING, PROCESSING, READY, FAILED ou EXPIRED. `daysLeft` diz quantos dias faltam para o arquivo ser apagado.",
         "operationId": "listRecordings",
@@ -2961,7 +3163,9 @@
     },
     "/recordings/{id}/stop": {
       "post": {
-        "tags": ["Recordings"],
+        "tags": [
+          "Recordings"
+        ],
         "summary": "Para a gravação (ADMIN)",
         "operationId": "stopRecording",
         "security": [
@@ -2990,7 +3194,9 @@
     },
     "/recordings/{id}/download": {
       "get": {
-        "tags": ["Recordings"],
+        "tags": [
+          "Recordings"
+        ],
         "summary": "Baixa o arquivo (ADMIN)",
         "description": "Passa pela API com o cookie de sessão. Dá 410 depois do prazo (padrão 10 dias), quando o arquivo é apagado.",
         "operationId": "downloadRecording",
@@ -3040,7 +3246,9 @@
     },
     "/recordings/{id}": {
       "delete": {
-        "tags": ["Recordings"],
+        "tags": [
+          "Recordings"
+        ],
         "summary": "Apaga a gravação e o arquivo antes do prazo (ADMIN)",
         "operationId": "deleteRecording",
         "security": [
@@ -3069,7 +3277,9 @@
     },
     "/stats": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Estatísticas do servidor (ADMIN)",
         "description": "Lives, reuniões, pessoas, minutos conectados, ranking e série por dia no período (`days`, 1 a 365).",
         "operationId": "getStats",
@@ -3097,7 +3307,9 @@
     },
     "/calls": {
       "get": {
-        "tags": ["Rooms"],
+        "tags": [
+          "Rooms"
+        ],
         "summary": "Status das calls com live (qualquer membro)",
         "description": "Quem está em cada call habilitada agora e a sala/sessão associada.",
         "operationId": "listCalls",
@@ -3115,7 +3327,9 @@
     },
     "/rooms/{id}/hand": {
       "post": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Levanta a mão (pede a palavra) na reunião",
         "operationId": "raiseHand",
         "security": [
@@ -3152,7 +3366,9 @@
         }
       },
       "delete": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Abaixa a mão",
         "operationId": "lowerHand",
         "security": [
@@ -3181,7 +3397,9 @@
     },
     "/rooms/{id}/hands": {
       "get": {
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "summary": "Fila de quem pediu a palavra",
         "description": "Moderação vê a fila inteira; os demais, só a própria mão.",
         "operationId": "listHands",
@@ -3211,7 +3429,9 @@
     },
     "/status": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "O que falta configurar (qualquer membro)",
         "description": "Só sim ou não: `botInGuild`, `livesConfigured`, `announceConfigured`. Nenhum ID.",
         "operationId": "getStatus",
@@ -3229,7 +3449,9 @@
     },
     "/meetings/{id}/cancel": {
       "post": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Cancela uma reunião agendada (ADMIN)",
         "description": "Edita o aviso para \"cancelada\" e manda uma mensagem curta e silenciosa no canal. Reunião já aberta não se cancela: encerre-a (`POST /rooms/{id}/end`).",
         "operationId": "cancelMeeting",
@@ -3299,7 +3521,9 @@
     },
     "/meetings/{id}/report": {
       "get": {
-        "tags": ["Meetings"],
+        "tags": [
+          "Meetings"
+        ],
         "summary": "Relatório de presença (ADMIN)",
         "description": "Só depois que a reunião termina. Quem saiu e voltou aparece uma vez, com a soma dos períodos. Quem ainda estava conectado no fim conta até o fim.",
         "operationId": "getMeetingReport",
@@ -3327,7 +3551,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/MeetingReport"
@@ -3425,7 +3651,9 @@
       },
       "MeetingCreate": {
         "type": "object",
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "additionalProperties": false,
         "properties": {
           "title": {
@@ -3434,11 +3662,17 @@
             "maxLength": 100
           },
           "description": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "maxLength": 1000
           },
           "startsAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time",
             "description": "Ausente ou null: abre agora"
           },
@@ -3481,7 +3715,10 @@
             "maxLength": 100
           },
           "description": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "maxLength": 1000
           },
           "startsAt": {
@@ -3557,11 +3794,18 @@
             "type": "string"
           },
           "avatarUrl": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "role": {
             "type": "string",
-            "enum": ["MEMBER", "MOD", "ADMIN"]
+            "enum": [
+              "MEMBER",
+              "MOD",
+              "ADMIN"
+            ]
           },
           "joinedAt": {
             "type": "string",
@@ -3577,7 +3821,12 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["microphone", "camera", "screen_share", "screen_share_audio"]
+              "enum": [
+                "microphone",
+                "camera",
+                "screen_share",
+                "screen_share_audio"
+              ]
             }
           }
         }
@@ -3589,13 +3838,22 @@
             "type": "string"
           },
           "liveCategoryId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "liveTextChannelId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "announceChannelId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "adminRoleIds": {
             "type": "array",
@@ -3633,15 +3891,24 @@
             "description": "Calls de voz escolhidas no painel para terem live (além da categoria, se houver)"
           },
           "logChannelId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Canal de texto dos logs"
           },
           "mentionRoleId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Cargo marcado nos avisos de reunião. null = não marca ninguém"
           },
           "emptyLiveEndSeconds": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 10,
             "maximum": 3600,
             "description": "Segundos com a call vazia até encerrar a live. null = padrão"
@@ -3666,15 +3933,24 @@
         "additionalProperties": false,
         "properties": {
           "liveCategoryId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Categoria de canais"
           },
           "liveTextChannelId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Canal de texto"
           },
           "announceChannelId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Canal de texto"
           },
           "adminRoleIds": {
@@ -3716,15 +3992,24 @@
             "description": "Calls de voz escolhidas no painel para terem live (além da categoria, se houver)"
           },
           "logChannelId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Canal de texto dos logs"
           },
           "mentionRoleId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Cargo marcado nos avisos de reunião. null = não marca ninguém"
           },
           "emptyLiveEndSeconds": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 10,
             "maximum": 3600,
             "description": "Segundos com a call vazia até encerrar a live. null = padrão"
@@ -3790,16 +4075,25 @@
             "type": "string"
           },
           "targetId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "roomId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "action": {
             "$ref": "#/components/schemas/AuditAction"
           },
           "reason": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "meta": {
             "type": "object",
@@ -3809,11 +4103,19 @@
       },
       "RoomType": {
         "type": "string",
-        "enum": ["LIVE", "MEETING"]
+        "enum": [
+          "LIVE",
+          "MEETING"
+        ]
       },
       "RoomStatus": {
         "type": "string",
-        "enum": ["SCHEDULED", "OPEN", "ENDED", "CANCELED"]
+        "enum": [
+          "SCHEDULED",
+          "OPEN",
+          "ENDED",
+          "CANCELED"
+        ]
       },
       "AccessReason": {
         "type": "string",
@@ -3827,7 +4129,15 @@
       },
       "Room": {
         "type": "object",
-        "required": ["id", "type", "status", "title", "url", "participantCount", "maxParticipants"],
+        "required": [
+          "id",
+          "type",
+          "status",
+          "title",
+          "url",
+          "participantCount",
+          "maxParticipants"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -3844,22 +4154,37 @@
             "type": "string"
           },
           "description": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "voiceChannelId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Só em lives"
           },
           "startsAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "openedAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "endedAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "createdBy": {
@@ -3871,9 +4196,21 @@
           "lectureMode": {
             "type": "boolean"
           },
+          "screenLock": {
+            "type": "boolean"
+          },
+          "spotlightId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "mediaState": {
             "type": "string",
-            "enum": ["ACTIVE", "IDLE"],
+            "enum": [
+              "ACTIVE",
+              "IDLE"
+            ],
             "description": "Só lives: ACTIVE (em uso) ou IDLE (em espera; ativa quando alguém entra pelo link)"
           },
           "participantCount": {
@@ -3887,11 +4224,19 @@
       },
       "JoinResult": {
         "type": "object",
-        "required": ["livekit", "participant", "permissions", "room"],
+        "required": [
+          "livekit",
+          "participant",
+          "permissions",
+          "room"
+        ],
         "properties": {
           "livekit": {
             "type": "object",
-            "required": ["url", "token"],
+            "required": [
+              "url",
+              "token"
+            ],
             "properties": {
               "url": {
                 "type": "string",
@@ -3914,7 +4259,11 @@
               },
               "role": {
                 "type": "string",
-                "enum": ["MEMBER", "MOD", "ADMIN"]
+                "enum": [
+                  "MEMBER",
+                  "MOD",
+                  "ADMIN"
+                ]
               }
             }
           },
@@ -3928,7 +4277,12 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["microphone", "camera", "screen_share", "screen_share_audio"]
+                  "enum": [
+                    "microphone",
+                    "camera",
+                    "screen_share",
+                    "screen_share_audio"
+                  ]
                 }
               },
               "canModerate": {
@@ -3951,7 +4305,13 @@
       },
       "User": {
         "type": "object",
-        "required": ["id", "username", "displayName", "avatarUrl", "role"],
+        "required": [
+          "id",
+          "username",
+          "displayName",
+          "avatarUrl",
+          "role"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -3966,21 +4326,33 @@
             "description": "Apelido na guilda, nome global ou username"
           },
           "avatarUrl": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "role": {
             "type": "string",
-            "enum": ["MEMBER", "MOD", "ADMIN"]
+            "enum": [
+              "MEMBER",
+              "MOD",
+              "ADMIN"
+            ]
           }
         }
       },
       "ErrorBody": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
           "error": {
             "type": "object",
-            "required": ["code", "message"],
+            "required": [
+              "code",
+              "message"
+            ],
             "properties": {
               "code": {
                 "type": "string",

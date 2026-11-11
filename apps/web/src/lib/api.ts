@@ -150,6 +150,8 @@ export const api = {
         description?: string | null;
         maxParticipants?: number;
         lectureMode?: boolean;
+        screenLock?: boolean;
+        spotlightId?: string | null;
       },
     ) => data<Room>('PATCH', `/rooms/${enc(id)}`, { body: patch }),
   },

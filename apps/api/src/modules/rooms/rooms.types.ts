@@ -23,6 +23,10 @@ export interface RoomRecord {
   maxParticipants: number;
   allowedRoleIds: string[];
   lectureMode: boolean;
+  /** Tela travada: só o palco (e o admin) compartilha tela; câmera segue livre. */
+  screenLock: boolean;
+  /** Quem a administração fixou em destaque para todos (identidade), ou nenhum. */
+  spotlightId: string | null;
   /**
    * Só lives. `ACTIVE`: há gente usando o vídeo agora. `IDLE`: em espera, sem ninguém conectado
    * ao LiveKit; é ativada de novo quando alguém entra pelo link.
@@ -40,6 +44,8 @@ export interface RoomPatch {
   description?: string | null;
   maxParticipants?: number;
   lectureMode?: boolean;
+  screenLock?: boolean;
+  spotlightId?: string | null;
   allowedRoleIds?: string[];
 }
 

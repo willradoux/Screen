@@ -30,6 +30,8 @@ export const makeRoom = (over: Partial<Room> = {}): Room => ({
   createdBy: '111111111111111111',
   maxParticipants: 25,
   lectureMode: false,
+  screenLock: false,
+  spotlightId: null,
   mediaState: 'ACTIVE',
   participantCount: 2,
   url: `https://app.exemplo.com/r/${ROOM_ID}`,

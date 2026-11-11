@@ -201,7 +201,14 @@ export function useRoomSession(
       socket.on('voice:restored', () => dispatch({ type: 'VOICE_RESTORED' }));
       socket.on(
         'room:updated',
-        (p: { changes?: { lectureMode?: boolean; mediaState?: 'ACTIVE' | 'IDLE' } }) => {
+        (p: {
+          changes?: {
+            lectureMode?: boolean;
+            screenLock?: boolean;
+            spotlightId?: string | null;
+            mediaState?: 'ACTIVE' | 'IDLE';
+          };
+        }) => {
           dispatch({
             type: 'ROOM_UPDATED',
             ...(p.changes?.lectureMode !== undefined ? { lectureMode: p.changes.lectureMode } : {}),
@@ -212,6 +219,12 @@ export function useRoomSession(
                   ...r,
                   ...(p.changes?.lectureMode !== undefined
                     ? { lectureMode: p.changes.lectureMode }
+                    : {}),
+                  ...(p.changes?.screenLock !== undefined
+                    ? { screenLock: p.changes.screenLock }
+                    : {}),
+                  ...(p.changes?.spotlightId !== undefined
+                    ? { spotlightId: p.changes.spotlightId }
                     : {}),
                   ...(p.changes?.mediaState !== undefined
                     ? { mediaState: p.changes.mediaState }

@@ -215,7 +215,7 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
           tags: ['Moderation'],
           summary: 'Edita a sala',
           description:
-            '`lectureMode` (modo palestra) é de MOD ou ADMIN. `title`, `description` e `maxParticipants` são só de ADMIN. Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e nada é aplicado. Só salas abertas ou agendadas.',
+            '`lectureMode` (modo palestra) e `screenLock` (tela só para o palco e o admin) são de MOD ou ADMIN; `spotlightId` (destaque para todos) é só de ADMIN. `title`, `description` e `maxParticipants` são só de ADMIN. Se o pedido mistura campos de papéis diferentes, vale a regra mais restrita e nada é aplicado. Só salas abertas ou agendadas.',
           operationId: 'updateRoom',
           security: [{ sessionCookie: [] }],
           parameters: [roomIdParam],
@@ -232,6 +232,8 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
                     description: { type: ['string', 'null'], maxLength: 1000 },
                     maxParticipants: { type: 'integer', minimum: 2, maximum: 500 },
                     lectureMode: { type: 'boolean' },
+                    screenLock: { type: 'boolean' },
+                    spotlightId: { type: ['string', 'null'] },
                   },
                 },
               },
@@ -1275,6 +1277,8 @@ export function buildOpenApi(serverUrl = 'http://localhost:3000') {
             createdBy: { type: 'string' },
             maxParticipants: { type: 'integer' },
             lectureMode: { type: 'boolean' },
+            screenLock: { type: 'boolean' },
+            spotlightId: { type: ['string', 'null'] },
             mediaState: {
               type: 'string',
               enum: ['ACTIVE', 'IDLE'],

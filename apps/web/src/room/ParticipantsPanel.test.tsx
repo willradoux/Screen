@@ -30,7 +30,11 @@ const people = {
   }),
 };
 
-function setup(role: Role, list = Object.values(people), over: { lectureMode?: boolean } = {}) {
+function setup(
+  role: Role,
+  list = Object.values(people),
+  over: { lectureMode?: boolean; screenLock?: boolean; spotlightId?: string | null } = {},
+) {
   vi.spyOn(api.rooms, 'participants').mockResolvedValue([
     makeParticipant({ userId: ME, displayName: 'Eu mesmo', role }),
     ...list,
@@ -39,7 +43,11 @@ function setup(role: Role, list = Object.values(people), over: { lectureMode?: b
   const onError = vi.fn();
   render(
     <ParticipantsPanel
-      room={makeRoom({ type: 'MEETING' })}
+      room={makeRoom({
+        type: 'MEETING',
+        screenLock: over.screenLock ?? false,
+        spotlightId: over.spotlightId ?? null,
+      })}
       me={{ id: ME, role }}
       version={0}
       lectureMode={over.lectureMode ?? false}
@@ -283,5 +291,48 @@ describe('ParticipantsPanel: ações', () => {
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
     rerender(<ParticipantsPanel {...props} version={1} />);
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(2), { timeout: 4000 });
+  });
+});
+
+describe('ParticipantsPanel: tela travada e destaque para todos', () => {
+  it('moderador trava a tela; o botão mostra o estado e chama a API', async () => {
+    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
+    setup('MOD');
+    await screen.findByText('Membro Um');
+    await userEvent.click(screen.getByRole('button', { name: 'Tela: liberada' }));
+    expect(update).toHaveBeenCalledWith(ROOM_ID, { screenLock: true });
+  });
+
+  it('com a tela travada o botão avisa que só o palco compartilha', async () => {
+    setup('MOD', undefined, { screenLock: true });
+    await screen.findByText('Membro Um');
+    expect(screen.getByRole('button', { name: 'Tela: só no palco' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('só o admin destaca alguém para todos', async () => {
+    const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
+    setup('ADMIN');
+    await screen.findByText('Membro Um');
+    await userEvent.click(
+      within(row('Membro Um')).getByRole('button', { name: 'Destacar para todos' }),
+    );
+    expect(update).toHaveBeenCalledWith(ROOM_ID, { spotlightId: people.member.userId });
+  });
+
+  it('moderador não vê o botão de destaque', async () => {
+    setup('MOD');
+    await screen.findByText('Membro Um');
+    expect(screen.queryByRole('button', { name: /destacar para todos/i })).not.toBeInTheDocument();
+  });
+
+  it('quem está em destaque ganha o botão de tirar', async () => {
+    setup('ADMIN', undefined, { spotlightId: people.member.userId });
+    await screen.findByText('Membro Um');
+    expect(
+      within(row('Membro Um')).getByRole('button', { name: 'Tirar destaque' }),
+    ).toBeInTheDocument();
   });
 });

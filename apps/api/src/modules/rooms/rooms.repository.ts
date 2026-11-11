@@ -19,6 +19,8 @@ type Doc = {
   maxParticipants: number;
   allowedRoleIds?: string[];
   lectureMode?: boolean | null;
+  screenLock?: boolean | null;
+  spotlightId?: string | null;
   mediaState?: 'ACTIVE' | 'IDLE' | null;
   speakerIds?: string[];
   reminders?: { minutesBefore?: number | null; sentAt?: Date | null }[];
@@ -46,6 +48,8 @@ function toRecord(d: Doc): RoomRecord {
     maxParticipants: d.maxParticipants,
     allowedRoleIds: d.allowedRoleIds ?? [],
     lectureMode: d.lectureMode ?? false,
+    screenLock: d.screenLock ?? false,
+    spotlightId: d.spotlightId ?? null,
     mediaState: d.mediaState ?? 'IDLE',
     speakerIds: d.speakerIds ?? [],
     reminders: (d.reminders ?? []).map((r) => ({

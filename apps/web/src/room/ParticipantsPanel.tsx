@@ -113,6 +113,38 @@ export function ParticipantsPanel({
     );
   }
 
+  async function toggleScreenLock() {
+    await run(
+      'screen-lock',
+      () => api.rooms.update(room.id, { screenLock: !room.screenLock }),
+      room.screenLock
+        ? 'Tela liberada: todo mundo pode compartilhar.'
+        : 'Tela travada: só o palco compartilha.',
+    );
+  }
+
+  /** Destaque para todos: a pessoa aparece grande para a sala inteira. */
+  function spotlightButton(p: Participant) {
+    const on = room.spotlightId === p.userId;
+    return (
+      <Button
+        size="sm"
+        variant={on ? 'primary' : 'secondary'}
+        aria-pressed={on}
+        loading={busy === `spot:${p.userId}`}
+        onClick={() =>
+          void run(
+            `spot:${p.userId}`,
+            () => api.rooms.update(room.id, { spotlightId: on ? null : p.userId }),
+            on ? 'Destaque removido.' : `${p.displayName} está em destaque para todos.`,
+          )
+        }
+      >
+        {on ? 'Tirar destaque' : 'Destacar para todos'}
+      </Button>
+    );
+  }
+
   async function endRoom() {
     await run('end', () => api.rooms.end(room.id), 'Sala encerrada.');
   }
@@ -162,6 +194,15 @@ export function ParticipantsPanel({
             onClick={() => void toggleLecture()}
           >
             Palco: {lectureMode ? 'ligado' : 'desligado'}
+          </Button>
+          <Button
+            size="sm"
+            variant={room.screenLock ? 'primary' : 'secondary'}
+            aria-pressed={room.screenLock}
+            loading={busy === 'screen-lock'}
+            onClick={() => void toggleScreenLock()}
+          >
+            Tela: {room.screenLock ? 'só no palco' : 'liberada'}
           </Button>
           <Button
             size="sm"
@@ -285,7 +326,8 @@ export function ParticipantsPanel({
                     }
                   >
                     {p.isSpeaker ? 'Sair do palco' : 'Subir ao palco'}
-                  </Button>
+                  </Button>{' '}
+                  {spotlightButton(p)}
                 </div>
               )}
 
@@ -326,6 +368,7 @@ export function ParticipantsPanel({
                       Silenciar
                     </Button>
                   )}
+                  {canStage && spotlightButton(p)}
                   {!canStage ? null : p.isSpeaker ? (
                     <Button
                       size="sm"

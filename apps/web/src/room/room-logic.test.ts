@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AccessResult } from '../lib/types';
-import { publishRestriction, canUseSource } from './publish-rules';
+import { publishRestriction, canUseSource, liveSources } from './publish-rules';
 import {
   initialSessionState,
   pollIntervalMs,
@@ -256,5 +256,27 @@ describe('parseMetadata', () => {
     for (const m of [undefined, '', 'não é json', '{"role":"SUPERUSER"}', '{"role":1}', 'null']) {
       expect(parseMetadata(m as string), String(m)).toEqual({ role: 'MEMBER', avatarUrl: null });
     }
+  });
+});
+
+describe('liveSources', () => {
+  it('sem permissões do LiveKit ainda, vale o que veio do join', () => {
+    expect(liveSources(undefined, ['camera'])).toEqual(['camera']);
+    expect(liveSources(undefined, undefined)).toBeUndefined();
+  });
+
+  it('tela travada: o LiveKit tira a tela e o botão acompanha', () => {
+    expect(liveSources({ canPublish: true, canPublishSources: [1, 2] }, undefined)).toEqual([
+      'camera',
+      'microphone',
+    ]);
+    expect(liveSources({ canPublish: true, canPublishSources: [1, 2, 3, 4] }, undefined)).toContain(
+      'screen_share',
+    );
+  });
+
+  it('sem poder publicar nada, não sobra fonte; lista vazia com permissão significa tudo', () => {
+    expect(liveSources({ canPublish: false, canPublishSources: [1] }, undefined)).toEqual([]);
+    expect(liveSources({ canPublish: true, canPublishSources: [] }, ['camera'])).toBeUndefined();
   });
 });
