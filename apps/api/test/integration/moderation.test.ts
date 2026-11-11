@@ -528,6 +528,53 @@ describe('palestrantes e modo palestra', () => {
     });
   });
 
+  it('travar a tela tira só a tela de quem não está no palco; câmera e mic seguem', async () => {
+    const { ctx, room } = await setup([staff.mod2, staff.admin]);
+    await ctx.rooms.updateSpeakers(room.id, 'add', MEMBER2);
+    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+
+    const res = await act(mod, ctx, 'patch', `/rooms/${room.id}`, { screenLock: true });
+    expect(res.status).toBe(200);
+    expect(res.body.data.screenLock).toBe(true);
+
+    const last = (id: string) => ctx.livekit.permissions.filter((p) => p.identity === id).at(-1)!;
+    expect(last(MEMBER).canPublish).toBe(true);
+    expect([...last(MEMBER).sources].sort()).toEqual(['camera', 'microphone']);
+    expect([...last(MOD2).sources].sort()).toEqual(['camera', 'microphone']);
+    expect(last(MEMBER2).sources).toContain('screen_share'); // no palco
+  });
+
+  it('com a tela travada, subir ao palco libera a tela e descer tira de novo', async () => {
+    const { ctx, room } = await setup([staff.admin]);
+    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+    await act(mod, ctx, 'patch', `/rooms/${room.id}`, { screenLock: true });
+
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/promote`);
+    expect(ctx.livekit.permissions.at(-1)).toMatchObject({ identity: MEMBER });
+    expect(ctx.livekit.permissions.at(-1)!.sources).toContain('screen_share');
+    await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/demote`);
+    expect(ctx.livekit.permissions.at(-1)!.sources).not.toContain('screen_share');
+  });
+
+  it('destaque para todos: só admin muda; moderador leva 403', async () => {
+    const { ctx, room } = await setup([staff.admin]);
+    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+
+    expect(
+      (await act(mod, ctx, 'patch', `/rooms/${room.id}`, { spotlightId: MEMBER })).status,
+    ).toBe(403);
+    const ok = await act(admin, ctx, 'patch', `/rooms/${room.id}`, { spotlightId: MEMBER });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.spotlightId).toBe(MEMBER);
+    expect(ctx.emitter.of('room:updated').at(-1)).toMatchObject({
+      payload: { changes: { spotlightId: MEMBER } },
+    });
+    const cleared = await act(admin, ctx, 'patch', `/rooms/${room.id}`, { spotlightId: null });
+    expect(cleared.body.data.spotlightId).toBeNull();
+  });
+
   it('desligar o modo palestra devolve a permissão; repetir o mesmo valor não faz nada', async () => {
     const { ctx, room } = await setup([staff.admin]);
     const mod = await loginAs(ctx, MOD, [MOD_ROLE]);

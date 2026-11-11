@@ -45,20 +45,29 @@ export function computePermissions(input: {
   mutedSources: MediaSource[];
   lectureMode: boolean;
   speakerIds: string[];
+  /** Tela travada: só quem está no palco (e o admin) compartilha tela. */
+  screenLock?: boolean;
 }): RoomPermissions {
   const staff = ROLE_RANK[input.role] >= ROLE_RANK.MOD;
   // Palco ligado: ninguém transmite por padrão, nem a moderação. Só sobe quem um admin colocou
   // (o próprio admin sobe a si mesmo).
   const lectureBlocked = input.lectureMode && !input.speakerIds.includes(input.userId);
+  // Tela travada: câmera e microfone continuam livres, a tela só vai a quem está no palco.
+  const screenBlocked =
+    Boolean(input.screenLock) && input.role !== 'ADMIN' && !input.speakerIds.includes(input.userId);
+  const withoutScreen = (sources: MediaSource[]) =>
+    screenBlocked
+      ? sources.filter((s) => s !== 'screen_share' && s !== 'screen_share_audio')
+      : sources;
   if (staff) {
     return {
       canPublish: !lectureBlocked,
-      canPublishSources: lectureBlocked ? [] : ALL_SOURCES,
+      canPublishSources: lectureBlocked ? [] : withoutScreen(ALL_SOURCES),
       // Só reuniões têm moderação; nas lives todo mundo é igual.
       canModerate: input.roomType !== 'LIVE',
     };
   }
-  const allowed = ALL_SOURCES.filter((s) => !input.mutedSources.includes(s));
+  const allowed = withoutScreen(ALL_SOURCES.filter((s) => !input.mutedSources.includes(s)));
   if (lectureBlocked || allowed.length === 0) {
     return { canPublish: false, canPublishSources: [], canModerate: false };
   }
@@ -171,6 +180,7 @@ export class RoomAccess {
       mutedSources: await this.deps.participations.getMutedSources(room.id, identity.user.id),
       lectureMode: room.lectureMode,
       speakerIds: room.speakerIds,
+      screenLock: room.screenLock,
     });
   }
 

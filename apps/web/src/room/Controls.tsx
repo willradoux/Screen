@@ -21,6 +21,8 @@ interface Props {
   allowedSources: MediaSource[] | undefined;
   /** Texto de por que não dá para transmitir (modo palestra, silenciado...). */
   restriction: string | null;
+  /** A tela está travada: só o palco (e o admin) compartilha. */
+  screenLocked?: boolean;
   /** Painel de pessoas aberto. */
   panelOpen: boolean;
   onTogglePanel: () => void;
@@ -36,6 +38,7 @@ interface Props {
 }
 
 const SCREEN_UNSUPPORTED_SHORT = 'Compartilhar tela só funciona no computador.';
+const SCREEN_LOCKED_SHORT = 'A tela está liberada só para quem está no palco.';
 
 /** Botão redondo de controle: ícone, rótulo curto e nome completo para leitores de tela. */
 function RoundButton({
@@ -97,6 +100,7 @@ export function Controls({
   local,
   allowedSources,
   restriction,
+  screenLocked = false,
   panelOpen,
   onTogglePanel,
   onLeave,
@@ -278,7 +282,14 @@ export function Controls({
             fullLabel={`Tela: ${screen ? 'compartilhando' : 'parada'}`}
             active={screen}
             disabled={!screenSupported || disabled('screen_share')}
-            title={screenSupported ? (restriction ?? undefined) : SCREEN_UNSUPPORTED_SHORT}
+            title={
+              !screenSupported
+                ? SCREEN_UNSUPPORTED_SHORT
+                : (restriction ??
+                  (screenLocked && !canUseSource(allowedSources, 'screen_share')
+                    ? SCREEN_LOCKED_SHORT
+                    : undefined))
+            }
             busy={busy === 'screen'}
             onClick={() => void toggle('screen')}
           />

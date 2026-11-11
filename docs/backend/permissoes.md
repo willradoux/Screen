@@ -46,6 +46,8 @@ O papel **não** é gravado de forma permanente na sessão. É recalculado, ent�
 | Encerrar sala de live | não | sim | sim |
 | Ligar o palco (só quem está no palco transmite, **inclusive moderação e admin**) | não | sim | sim |
 | Subir/tirar pessoas do palco (e subir a si mesmo) | não | não | sim |
+| Travar a tela (`screenLock`): só o palco e o admin compartilham tela; câmera e microfone seguem livres | não | sim | sim |
+| Destacar alguém para todos (`spotlightId`) | não | não | sim |
 | Criar reunião (comando e API) | não | não | sim |
 | Agendar, editar e cancelar reunião | não | não | sim |
 | Encerrar reunião | não | sim | sim |

@@ -52,6 +52,8 @@ const patchSchemas = {
       description: z.string().trim().max(1000).nullable().optional(),
       maxParticipants: z.number().int().min(2).max(500).optional(),
       lectureMode: z.boolean().optional(),
+      screenLock: z.boolean().optional(),
+      spotlightId: z.string().min(1).max(64).nullable().optional(),
     })
     .strict()
     .refine((b) => Object.keys(b).length > 0, 'Informe pelo menos um campo.'),

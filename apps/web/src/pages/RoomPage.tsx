@@ -7,7 +7,7 @@ import { ToastViewport, useToasts } from '../components/Toasts';
 import { useImmersive } from '../components/immersive';
 import { Alert, Avatar, Badge, Button } from '../components/ui';
 import { ROLE_LABEL } from '../lib/moderation-rules';
-import { publishRestriction } from '../room/publish-rules';
+import { liveSources, publishRestriction } from '../room/publish-rules';
 import { CaptionsOverlay, useSpeechCaptions } from '../room/captions';
 import { Controls } from '../room/Controls';
 import { useNow } from './MeetingsPage';
@@ -134,6 +134,8 @@ function ConnectedRoom({
     toast.error,
   );
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  // Quem a administração destacou vale para todos; fixar outra pessoa por conta própria vale só aqui.
+  const effectivePin = pinnedId ?? room?.spotlightId ?? null;
   // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
   const lastSpeaker = useRef<string | null>(null);
   const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);
@@ -143,7 +145,7 @@ function ConnectedRoom({
   useAudienceSubscriptions(
     media,
     audienceOfBigRoom,
-    audienceOfBigRoom ? wantedVideo(tiles, pinnedId, lastSpeaker.current) : null,
+    audienceOfBigRoom ? wantedVideo(tiles, effectivePin, lastSpeaker.current) : null,
   );
   const raised = session.hands.some((h) => h.userId === me.id);
 
@@ -171,7 +173,9 @@ function ConnectedRoom({
 
   if (!media || !local || !room) return <JoiningScreen />;
 
-  const restriction = publishRestriction(state, me.role, permissions?.canPublishSources);
+  // As permissões podem mudar no meio da reunião (tela travada, subir ao palco): vale a mais nova.
+  const allowedSources = liveSources(local.permissions, permissions?.canPublishSources);
+  const restriction = publishRestriction(state, me.role, allowedSources);
 
   const controlsFor = (variant: 'media' | 'rail') => (
     <Controls
@@ -185,7 +189,8 @@ function ConnectedRoom({
       captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
       local={local}
       profile={profileFor(room.maxParticipants)}
-      allowedSources={permissions?.canPublishSources}
+      allowedSources={allowedSources}
+      screenLocked={room.screenLock}
       restriction={restriction}
       panelOpen={side === 'people'}
       onTogglePanel={() => setSide((v) => (v === 'people' ? null : 'people'))}
@@ -312,7 +317,7 @@ function ConnectedRoom({
             <Stage
               tiles={tiles}
               layout={layout}
-              pinnedId={pinnedId}
+              pinnedId={effectivePin}
               onPinnedChange={setPinnedId}
               lectureMode={state.lectureMode}
               {...(me.role === 'ADMIN' && room.type === 'MEETING'

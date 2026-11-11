@@ -38,3 +38,27 @@ export function canUseSource(
 ): boolean {
   return !allowedSources || allowedSources.includes(source);
 }
+
+/** Códigos do LiveKit (TrackSource) para os nomes que o resto do app usa. */
+const SOURCE_BY_CODE: Record<number, MediaSource> = {
+  1: 'camera',
+  2: 'microphone',
+  3: 'screen_share',
+  4: 'screen_share_audio',
+};
+
+/**
+ * Fontes que a pessoa pode ligar AGORA. O LiveKit avisa quando o servidor muda as permissões
+ * no meio da reunião (tela travada, subir ao palco, silenciar), então os botões acompanham
+ * sem precisar entrar de novo. Sem permissões ainda, vale o que veio do `join`.
+ */
+export function liveSources(
+  live: { canPublish: boolean; canPublishSources: number[] } | undefined,
+  fromJoin: MediaSource[] | undefined,
+): MediaSource[] | undefined {
+  if (!live) return fromJoin;
+  if (!live.canPublish) return [];
+  // Lista vazia no LiveKit significa "todas as fontes".
+  if (live.canPublishSources.length === 0) return undefined;
+  return live.canPublishSources.flatMap((code) => SOURCE_BY_CODE[code] ?? []);
+}

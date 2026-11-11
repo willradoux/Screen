@@ -17,6 +17,8 @@ export interface RoomDto {
   createdBy: string;
   maxParticipants: number;
   lectureMode: boolean;
+  screenLock: boolean;
+  spotlightId: string | null;
   /** Só lives: `ACTIVE` (em uso) ou `IDLE` (em espera, ativa quando alguém entra). */
   mediaState: 'ACTIVE' | 'IDLE';
   participantCount: number;
@@ -37,6 +39,8 @@ export function toRoomDto(room: RoomRecord, participantCount: number, webUrl: st
     createdBy: room.createdBy,
     maxParticipants: room.maxParticipants,
     lectureMode: room.lectureMode,
+    screenLock: room.screenLock,
+    spotlightId: room.spotlightId,
     mediaState: room.mediaState,
     participantCount,
     url: roomUrl(webUrl, room.id),

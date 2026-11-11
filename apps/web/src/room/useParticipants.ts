@@ -80,6 +80,8 @@ const ROOM_EVENTS = [
   RoomEvent.ActiveSpeakersChanged,
   RoomEvent.ParticipantMetadataChanged,
   RoomEvent.ParticipantNameChanged,
+  // O servidor mudou o que alguém pode transmitir (palco, tela travada, silenciar).
+  RoomEvent.ParticipantPermissionsChanged,
   RoomEvent.Reconnected,
 ] as const;
 

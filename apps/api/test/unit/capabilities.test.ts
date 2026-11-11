@@ -114,4 +114,34 @@ describe('computePermissions', () => {
       });
     }
   });
+
+  it('tela travada: membro e moderador seguem com câmera e mic, sem tela', () => {
+    const noScreen = ALL_SOURCES.filter((x) => x !== 'screen_share' && x !== 'screen_share_audio');
+    for (const role of ['MEMBER', 'MOD'] as const) {
+      expect(computePermissions({ ...base, role, screenLock: true }).canPublishSources).toEqual(
+        noScreen,
+      );
+    }
+  });
+
+  it('tela travada: admin e quem está no palco compartilham tela', () => {
+    expect(
+      computePermissions({ ...base, role: 'ADMIN', screenLock: true }).canPublishSources,
+    ).toEqual(ALL_SOURCES);
+    expect(
+      computePermissions({ ...base, role: 'MEMBER', screenLock: true, speakerIds: ['1'] })
+        .canPublishSources,
+    ).toEqual(ALL_SOURCES);
+  });
+
+  it('tela travada não tira a tela de quem já estava silenciado só de câmera', () => {
+    const p = computePermissions({
+      ...base,
+      role: 'MEMBER',
+      screenLock: true,
+      mutedSources: ['camera', 'microphone'],
+    });
+    expect(p.canPublish).toBe(false);
+    expect(p.canPublishSources).toEqual([]);
+  });
 });

@@ -186,6 +186,7 @@ export class ModerationService {
       mutedSources: muted,
       lectureMode: room.lectureMode,
       speakerIds: room.speakerIds,
+      screenLock: room.screenLock,
     });
     await this.applyPermissions(room, targetId, perms);
     await this.liveKit(() => this.deps.livekit.muteSources(room.id, targetId, requested));
@@ -226,6 +227,7 @@ export class ModerationService {
       mutedSources: [],
       lectureMode: room.lectureMode,
       speakerIds: room.speakerIds,
+      screenLock: room.screenLock,
     });
     await this.applyPermissions(room, targetId, perms);
 
@@ -355,14 +357,16 @@ export class ModerationService {
     if (!room) throw err.notFound();
 
     const muted = await this.deps.participations.getMutedSources(room.id, targetId);
-    if (room.lectureMode) {
-      // No modo palestra é isto que liga ou desliga a câmera e o microfone da pessoa.
+    if (room.lectureMode || room.screenLock) {
+      // No modo palestra é isto que liga ou desliga a câmera e o microfone da pessoa; com a
+      // tela travada, é o que libera ou tira a tela dela.
       const perms = computePermissions({
         role: participation.roleAtJoin,
         userId: targetId,
         mutedSources: muted,
-        lectureMode: true,
+        lectureMode: room.lectureMode,
         speakerIds: room.speakerIds,
+        screenLock: room.screenLock,
       });
       await this.applyPermissions(room, targetId, perms);
     }
@@ -431,12 +435,14 @@ export class ModerationService {
   // ---------- editar a sala (inclui o modo palestra) ----------
 
   async updateRoom(actor: Actor, roomId: string, patch: RoomPatch): Promise<RoomRecord> {
-    const changesLecture = patch.lectureMode !== undefined;
+    const changesLecture = patch.lectureMode !== undefined || patch.screenLock !== undefined;
+    const changesSpotlight = patch.spotlightId !== undefined;
     const changesDetails =
       patch.title !== undefined ||
       patch.description !== undefined ||
       patch.maxParticipants !== undefined;
     if (changesLecture) this.act('room.lecture', actor);
+    if (changesSpotlight) this.act('moderation.speaker', actor);
     if (changesDetails) this.act('room.edit', actor);
 
     const current = await this.loadRoom(roomId);
@@ -446,7 +452,9 @@ export class ModerationService {
     const room = await this.deps.rooms.update(current.id, patch);
     if (!room) throw err.notFound();
 
-    if (changesLecture && room.lectureMode !== current.lectureMode && room.status === 'OPEN') {
+    const permissionsChanged =
+      room.lectureMode !== current.lectureMode || room.screenLock !== current.screenLock;
+    if (changesLecture && permissionsChanged && room.status === 'OPEN') {
       await this.reapplyAll(room);
     }
     if (changesDetails && this.deps.onRoomChanged) {
@@ -458,7 +466,14 @@ export class ModerationService {
     }
 
     const changes: Record<string, unknown> = {};
-    for (const key of ['title', 'description', 'maxParticipants', 'lectureMode'] as const) {
+    for (const key of [
+      'title',
+      'description',
+      'maxParticipants',
+      'lectureMode',
+      'screenLock',
+      'spotlightId',
+    ] as const) {
       if (patch[key] !== undefined) changes[key] = room[key];
     }
     this.deps.realtime.toRoom(room.id, 'room:updated', { roomId: room.id, changes });
@@ -486,6 +501,7 @@ export class ModerationService {
             mutedSources,
             lectureMode: room.lectureMode,
             speakerIds: room.speakerIds,
+            screenLock: room.screenLock,
           });
           try {
             await this.applyPermissions(room, p.userId, perms);
