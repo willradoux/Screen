@@ -4078,3 +4078,175 @@ html[data-call] .zoom-controls {
   z-index: 3;
   background: rgb(0 0 0 / 0.68);
 }
+
+/* ---- Controles da moderação (painel Pessoas) ----
+   Chaves com o estado à vista (Ligado/Desligado + o que acontece) e ações com ícone. Todos com
+   o mesmo hover (clareia e sobe um pouco) e o "clique" ao apertar. */
+.mod-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+
+.mod-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--v3-elev);
+  padding: 9px 10px;
+  transition:
+    background-color 160ms var(--ease-out),
+    transform 200ms var(--v3-spring),
+    box-shadow 160ms var(--ease-out);
+}
+
+.mod-toggle[data-on] {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--v3-accent) 60%, transparent);
+}
+
+.mod-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v3-text);
+}
+
+.mod-toggle-state {
+  border-radius: 999px;
+  background: var(--v3-pill);
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--v3-text-2);
+}
+
+.mod-toggle[data-on] .mod-toggle-state {
+  background: var(--v3-accent);
+  color: #120a08;
+}
+
+.mod-toggle-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--v3-text-3);
+}
+
+.mod-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.mod-action {
+  display: inline-flex;
+  min-height: 0;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v3-text);
+  transition:
+    background-color 160ms var(--ease-out),
+    transform 200ms var(--v3-spring);
+}
+
+.mod-action[data-danger] {
+  background: #c8352a;
+  color: #fff;
+}
+
+.mod-toggle:hover:not(:disabled),
+.mod-action:hover:not(:disabled) {
+  background: var(--v3-card-hover, var(--v3-pill));
+  transform: translateY(-1px);
+}
+
+.mod-action[data-danger]:hover:not(:disabled) {
+  background: #b22d23;
+}
+
+.mod-toggle:active:not(:disabled),
+.mod-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.mod-toggle:disabled,
+.mod-action:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+:root[data-motion='off'] .mod-toggle,
+:root[data-motion='off'] .mod-action {
+  transition: none;
+}
+
+/* Tratamento do microfone no menu da setinha do mic. */
+.mic-processing {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  border-top: 1px solid var(--v3-line);
+  padding-top: 8px;
+}
+
+.mic-row {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 6px 8px;
+  transition: background-color 140ms var(--ease-out);
+}
+
+.mic-row:hover:not(:disabled) {
+  background: var(--v3-elev);
+}
+
+.mic-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 8px 4px;
+}
+
+.mic-chip {
+  min-height: 0;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v3-text-2);
+  transition:
+    background-color 140ms var(--ease-out),
+    transform 180ms var(--v3-spring);
+}
+
+.mic-chip:hover:not(:disabled) {
+  color: var(--v3-text);
+}
+
+.mic-chip:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.mic-chip[aria-checked='true'] {
+  background: var(--v3-accent);
+  color: #120a08;
+}

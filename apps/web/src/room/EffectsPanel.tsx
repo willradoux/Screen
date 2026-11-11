@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { applyBackground, BACKGROUND_IMAGES, backgroundSupported } from '../lib/videoEffects';
-import { GATE_LEVELS, VOICE_PRESETS, type GateLevel, type VoicePreset } from '../lib/voiceEffects';
+import { VOICE_PRESETS, type VoicePreset } from '../lib/voiceEffects';
 import { applyMicEffects, micPrefs, saveMicPrefs } from '../lib/micEffects';
 
 interface Props {
@@ -43,8 +43,6 @@ export function EffectsPanel({ local, onError }: Props) {
   const [open, setOpen] = useState(false);
   const [bg, setBg] = useState('none');
   const [voice, setVoice] = useState<VoicePreset>(() => micPrefs().voice);
-  const [gate, setGate] = useState<GateLevel>(() => micPrefs().gate);
-  const [suppression, setSuppression] = useState(() => micPrefs().suppression);
   const [busy, setBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -69,10 +67,7 @@ export function EffectsPanel({ local, onError }: Props) {
   }
 
   /** Muda algo do microfone: aplica na hora se ele está ligado; senão guarda para quando ligar. */
-  async function changeMic(
-    id: string,
-    patch: Partial<{ voice: VoicePreset; gate: GateLevel; suppression: boolean }>,
-  ) {
+  async function changeMic(id: string, patch: Partial<{ voice: VoicePreset }>) {
     const mic = local.getTrackPublication(Track.Source.Microphone)?.track as
       LocalAudioTrack | undefined;
     if (!mic) {
@@ -91,8 +86,6 @@ export function EffectsPanel({ local, onError }: Props) {
       }
     }
     if (patch.voice !== undefined) setVoice(patch.voice);
-    if (patch.gate !== undefined) setGate(patch.gate);
-    if (patch.suppression !== undefined) setSuppression(patch.suppression);
   }
 
   const pickVoice = (preset: VoicePreset) => changeMic(`voice-${preset}`, { voice: preset });
@@ -167,49 +160,6 @@ export function EffectsPanel({ local, onError }: Props) {
             />
             <p className="text-xs text-zinc-500">
               Funciona no Chrome e no Edge. Pede um aparelho razoável.
-            </p>
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold text-zinc-500">Redução de ruído</legend>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { on: true, label: 'Ligada' },
-                { on: false, label: 'Desligada' },
-              ].map((o) => (
-                <Chip
-                  key={o.label}
-                  active={suppression === o.on}
-                  disabled={busy !== null}
-                  onClick={() => void changeMic('suppression', { suppression: o.on })}
-                >
-                  {o.label}
-                </Chip>
-              ))}
-            </div>
-            <p className="text-xs text-zinc-500">
-              {suppression
-                ? 'O navegador tira ruído e eco da sua voz. Recomendado.'
-                : 'Sem tratamento: bom para tocar música, mas o barulho e o eco passam.'}
-            </p>
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold text-zinc-500">Filtro de barulho</legend>
-            <div className="flex flex-wrap gap-2">
-              {GATE_LEVELS.map((g) => (
-                <Chip
-                  key={g.value}
-                  active={gate === g.value}
-                  disabled={busy !== null}
-                  onClick={() => void changeMic(`gate-${g.value}`, { gate: g.value })}
-                >
-                  {g.label}
-                </Chip>
-              ))}
-            </div>
-            <p className="text-xs text-zinc-500">
-              {GATE_LEVELS.find((g) => g.value === gate)?.hint}
             </p>
           </fieldset>
 

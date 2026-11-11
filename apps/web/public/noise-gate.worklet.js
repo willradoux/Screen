@@ -28,12 +28,13 @@ class NoiseGate extends AudioWorkletProcessor {
     const rms = Math.sqrt(sum / (block * input.length));
     this.env = Math.max(rms, this.env * 0.95);
 
-    const holdSamples = sampleRate * 0.25;
+    // Segura aberto 0,5 s depois da última palavra (não corta o fim das frases).
+    const holdSamples = sampleRate * 0.5;
     if (this.env > threshold) this.hold = holdSamples;
     else this.hold = Math.max(0, this.hold - block);
     const target = this.hold > 0 ? 1 : 0;
     // Abre rápido (não corta o começo da palavra) e fecha devagar (sem "clique").
-    const speed = target > this.gain ? 0.5 : 0.04;
+    const speed = target > this.gain ? 1 : 0.03;
 
     for (let c = 0; c < output.length; c++) {
       const src = input[c] ?? input[0];

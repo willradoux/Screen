@@ -26,9 +26,10 @@ export const GATE_LEVELS: { value: GateLevel; label: string; hint: string }[] = 
 
 /** Limite de volume (RMS, 0 a 1) de cada nível: abaixo disso é barulho. */
 const GATE_THRESHOLD: Record<Exclude<GateLevel, 'off'>, number> = {
-  leve: 0.004, // ~ -48 dB
-  medio: 0.009, // ~ -41 dB
-  forte: 0.02, // ~ -34 dB
+  // Mais tolerantes: cortam o fundo sem engolir voz baixa nem o começo das palavras.
+  leve: 0.0025, // ~ -52 dB
+  medio: 0.006, // ~ -44 dB
+  forte: 0.013, // ~ -38 dB
 };
 
 /** Curva de distorção suave, usada no efeito de rádio. */

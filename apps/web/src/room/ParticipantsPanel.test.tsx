@@ -70,7 +70,7 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
       screen.queryByRole('button', { name: /silenciar|expulsar|banir|palestrante/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /encerrar sala/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /palco:/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Palco' })).not.toBeInTheDocument();
   });
 
   it('moderador age sobre membros, mas não sobre moderadores nem admins nem sobre si', async () => {
@@ -114,7 +114,10 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
 
   it('moderação vê os controles da sala; membro não', async () => {
     setup('MOD');
-    expect(await screen.findByRole('button', { name: /palco: desligado/i })).toBeInTheDocument();
+    expect(await screen.findByRole('switch', { name: 'Palco' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
     expect(screen.getByRole('button', { name: /encerrar sala/i })).toBeInTheDocument();
   });
 
@@ -258,14 +261,16 @@ describe('ParticipantsPanel: ações', () => {
   it('modo palestra: liga e desliga pela API de edição da sala', async () => {
     const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member]);
-    await userEvent.click(await screen.findByRole('button', { name: /palco: desligado/i }));
+    await userEvent.click(await screen.findByRole('switch', { name: 'Palco' }));
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: true });
   });
 
   it('modo palestra já ligado oferece desligar', async () => {
     const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD', [people.member], { lectureMode: true });
-    await userEvent.click(await screen.findByRole('button', { name: /palco: ligado/i }));
+    const palco = await screen.findByRole('switch', { name: 'Palco' });
+    expect(palco).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(palco);
     expect(update).toHaveBeenCalledWith(ROOM_ID, { lectureMode: false });
   });
 
@@ -312,15 +317,17 @@ describe('ParticipantsPanel: tela travada e destaque para todos', () => {
     const update = vi.spyOn(api.rooms, 'update').mockResolvedValue(makeRoom({ type: 'MEETING' }));
     setup('MOD');
     await screen.findByText('Membro Um');
-    await userEvent.click(screen.getByRole('button', { name: 'Tela: liberada' }));
+    const lock = screen.getByRole('switch', { name: 'Tela só no palco' });
+    expect(lock).toHaveAttribute('aria-checked', 'false');
+    await userEvent.click(lock);
     expect(update).toHaveBeenCalledWith(ROOM_ID, { screenLock: true });
   });
 
   it('com a tela travada o botão avisa que só o palco compartilha', async () => {
     setup('MOD', undefined, { screenLock: true });
     await screen.findByText('Membro Um');
-    expect(screen.getByRole('button', { name: 'Tela: só no palco' })).toHaveAttribute(
-      'aria-pressed',
+    expect(screen.getByRole('switch', { name: 'Tela só no palco' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
   });

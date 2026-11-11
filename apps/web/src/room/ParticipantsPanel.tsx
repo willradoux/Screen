@@ -33,6 +33,46 @@ interface Props {
   sharingIds?: ReadonlySet<string>;
 }
 
+/** Chave da moderação (palco, tela): mostra se está ligada e o que isso faz. */
+function ModToggle({
+  label,
+  on,
+  hint,
+  busy,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  hint: string;
+  busy: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      aria-busy={busy || undefined}
+      disabled={busy}
+      onClick={onClick}
+      className="mod-toggle"
+      data-on={on || undefined}
+    >
+      <span className="min-w-0 flex-1 text-left">
+        <span className="mod-toggle-label">
+          {label}
+          <span className="mod-toggle-state">{on ? 'Ligado' : 'Desligado'}</span>
+        </span>
+        <span className="mod-toggle-hint">{hint}</span>
+      </span>
+      <span aria-hidden="true" className="switch" data-on={on || undefined}>
+        <span className="switch-knob" />
+      </span>
+    </button>
+  );
+}
+
 /** Botão pequeno de fixar (câmera ou tela) na linha da pessoa. */
 function PinToggle({
   label,
@@ -223,49 +263,60 @@ export function ParticipantsPanel({
       </header>
 
       {staff && (
-        <div className="flex flex-wrap gap-2 pb-4">
-          <Button
-            size="sm"
-            variant={lectureMode ? 'primary' : 'secondary'}
-            aria-pressed={lectureMode}
-            loading={busy === 'lecture'}
+        <div className="mod-controls">
+          {/* Chaves: o estado fica à vista (ligado/desligado) e o texto diz o que acontece. */}
+          <ModToggle
+            label="Palco"
+            on={lectureMode}
+            hint={
+              lectureMode
+                ? 'Ligado: só quem está no palco fala e transmite.'
+                : 'Desligado: todo mundo pode falar e transmitir.'
+            }
+            busy={busy === 'lecture'}
             onClick={() => void toggleLecture()}
-          >
-            Palco: {lectureMode ? 'ligado' : 'desligado'}
-          </Button>
-          <Button
-            size="sm"
-            variant={room.screenLock ? 'primary' : 'secondary'}
-            aria-pressed={room.screenLock}
-            loading={busy === 'screen-lock'}
+          />
+          <ModToggle
+            label="Tela só no palco"
+            on={room.screenLock}
+            hint={
+              room.screenLock
+                ? 'Ligado: só o palco e o admin compartilham a tela.'
+                : 'Desligado: qualquer um compartilha a tela.'
+            }
+            busy={busy === 'screen-lock'}
             onClick={() => void toggleScreenLock()}
-          >
-            Tela: {room.screenLock ? 'só no palco' : 'liberada'}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={busy === 'mute-all'}
-            onClick={() => void muteAll()}
-          >
-            Silenciar todos
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={busy === 'cameras-off'}
-            onClick={() => void camerasOff()}
-          >
-            Desligar câmeras
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            loading={busy === 'end'}
-            onClick={() => void endRoom()}
-          >
-            Encerrar sala
-          </Button>
+          />
+          <div className="mod-actions">
+            <button
+              type="button"
+              className="mod-action"
+              disabled={busy === 'mute-all'}
+              onClick={() => void muteAll()}
+            >
+              <Icon name="mic_off" size="1rem" />
+              Silenciar todos
+            </button>
+            <button
+              type="button"
+              className="mod-action"
+              disabled={busy === 'cameras-off'}
+              onClick={() => void camerasOff()}
+            >
+              <Icon name="videocam_off" size="1rem" />
+              Desligar câmeras
+            </button>
+            <button
+              type="button"
+              className="mod-action"
+              data-danger
+              disabled={busy === 'end'}
+              onClick={() => void endRoom()}
+            >
+              <Icon name="call_end" size="1rem" />
+              Encerrar sala
+            </button>
+          </div>
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { Room, type Room as LiveKitRoom } from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { setOutputDevice } from '../lib/audioPrefs';
+import { MicProcessing } from './MicProcessing';
 
 export type DeviceKind = 'audio' | 'video' | 'output';
 type Kind = DeviceKind;
@@ -162,6 +163,8 @@ export function DeviceMenu({
           </div>
         );
       })}
+      {/* Microfone: tratamento do som (separado dos efeitos de voz). */}
+      {kind === 'audio' && <MicProcessing local={room.localParticipant} onError={onError} />}
     </div>
   );
 }
