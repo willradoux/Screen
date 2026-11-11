@@ -105,6 +105,9 @@ export interface Poll {
 }
 
 /** Resposta de uma ação do chat/enquete (o servidor confirma ou diz por que não). */
+/** Quem escreve no chat da sala (só o admin geral muda): todos, só admins ou ninguém. */
+export type ChatMode = 'open' | 'admins' | 'off';
+
 export interface ChatAck {
   ok: boolean;
   error?: { code: string; message: string };

@@ -4250,3 +4250,83 @@ html[data-call] .zoom-controls {
   background: var(--v3-accent);
   color: #120a08;
 }
+
+/* ── Chat: quem escreve (admin geral muda; os outros veem o aviso) ── */
+.chat-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+  background: var(--v3-elev);
+  padding: 6px;
+  animation: v3-rise 240ms var(--v3-spring) both;
+}
+
+.chat-mode-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--v3-text);
+}
+
+.chat-mode-opt {
+  display: inline-flex;
+  min-height: 0;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v3-text-2);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 180ms var(--v3-spring);
+}
+
+.chat-mode-opt:hover:not(:disabled) {
+  background: var(--v3-pill);
+  color: var(--v3-text);
+}
+
+.chat-mode-opt:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.chat-mode-opt[aria-checked='true'] {
+  background: var(--v3-accent);
+  color: #120a08;
+}
+
+.chat-mode-opt[aria-checked='true'][data-mode='off'] {
+  background: #f04452;
+  color: #fff;
+}
+
+.chat-mode-opt:disabled {
+  opacity: 0.6;
+}
+
+.chat-mode-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: var(--v3-elev);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-text-2);
+  animation: v3-rise 240ms var(--v3-spring) both;
+}
+
+:root[data-motion='off'] .chat-mode,
+:root[data-motion='off'] .chat-mode-note {
+  animation: none;
+}

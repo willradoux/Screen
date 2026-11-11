@@ -47,6 +47,9 @@ Resposta `data`: snapshot `{ room, participants[], bans[] (MOD+) }`.
 ### `chat:delete`
 `{ roomId, id }`. Só MOD+. Avisa todos com `chat:deleted` para tirar a mensagem da tela.
 
+### `chat:mode`
+`{ roomId, mode: 'open' | 'admins' | 'off' }`. Só admin geral (`OWNER_IDS`). Muda quem escreve no chat da sala: todos, só ADMIN ou ninguém (o admin geral sempre escreve). Fica em memória enquanto a sala está aberta; avisa todos com `chat:mode` `{ roomId, mode }` e o `room:subscribe` devolve `chatMode`. Com o chat fechado, `chat:send` e `poll:propose` respondem `CHAT_CLOSED`.
+
 ### `poll:propose`
 `{ roomId, question, options }` (pergunta até 200 caracteres; 2 a 5 opções de até 80). **Só no modo live** (sala com o palco ligado, `lectureMode`); fora dele: `POLLS_DISABLED`. Membro: vira sugestão (`poll:pending` só para a moderação da sala; uma sugestão a cada 30 s; no máximo 10 esperando). MOD+: a enquete já abre (`poll:state`).
 

@@ -110,6 +110,7 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
       socket,
       userId,
       role: () => data(socket).role,
+      owner: env.ownerIds.includes(userId),
       participations: deps.participations,
       rooms: deps.rooms,
       state: chat,
@@ -160,6 +161,7 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
             participants: participants.map((p) => toParticipantDto(p, room)),
             // Quem entra no meio já vê a enquete do topo; a moderação vê as sugestões.
             poll: chat.active(room.id),
+            chatMode: chat.mode(room.id),
             ...(staff ? { pendingPolls: chat.pending(room.id) } : {}),
           },
         });

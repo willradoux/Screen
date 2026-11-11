@@ -28,6 +28,10 @@ import block from '@material-symbols/svg-400/rounded/block.svg?url';
 import calendarMonth from '@material-symbols/svg-400/rounded/calendar_month.svg?url';
 import callEnd from '@material-symbols/svg-400/rounded/call_end.svg?url';
 import campaign from '@material-symbols/svg-400/rounded/campaign.svg?url';
+import forumIcon from '@material-symbols/svg-400/rounded/forum.svg?url';
+import shieldPerson from '@material-symbols/svg-400/rounded/shield_person.svg?url';
+import notesOff from '@material-symbols/svg-400/rounded/speaker_notes_off.svg?url';
+import adminPanel from '@material-symbols/svg-400/rounded/admin_panel_settings.svg?url';
 import check from '@material-symbols/svg-400/rounded/check.svg?url';
 import checkCircle from '@material-symbols/svg-400/rounded/check_circle.svg?url';
 import chevronRight from '@material-symbols/svg-400/rounded/chevron_right.svg?url';
@@ -95,6 +99,10 @@ const ICONS = {
   calendar_month: calendarMonth,
   call_end: callEnd,
   campaign,
+  forum: forumIcon,
+  shield_person: shieldPerson,
+  speaker_notes_off: notesOff,
+  admin_panel_settings: adminPanel,
   cancel,
   check,
   check_circle: checkCircle,

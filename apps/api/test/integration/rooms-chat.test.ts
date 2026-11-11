@@ -32,8 +32,8 @@ async function sessionCookie(ctx: RoomsCtx, userId: string, roles: string[] = []
   return `screem_sid=${sid}`;
 }
 
-async function start() {
-  const ctx = buildRoomsApp();
+async function start(ownerIds: string[] = []) {
+  const ctx = buildRoomsApp({ ownerIds });
   const server = await ctx.listen();
   closers.push(server.close);
   await ctx.live.handle({ userId: USER, oldChannelId: null, newChannelId: VOICE_1 });
@@ -64,7 +64,7 @@ const emitAck = <T = { ok: boolean; data?: unknown; error?: { code: string } }>(
 
 interface SubscribeReply {
   ok: boolean;
-  data: { poll: unknown; pendingPolls?: unknown[] };
+  data: { poll: unknown; pendingPolls?: unknown[]; chatMode?: string };
 }
 
 /** Pessoa conectada na sala (participação aberta) e com o socket assinando a sala. */
@@ -91,6 +91,46 @@ async function joinRoom(
 }
 
 describe('chat da sala', () => {
+  it('admin geral desliga o chat, deixa só para admins e liga de novo; ninguém mais muda', async () => {
+    const OWNER = '930000000000000007';
+    const { ctx, server, room } = await start([OWNER]);
+    const owner = await joinRoom(ctx, server.url, room.id, OWNER, 'Dono');
+    const member = await joinRoom(ctx, server.url, room.id, OTHER, 'Ciclano');
+    const mod = await joinRoom(ctx, server.url, room.id, MOD, 'Mod', [MOD_ROLE]);
+    expect(member.sub.data.chatMode).toBe('open');
+
+    // Só o admin geral muda o modo.
+    const denied = await emitAck(mod.socket, 'chat:mode', { roomId: room.id, mode: 'off' });
+    expect(denied.error?.code).toBe('FORBIDDEN');
+
+    // Desligado: todo mundo é avisado e ninguém escreve (o dono ainda pode avisar a sala).
+    const told = once<{ mode: string }>(member.socket, 'chat:mode');
+    expect((await emitAck(owner.socket, 'chat:mode', { roomId: room.id, mode: 'off' })).ok).toBe(
+      true,
+    );
+    expect((await told).mode).toBe('off');
+    const off = await emitAck(member.socket, 'chat:send', { roomId: room.id, text: 'oi' });
+    expect(off.error?.code).toBe('CHAT_CLOSED');
+    expect((await emitAck(owner.socket, 'chat:send', { roomId: room.id, text: 'pausa' })).ok).toBe(
+      true,
+    );
+
+    // Quem entra depois já sabe o modo.
+    const late = await joinRoom(ctx, server.url, room.id, LATE, 'Atrasado');
+    expect(late.sub.data.chatMode).toBe('off');
+
+    // Só admins: MOD e membro não escrevem.
+    await emitAck(owner.socket, 'chat:mode', { roomId: room.id, mode: 'admins' });
+    const modTry = await emitAck(mod.socket, 'chat:send', { roomId: room.id, text: 'oi' });
+    expect(modTry.error?.code).toBe('CHAT_CLOSED');
+
+    // Ligado de novo: volta ao normal.
+    await emitAck(owner.socket, 'chat:mode', { roomId: room.id, mode: 'open' });
+    expect(
+      (await emitAck(member.socket, 'chat:send', { roomId: room.id, text: 'voltou' })).ok,
+    ).toBe(true);
+  });
+
   it('"digitando" sai como resumo da sala (1 por segundo), com quem está digitando', async () => {
     const { ctx, server, room } = await start();
     const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');

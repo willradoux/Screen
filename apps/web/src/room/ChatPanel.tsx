@@ -1,8 +1,8 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
 import { Avatar } from '../components/ui';
 import { ROLE_LABEL } from '../lib/moderation-rules';
-import type { ChatAck, ChatMessage, Poll, Role } from '../lib/types';
+import type { ChatAck, ChatMessage, ChatMode, Poll, Role } from '../lib/types';
 import type { RoomChat } from './useRoomSession';
 
 /** Espera padrão entre mensagens (o servidor confere e diz a de cada um; aqui é o botão). */
@@ -12,6 +12,62 @@ const MAX_TEXT = 500;
 const isStaff = (role: Role) => role === 'MOD' || role === 'ADMIN';
 const time = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+const MODES: { value: ChatMode; label: string; icon: IconName }[] = [
+  { value: 'open', label: 'Todos', icon: 'forum' },
+  { value: 'admins', label: 'Só admins', icon: 'shield_person' },
+  { value: 'off', label: 'Desligado', icon: 'speaker_notes_off' },
+];
+
+const CLOSED_TEXT: Record<Exclude<ChatMode, 'open'>, string> = {
+  admins: 'Agora só os admins escrevem no chat.',
+  off: 'O chat foi desligado nesta sala.',
+};
+
+/**
+ * Painel do admin geral, no topo do chat: quem escreve agora. Muda na hora para a sala toda
+ * (para segurar o chat se começar a travar ou rolar alguma coisa).
+ */
+function ChatModeControl({
+  mode,
+  onChange,
+}: {
+  mode: ChatMode;
+  onChange: (mode: ChatMode) => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div role="radiogroup" aria-label="Quem escreve no chat" className="chat-mode">
+      <span className="chat-mode-title">
+        <Icon name="admin_panel_settings" size="0.95rem" />
+        Chat
+      </span>
+      {MODES.map((m) => (
+        <button
+          key={m.value}
+          type="button"
+          role="radio"
+          aria-checked={mode === m.value}
+          disabled={busy}
+          className="chat-mode-opt"
+          data-mode={m.value}
+          onClick={async () => {
+            if (mode === m.value) return;
+            setBusy(true);
+            try {
+              await onChange(m.value);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <Icon name={m.icon} size="0.95rem" />
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Uma mensagem. Memorizada: chegar mensagem nova não redesenha as antigas. */
 const MessageRow = memo(function MessageRow({
@@ -235,13 +291,16 @@ export function ChatPanel({
   onInfo,
 }: {
   chat: RoomChat;
-  me: { id: string; role: Role };
+  me: { id: string; role: Role; owner?: boolean };
   /** Enquete só no modo live (reunião com o palco ligado). */
   pollsEnabled?: boolean;
   onError: (message: string) => void;
   onInfo: (message: string) => void;
 }) {
   const staff = isStaff(me.role);
+  // Admin geral sempre escreve (para avisar a sala); com "só admins", os admins também.
+  const canWrite =
+    Boolean(me.owner) || chat.mode === 'open' || (chat.mode === 'admins' && me.role === 'ADMIN');
   const [text, setText] = useState('');
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -290,6 +349,8 @@ export function ChatPanel({
       setNow(Date.now());
       // O servidor diz quanto esperar (plateia do modo live: 5 s; os outros: 3 s).
       setWaitUntil(Date.now() + (res.data?.cooldownMs ?? COOLDOWN_MS));
+    } else if (res.error?.code === 'CHAT_CLOSED') {
+      onInfo(res.error.message);
     } else if (res.error?.code === 'RATE_LIMITED' || res.error?.code === 'ROOM_BUSY') {
       if (res.error.code === 'ROOM_BUSY') onInfo(res.error.message);
       setNow(Date.now());
@@ -303,6 +364,21 @@ export function ChatPanel({
 
   return (
     <section aria-label="Chat" className="chat-panel">
+      {me.owner && (
+        <ChatModeControl
+          mode={chat.mode}
+          onChange={async (mode) => {
+            const res = await chat.setMode(mode);
+            if (!res.ok) onError(res.error?.message ?? 'Não deu para mudar o chat.');
+          }}
+        />
+      )}
+      {!me.owner && chat.mode !== 'open' && (
+        <p className="chat-mode-note" data-mode={chat.mode}>
+          <Icon name={chat.mode === 'off' ? 'speaker_notes_off' : 'shield_person'} size="1rem" />
+          {CLOSED_TEXT[chat.mode]}
+        </p>
+      )}
       {pollsEnabled && chat.poll && (
         <PollCard key={chat.poll.id} poll={chat.poll} staff={staff} chat={chat} onError={onError} />
       )}
@@ -371,7 +447,7 @@ export function ChatPanel({
       )}
       <TypingLine names={chat.typing} count={chat.typingCount ?? chat.typing.length} />
 
-      {pollsEnabled && pollForm ? (
+      {!canWrite ? null : pollsEnabled && pollForm ? (
         <PollForm
           staff={staff}
           chat={chat}

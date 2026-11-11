@@ -14,6 +14,7 @@ import type {
   ModerationAction,
   RaisedHand,
   Room,
+  ChatMode,
 } from '../lib/types';
 import {
   initialSessionState,
@@ -98,6 +99,7 @@ export function useRoomSession(
   const [messages, setMessages] = useState<ChatMessage[]>(() => readChat(chatKey));
   const [poll, setPoll] = useState<Poll | null>(null);
   const [pendingPolls, setPendingPolls] = useState<Poll[]>([]);
+  const [chatMode, setChatMode] = useState<ChatMode>('open');
   // Quem está digitando (resumo da sala que o servidor manda no máximo 1 vez por segundo).
   const [typing, setTyping] = useState<{
     people: { userId: string; name: string }[];
@@ -193,12 +195,13 @@ export function useRoomSession(
           { roomId },
           (res: {
             ok: boolean;
-            data?: { poll?: Poll | null; pendingPolls?: Poll[] };
+            data?: { poll?: Poll | null; pendingPolls?: Poll[]; chatMode?: ChatMode };
             error?: { code: string; message: string };
           }) => {
             if (res?.ok) {
               setPoll(res.data?.poll ?? null);
               setPendingPolls(res.data?.pendingPolls ?? []);
+              setChatMode(res.data?.chatMode ?? 'open');
             }
             if (!res?.ok) {
               dispatch({
@@ -238,6 +241,7 @@ export function useRoomSession(
         saveMessages((list) => list.filter((m) => m.id !== p.id)),
       );
       socket.on('poll:state', (p: { poll: Poll | null }) => setPoll(p.poll));
+      socket.on('chat:mode', (p: { mode: ChatMode }) => setChatMode(p.mode));
       socket.on(
         'chat:typing',
         (p: { people?: { userId: string; name: string }[]; count?: number }) =>
@@ -465,6 +469,7 @@ export function useRoomSession(
   const chat: RoomChat = useMemo(
     () => ({
       messages,
+      mode: chatMode,
       poll,
       pendingPolls,
       typing: typing.people.filter((p) => p.userId !== myId).map((p) => p.name),
@@ -487,8 +492,9 @@ export function useRoomSession(
       vote: (pollId, option) => ask('poll:vote', { pollId, option }),
       close: (pollId) => ask('poll:close', { pollId }),
       clear: (pollId) => ask('poll:clear', { pollId }),
+      setMode: (mode) => ask('chat:mode', { mode }),
     }),
-    [messages, poll, pendingPolls, typing, ask, roomId, myId],
+    [messages, chatMode, poll, pendingPolls, typing, ask, roomId, myId],
   );
 
   const retry = useCallback(() => {
@@ -527,6 +533,10 @@ export function useRoomSession(
 /** O chat da sala, como a tela usa. */
 export interface RoomChat {
   messages: ChatMessage[];
+  /** Quem escreve agora: todos, só admins ou ninguém (o admin geral muda). */
+  mode: ChatMode;
+  /** Muda quem escreve (só admin geral; o servidor confere). */
+  setMode: (mode: ChatMode) => Promise<ChatAck>;
   /** Enquete do topo (ou null). */
   poll: Poll | null;
   /** Sugestões esperando a moderação (só a moderação recebe). */

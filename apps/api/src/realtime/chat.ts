@@ -26,6 +26,13 @@ const pollPropose = z.object({
 const pollRef = z.object({ roomId, pollId: z.string().min(1).max(64) });
 const pollVote = pollRef.extend({ option: z.number().int().min(0).max(4) });
 const typing = z.object({ roomId });
+const chatModeInput = z.object({ roomId, mode: z.enum(['open', 'admins', 'off']) });
+
+/**
+ * Quem escreve no chat da sala (só os admins gerais mudam, na hora, para segurar a sala se
+ * começar a travar ou rolar alguma coisa): todos, só admins, ou ninguém.
+ */
+export type ChatMode = z.infer<typeof chatModeInput>['mode'];
 
 /** "Fulano está digitando": no máximo um aviso a cada 1,5 s por pessoa. */
 export const TYPING_EVERY_MS = 1_500;
@@ -91,7 +98,12 @@ const toDto = (p: Poll): PollDto => {
 export class ChatState {
   private rooms = new Map<
     string,
-    { active: Poll | null; pending: Poll[]; timer?: ReturnType<typeof setTimeout> }
+    {
+      active: Poll | null;
+      pending: Poll[];
+      mode: ChatMode;
+      timer?: ReturnType<typeof setTimeout>;
+    }
   >();
   readonly lastMessage = new Map<string, number>();
   readonly lastProposal = new Map<string, number>();
@@ -157,10 +169,14 @@ export class ChatState {
   room(id: string) {
     let r = this.rooms.get(id);
     if (!r) {
-      r = { active: null, pending: [] };
+      r = { active: null, pending: [], mode: 'open' };
       this.rooms.set(id, r);
     }
     return r;
+  }
+
+  mode(roomId: string): ChatMode {
+    return this.rooms.get(roomId)?.mode ?? 'open';
   }
 
   active(roomId: string): PollDto | null {
@@ -189,6 +205,8 @@ export interface ChatDeps {
   socket: Socket;
   userId: string;
   role: () => Role;
+  /** Admin geral (OWNER_IDS): o único que liga e desliga o chat da sala. */
+  owner?: boolean;
   participations: ParticipationRepo;
   rooms: Pick<RoomRepo, 'findById'>;
   state: ChatState;
@@ -197,6 +215,14 @@ export interface ChatDeps {
 }
 
 const isStaff = (role: Role) => ROLE_RANK[role] >= ROLE_RANK.MOD;
+
+/** Pode escrever com o chat neste modo? (admin geral sempre pode, para avisar a sala) */
+const canWrite = (mode: ChatMode, role: Role, owner: boolean) =>
+  owner || mode === 'open' || (mode === 'admins' && role === 'ADMIN');
+const CHAT_CLOSED = {
+  off: 'O chat foi desligado nesta sala.',
+  admins: 'Agora só os admins escrevem no chat.',
+} as const;
 
 /** Liga os eventos de chat e enquete num socket já autenticado. */
 export function registerChat(deps: ChatDeps): void {
@@ -266,6 +292,10 @@ export function registerChat(deps: ChatDeps): void {
       }
       const me = await inRoom(roomId, reply);
       if (!me) return;
+      const mode = state.mode(roomId);
+      if (!canWrite(mode, deps.role(), Boolean(deps.owner))) {
+        return reply(fail('CHAT_CLOSED', CHAT_CLOSED[mode as 'off' | 'admins']));
+      }
       if (me.mutedByModeration) {
         return reply(fail('MUTED', 'A moderação silenciou você nesta sala.'));
       }
@@ -301,6 +331,7 @@ export function registerChat(deps: ChatDeps): void {
       const { roomId } = parsed.data;
       const t = now();
       if (t - lastTyping < TYPING_EVERY_MS || !socket.rooms.has(room(roomId))) return;
+      if (!canWrite(state.mode(roomId), deps.role(), Boolean(deps.owner))) return;
       lastTyping = t;
       let name = names.get(roomId);
       if (!name) {
@@ -337,6 +368,19 @@ export function registerChat(deps: ChatDeps): void {
     return true;
   };
 
+  // Ligar, deixar só para admins ou desligar o chat: só admin geral. Vale na hora para todos.
+  socket.on(
+    'chat:mode',
+    handler(chatModeInput, 'chat:mode', async ({ roomId, mode }, reply) => {
+      if (!deps.owner) return reply(fail('FORBIDDEN', 'Só o admin geral muda o chat.'));
+      if (!socket.rooms.has(room(roomId))) return reply(fail('FORBIDDEN', 'Acompanhe a sala.'));
+      state.room(roomId).mode = mode;
+      logger.info({ roomId, userId, mode }, 'modo do chat mudou');
+      io.to(room(roomId)).emit('chat:mode', { roomId, mode });
+      reply({ ok: true });
+    }),
+  );
+
   // Apagar mensagem: só a moderação (some da tela de todos).
   socket.on(
     'chat:delete',
@@ -356,6 +400,10 @@ export function registerChat(deps: ChatDeps): void {
       const me = await inRoom(roomId, reply);
       if (!me) return;
       if (!(await pollsAllowed(roomId, reply))) return;
+      const mode = state.mode(roomId);
+      if (!canWrite(mode, deps.role(), Boolean(deps.owner))) {
+        return reply(fail('CHAT_CLOSED', CHAT_CLOSED[mode as 'off' | 'admins']));
+      }
       const staff = isStaff(deps.role());
       const t = now();
       if (!staff && t - (state.lastProposal.get(userId) ?? 0) < POLL_PROPOSE_COOLDOWN_MS) {

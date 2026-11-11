@@ -165,7 +165,10 @@ export function buildRoomsApp(opts: { graceSeconds?: number; ownerIds?: string[]
   bot.configureLives();
   if (opts.graceSeconds !== undefined) bot.settings.settings.graceSeconds = opts.graceSeconds;
 
-  const env: Env = loadEnv({ NODE_ENV: 'test' });
+  const env: Env = loadEnv({
+    NODE_ENV: 'test',
+    ...(opts.ownerIds?.length ? { OWNER_IDS: opts.ownerIds.join(',') } : {}),
+  });
   const logger = createLogger(env);
   const discord = new FakeDiscord();
   const users = new MemoryUsers();

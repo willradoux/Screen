@@ -10,6 +10,8 @@ const ok = () => Promise.resolve({ ok: true });
 function fakeChat(over: Partial<RoomChat> = {}): RoomChat {
   return {
     messages: [],
+    mode: 'open',
+    setMode: vi.fn(ok),
     poll: null,
     pendingPolls: [],
     typing: [],
@@ -50,11 +52,16 @@ const poll = (over: Partial<Poll> = {}): Poll => ({
   ...over,
 });
 
-const renderChat = (chat: RoomChat, role: 'MEMBER' | 'MOD' = 'MEMBER', live = true) =>
+const renderChat = (
+  chat: RoomChat,
+  role: 'MEMBER' | 'MOD' | 'ADMIN' = 'MEMBER',
+  live = true,
+  owner = false,
+) =>
   render(
     <ChatPanel
       chat={chat}
-      me={{ id: 'u1', role }}
+      me={{ id: 'u1', role, owner }}
       pollsEnabled={live}
       onError={vi.fn()}
       onInfo={vi.fn()}
@@ -125,5 +132,34 @@ describe('ChatPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Encerrar' }));
     expect(chat.close).toHaveBeenCalledWith('p1');
+  });
+
+  it('admin geral escolhe quem escreve no chat (todos, só admins, desligado)', async () => {
+    const chat = fakeChat();
+    renderChat(chat, 'ADMIN', false, true);
+    const group = screen.getByRole('radiogroup', { name: 'Quem escreve no chat' });
+    expect(within(group).getByRole('radio', { name: 'Todos' })).toBeChecked();
+    await userEvent.click(within(group).getByRole('radio', { name: 'Desligado' }));
+    expect(chat.setMode).toHaveBeenCalledWith('off');
+  });
+
+  it('quem não é admin geral não vê o controle; com o chat desligado, só vê o aviso', () => {
+    renderChat(fakeChat({ mode: 'off', messages: [msg('m1', 'oi')] }), 'MOD');
+    expect(
+      screen.queryByRole('radiogroup', { name: 'Quem escreve no chat' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('O chat foi desligado nesta sala.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Mensagem para a sala' })).not.toBeInTheDocument();
+    // As mensagens que já estavam continuam lá.
+    expect(screen.getByRole('log', { name: 'Mensagens' })).toHaveTextContent('oi');
+  });
+
+  it('com "só admins", admin escreve e membro não', () => {
+    const { unmount } = renderChat(fakeChat({ mode: 'admins' }), 'ADMIN');
+    expect(screen.getByRole('textbox', { name: 'Mensagem para a sala' })).toBeInTheDocument();
+    unmount();
+    renderChat(fakeChat({ mode: 'admins' }), 'MEMBER');
+    expect(screen.queryByRole('textbox', { name: 'Mensagem para a sala' })).not.toBeInTheDocument();
+    expect(screen.getByText('Agora só os admins escrevem no chat.')).toBeInTheDocument();
   });
 });
