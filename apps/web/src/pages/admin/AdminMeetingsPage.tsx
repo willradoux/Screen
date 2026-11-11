@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { DateTimeField } from '../../components/DateTimeField';
 import { Link } from 'react-router-dom';
 import {
   Alert,
@@ -138,12 +139,10 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
           htmlFor="m-when"
           hint="Deixe em branco para abrir agora. O horário é o do seu navegador."
         >
-          <input
+          <DateTimeField
             id="m-when"
-            type="datetime-local"
-            className={inputClass}
             value={values.when}
-            onChange={(e) => setValues({ ...values, when: e.target.value })}
+            onChange={(when) => setValues({ ...values, when })}
           />
         </Field>
 
@@ -375,13 +374,7 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
         {editing && (
           <div className="mt-3 flex flex-wrap items-end gap-2">
             <Field label="Novo horário" htmlFor={`w-${meeting.id}`}>
-              <input
-                id={`w-${meeting.id}`}
-                type="datetime-local"
-                className={inputClass}
-                value={when}
-                onChange={(e) => setWhen(e.target.value)}
-              />
+              <DateTimeField id={`w-${meeting.id}`} value={when} onChange={setWhen} />
             </Field>
             <Button
               size="sm"

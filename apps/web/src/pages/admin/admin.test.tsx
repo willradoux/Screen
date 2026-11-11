@@ -138,7 +138,7 @@ describe('AdminMeetingsPage', () => {
     await screen.findByText('Reunião agendada');
 
     await userEvent.type(screen.getByLabelText('Título'), 'Reunião de dezembro');
-    await userEvent.type(screen.getByLabelText(/Quando/), '2099-12-05T20:00');
+    await userEvent.type(screen.getByLabelText(/Quando/), '05/12/2099 20:00');
     expect(screen.getByRole('checkbox', { name: /24 h antes/i })).toBeChecked();
     await userEvent.click(screen.getByRole('checkbox', { name: /1 h antes/i })); // desmarca
     await userEvent.click(screen.getByRole('button', { name: /agendar reunião/i }));
@@ -188,7 +188,7 @@ describe('AdminMeetingsPage', () => {
     await userEvent.click(within(row).getByRole('button', { name: 'Reagendar' }));
     const input = within(row).getByLabelText('Novo horário');
     await userEvent.clear(input);
-    await userEvent.type(input, '2099-01-10T19:30');
+    await userEvent.type(input, '10/01/2099 19:30');
     await userEvent.click(within(row).getByRole('button', { name: 'Salvar' }));
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith(scheduled.id, {
@@ -212,7 +212,7 @@ describe('AdminMeetingsPage', () => {
     await userEvent.click(within(row).getByRole('button', { name: 'Reagendar' }));
     const input = within(row).getByLabelText('Novo horário');
     await userEvent.clear(input);
-    await userEvent.type(input, '2020-01-10T19:30');
+    await userEvent.type(input, '10/01/2020 19:30');
     await userEvent.click(within(row).getByRole('button', { name: 'Salvar' }));
     expect(await within(row).findByText(/2 minutos no futuro/)).toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();

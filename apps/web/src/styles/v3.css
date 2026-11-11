@@ -2783,3 +2783,312 @@ html[data-pinning]::view-transition-new(*) {
     pointer-events: auto;
   }
 }
+
+/* ---- Campo de data e hora (components/DateTimeField.tsx) ----
+   Calendário do Screen no lugar do do navegador: sai de dentro do campo, o mês desliza ao
+   trocar, o dia escolhido "estala". */
+.dt-field {
+  position: relative;
+}
+
+.dt-input {
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  transition: box-shadow 160ms var(--ease-out);
+}
+
+.dt-field[data-open] .dt-input,
+.dt-input:focus-within {
+  box-shadow: 0 0 0 2px var(--v3-accent);
+}
+
+.dt-input input {
+  height: 40px;
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  padding: 0 4px 0 16px;
+  font-size: 14px;
+  color: var(--v3-text);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-input input::placeholder {
+  color: var(--v3-text-3);
+}
+
+.dt-toggle {
+  display: inline-grid;
+  height: 34px;
+  width: 34px;
+  min-height: 0;
+  margin-right: 3px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--v3-text-2);
+  transition:
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
+}
+
+.dt-toggle:hover,
+.dt-field[data-open] .dt-toggle {
+  background: var(--v3-pill);
+  color: var(--v3-text);
+}
+
+.dt-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 14px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  border-radius: 14px;
+  background: var(--v3-panel);
+  padding: 14px;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 0.5),
+    0 0 0 1px var(--v3-line);
+  transform-origin: 20% 0;
+  animation: v3-dt-in 260ms var(--v3-spring) both;
+}
+
+@keyframes v3-dt-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+.dt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dt-head button,
+.dt-days button,
+.dt-col button {
+  min-height: 0;
+}
+
+.dt-head button {
+  display: inline-grid;
+  height: 30px;
+  width: 30px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--v3-text-2);
+}
+
+.dt-head button:hover {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+.dt-month {
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: capitalize;
+  color: var(--v3-text);
+}
+
+.dt-week,
+.dt-days {
+  display: grid;
+  grid-template-columns: repeat(7, 34px);
+  gap: 2px;
+}
+
+.dt-week span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--v3-text-3);
+}
+
+.dt-days {
+  margin-top: 4px;
+  animation: v3-dt-month 220ms var(--ease-out) both;
+}
+
+.dt-days[data-dir='prev'] {
+  animation-name: v3-dt-month-prev;
+}
+
+@keyframes v3-dt-month {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes v3-dt-month-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+.dt-days button {
+  height: 34px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-text);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 120ms var(--ease-out),
+    transform 200ms var(--v3-spring);
+}
+
+.dt-days button:hover:not(:disabled):not([aria-pressed='true']) {
+  background: var(--v3-elev);
+}
+
+.dt-days button[data-other] {
+  color: var(--v3-text-3);
+}
+
+.dt-days button[data-today] {
+  box-shadow: inset 0 0 0 1.5px var(--v3-accent);
+}
+
+.dt-days button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.dt-days button[aria-pressed='true'],
+.dt-col button[aria-pressed='true'] {
+  background: var(--v3-accent);
+  color: #120a08;
+  animation: v3-pin-pop 240ms var(--v3-spring);
+}
+
+.dt-time {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--v3-line);
+  padding-left: 14px;
+}
+
+.dt-time-label {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v3-text-2);
+}
+
+.dt-cols {
+  display: flex;
+  gap: 4px;
+  height: 236px;
+}
+
+.dt-col {
+  position: relative;
+  display: flex;
+  width: 46px;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.dt-col::-webkit-scrollbar {
+  display: none;
+}
+
+.dt-col button {
+  flex: none;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-col button:hover:not([aria-pressed='true']) {
+  background: var(--v3-elev);
+}
+
+.dt-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--v3-line);
+  padding-top: 10px;
+}
+
+.dt-link {
+  min-height: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-text-2);
+}
+
+.dt-link:hover {
+  color: var(--v3-text);
+  text-decoration: underline;
+}
+
+.dt-done {
+  min-height: 0;
+  height: 34px;
+  padding: 0 16px;
+}
+
+/* Celular: calendário em cima, horário embaixo (colunas deitadas). */
+@media (max-width: 520px) {
+  .dt-pop {
+    grid-template-columns: 1fr;
+    width: calc(100vw - 32px);
+  }
+
+  .dt-week,
+  .dt-days {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .dt-time {
+    border-left: 0;
+    border-top: 1px solid var(--v3-line);
+    padding: 10px 0 0;
+  }
+
+  .dt-cols {
+    height: auto;
+    flex-direction: column;
+  }
+
+  .dt-col {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .dt-col button {
+    min-width: 40px;
+  }
+}
+
+:root[data-motion='off'] .dt-pop,
+:root[data-motion='off'] .dt-days,
+:root[data-motion='off'] .dt-days button,
+:root[data-motion='off'] .dt-col button {
+  animation: none;
+}
