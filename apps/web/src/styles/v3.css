@@ -1901,3 +1901,161 @@ html:not([data-call]) .backdrop {
     aspect-ratio: 21 / 8;
   }
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Movimento fluido (só transform e opacidade: roda no compositor, leve no celular).
+ * ------------------------------------------------------------------------------------- */
+
+/* Troca de página: sobe de leve com a mola, sem desfoque (o desfoque pesa). */
+@keyframes v3-page {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.page-enter {
+  animation: v3-page 460ms var(--v3-spring) both;
+}
+
+.rise {
+  animation: v3-page 480ms var(--v3-spring) both;
+}
+
+/* Cards entram um depois do outro. */
+.widget-grid > li,
+.shortcuts > *,
+.login-cards > * {
+  animation: v3-rise 460ms var(--v3-spring) both;
+}
+
+.widget-grid > li:nth-child(2),
+.shortcuts > :nth-child(2),
+.login-cards > :nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.widget-grid > li:nth-child(3),
+.shortcuts > :nth-child(3),
+.login-cards > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.widget-grid > li:nth-child(4),
+.shortcuts > :nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.widget-grid > li:nth-child(n + 5) {
+  animation-delay: 190ms;
+}
+
+/* Hover e toque nos cards: a capa sobe de leve; apertar encolhe um pouco. */
+.sp-cover,
+.login-card-cover,
+.shortcut-icon {
+  transition:
+    transform 320ms var(--v3-spring),
+    box-shadow 320ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  .sp-card:hover .sp-cover,
+  .login-card:hover .login-card-cover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgb(0 0 0 / 0.55);
+  }
+
+  .shortcut:hover .shortcut-icon {
+    transform: scale(1.06);
+  }
+}
+
+.sp-card,
+.shortcut,
+.hub-link,
+.pref-theme,
+.theme-dot {
+  transition:
+    background-color 200ms var(--ease-out),
+    color 200ms var(--ease-out),
+    transform 260ms var(--v3-spring);
+}
+
+.sp-card:active,
+.shortcut:active,
+.hub-link:active,
+.pref-theme:active,
+.theme-dot:active {
+  transform: scale(0.98);
+}
+
+.sp-play:active {
+  transform: scale(0.92) !important;
+}
+
+/* Contagem regressiva: o número que muda "vira" de baixo para cima. */
+@keyframes v3-tick {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+}
+
+.countdown-value {
+  display: inline-block;
+  animation: v3-tick 360ms var(--v3-spring) both;
+}
+
+/* Avisos chegam com a mola. */
+@keyframes v3-toast {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+}
+
+.toast {
+  border-radius: var(--v3-r);
+  background: var(--v3-elev);
+  animation: v3-toast 420ms var(--v3-spring) both;
+}
+
+/* Animações desligadas ou movimento reduzido: tudo isso some (fica só a troca de cor). */
+:root[data-motion='off'] .page-enter,
+:root[data-motion='off'] .rise,
+:root[data-motion='off'] .widget-grid > li,
+:root[data-motion='off'] .shortcuts > *,
+:root[data-motion='off'] .login-cards > *,
+:root[data-motion='off'] .countdown-value,
+:root[data-motion='off'] .toast {
+  animation: none;
+}
+
+:root[data-motion='off'] .sp-card:hover .sp-cover,
+:root[data-motion='off'] .login-card:hover .login-card-cover,
+:root[data-motion='off'] .shortcut:hover .shortcut-icon,
+:root[data-motion='off'] .sp-card:active,
+:root[data-motion='off'] .hub-link:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .rise,
+  .widget-grid > li,
+  .shortcuts > *,
+  .login-cards > *,
+  .countdown-value,
+  .toast {
+    animation: none;
+  }
+
+  .sp-cover,
+  .login-card-cover,
+  .shortcut-icon,
+  .sp-card,
+  .hub-link {
+    transition-property: background-color, color, box-shadow;
+  }
+}

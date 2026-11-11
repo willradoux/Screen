@@ -65,7 +65,9 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
             <ol aria-hidden="true" className="countdown">
               {countdownParts(left).map((p) => (
                 <li key={p.unit}>
-                  <span className="countdown-value tabular">{p.value}</span>
+                  <span key={p.value} className="countdown-value tabular">
+                    {p.value}
+                  </span>
                   <span className="countdown-unit">{p.unit}</span>
                 </li>
               ))}
