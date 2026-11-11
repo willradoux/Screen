@@ -58,6 +58,7 @@ function setup(
   return { onInfo, onError };
 }
 
+// Botões de moderação (o "mutar só para mim" e o volume são de todos e não contam).
 const row = (name: string) =>
   screen.getByText(name).closest('[data-testid="person"]') as HTMLElement;
 
@@ -76,8 +77,16 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
     setup('MOD');
     await screen.findByText('Membro Um');
     expect(within(row('Membro Um')).getByRole('button', { name: 'Expulsar' })).toBeInTheDocument();
-    expect(within(row('Moderador Outro')).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(row('Admin Outro')).queryByRole('button')).not.toBeInTheDocument();
+    expect(
+      within(row('Moderador Outro')).queryByRole('button', {
+        name: /silenciar|liberar|expulsar|banir|palco|destacar/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(row('Admin Outro')).queryByRole('button', {
+        name: /silenciar|liberar|expulsar|banir|palco|destacar/i,
+      }),
+    ).not.toBeInTheDocument();
     expect(within(row('Eu mesmo')).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByText(/não podem moderar outros moderadores/i)).toBeInTheDocument();
   });
@@ -89,7 +98,11 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
       within(row('Moderador Outro')).getByRole('button', { name: 'Banir' }),
     ).toBeInTheDocument();
     expect(within(row('Membro Um')).getByRole('button', { name: 'Banir' })).toBeInTheDocument();
-    expect(within(row('Admin Outro')).queryByRole('button')).not.toBeInTheDocument();
+    expect(
+      within(row('Admin Outro')).queryByRole('button', {
+        name: /silenciar|liberar|expulsar|banir|palco|destacar/i,
+      }),
+    ).not.toBeInTheDocument();
     // Em si mesmo o admin só tem o palco, nada de expulsar ou banir.
     expect(
       within(row('Eu mesmo')).queryByRole('button', { name: 'Banir' }),
@@ -376,5 +389,25 @@ describe('ParticipantsPanel: fixar (só na sua tela)', () => {
     expect(
       within(row('Membro Um')).queryByRole('button', { name: /tela de Membro Um/ }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('ParticipantsPanel: volume só para você', () => {
+  it('cada pessoa (menos você) tem volume e "mutar só para mim"', async () => {
+    localStorage.clear();
+    setup('MEMBER', [people.member]);
+    await screen.findByText('Membro Um');
+    expect(
+      within(row('Eu mesmo')).queryByRole('slider', { name: /Volume de/ }),
+    ).not.toBeInTheDocument();
+    const mute = within(row('Membro Um')).getByRole('button', {
+      name: 'Mutar Membro Um só para mim',
+    });
+    await userEvent.click(mute);
+    expect(
+      within(row('Membro Um')).getByRole('button', { name: 'Voltar a ouvir Membro Um' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(within(row('Membro Um')).getByRole('slider')).toBeDisabled();
+    expect(row('Membro Um')).toHaveTextContent('Mudo');
   });
 });

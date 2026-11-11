@@ -1,6 +1,7 @@
 import type { LocalParticipant, Room as LiveKitRoom } from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
+import { setDeafened, useAudioPrefs } from '../lib/audioPrefs';
 import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
@@ -138,6 +139,7 @@ export function Controls({
     setMenuState(value);
   };
   const shownMenu = menu ?? leaving;
+  const audio = useAudioPrefs();
   const micPermission = usePermission('microphone');
   const camPermission = usePermission('camera');
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
@@ -268,6 +270,15 @@ export function Controls({
               {micPermission === 'denied' && <PermissionBadge />}
             </span>
           </span>
+          {/* Som da sala (como o fone do Discord): para de ouvir todo mundo, só para você. */}
+          <RoundButton
+            icon={audio.deafened ? 'headset_off' : 'headphones'}
+            short={audio.deafened ? 'Ligar o som da sala' : 'Desligar o som da sala'}
+            fullLabel={`Som da sala: ${audio.deafened ? 'desligado' : 'ligado'}`}
+            active={false}
+            off={audio.deafened}
+            onClick={() => setDeafened(!audio.deafened)}
+          />
           <span className="ctl-split">
             {room && (
               <DeviceToggle

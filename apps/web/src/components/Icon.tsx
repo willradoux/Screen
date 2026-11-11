@@ -1,3 +1,7 @@
+import headphonesIcon from '@material-symbols/svg-400/rounded/headphones.svg?url';
+import headsetOffIcon from '@material-symbols/svg-400/rounded/headset_off.svg?url';
+import volumeUpIcon from '@material-symbols/svg-400/rounded/volume_up.svg?url';
+import volumeOffIcon from '@material-symbols/svg-400/rounded/volume_off.svg?url';
 import addIcon from '@material-symbols/svg-400/rounded/add.svg?url';
 import removeIcon from '@material-symbols/svg-400/rounded/remove.svg?url';
 import arrowDown from '@material-symbols/svg-400/rounded/keyboard_arrow_down.svg?url';
@@ -71,6 +75,10 @@ import wifiOff from '@material-symbols/svg-400/rounded/wifi_off.svg?url';
  * (só entram no site os que estão nesta lista). Sem emoji em nenhum lugar da interface.
  */
 const ICONS = {
+  headphones: headphonesIcon,
+  headset_off: headsetOffIcon,
+  volume_up: volumeUpIcon,
+  volume_off: volumeOffIcon,
   add: addIcon,
   remove: removeIcon,
   arrow_back: arrowBack,

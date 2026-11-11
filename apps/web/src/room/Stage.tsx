@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
+import { effectiveVolume, useAudioPrefs } from '../lib/audioPrefs';
 import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
@@ -531,18 +532,30 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
   const latest = useRef(participants);
   latest.current = participants;
   const signature = audioSignature(participants);
+  const prefs = useAudioPrefs();
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
+  /** Cada som tocando: de quem é, o elemento e (só acima de 100%) o amplificador. */
+  const playing = useRef<
+    { identity: string; track: MediaStreamTrack; el: HTMLMediaElement; boost?: Boost }[]
+  >([]);
 
   useEffect(() => {
     const root = container.current;
     if (!root) return;
     const cleanups: (() => void)[] = [];
+    playing.current = [];
     for (const p of latest.current) {
       for (const source of [Track.Source.Microphone, Track.Source.ScreenShareAudio]) {
         const track = p.getTrackPublication(source)?.track;
         if (!track) continue;
         const el = track.attach();
         root.appendChild(el);
+        const entry = { identity: p.identity, track: track.mediaStreamTrack, el };
+        playing.current.push(entry);
+        applyVolume(entry, effectiveVolume(prefsRef.current, p.identity));
         cleanups.push(() => {
+          (entry as { boost?: Boost }).boost?.close();
           track.detach(el);
           el.remove();
         });
@@ -551,5 +564,54 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
     return () => cleanups.forEach((fn) => fn());
   }, [signature]);
 
+  // Mudou o volume de alguém, silenciou ou desligou o som da sala: aplica sem recriar nada.
+  useEffect(() => {
+    for (const entry of playing.current) applyVolume(entry, effectiveVolume(prefs, entry.identity));
+  }, [prefs]);
+
   return <div ref={container} hidden aria-hidden="true" data-testid="remote-audio" />;
+}
+
+/** Amplificador do navegador para tocar acima de 100% (só para quem foi aumentado). */
+interface Boost {
+  gain: GainNode;
+  close: () => void;
+}
+
+function applyVolume(
+  entry: { track: MediaStreamTrack; el: HTMLMediaElement; boost?: Boost },
+  volume: number,
+) {
+  if (volume <= 1) {
+    entry.boost?.close();
+    entry.boost = undefined;
+    entry.el.muted = volume === 0;
+    entry.el.volume = volume;
+    return;
+  }
+  // Acima de 100%: o elemento fica mudo e o som passa por um ganho do Web Audio.
+  if (!entry.boost) {
+    try {
+      const ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(new MediaStream([entry.track]));
+      const gain = ctx.createGain();
+      src.connect(gain).connect(ctx.destination);
+      void ctx.resume().catch(() => undefined);
+      entry.boost = {
+        gain,
+        close: () => {
+          src.disconnect();
+          gain.disconnect();
+          void ctx.close().catch(() => undefined);
+        },
+      };
+    } catch {
+      // Sem Web Audio: fica no máximo do elemento (100%).
+      entry.el.muted = false;
+      entry.el.volume = 1;
+      return;
+    }
+  }
+  entry.el.muted = true;
+  entry.boost.gain.gain.value = volume;
 }
