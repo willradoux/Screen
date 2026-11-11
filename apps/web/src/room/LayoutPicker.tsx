@@ -6,7 +6,6 @@ import { STAGE_LAYOUTS, type StageLayout } from './Stage';
 const ICON: Record<StageLayout, IconName> = {
   auto: 'auto_awesome_mosaic',
   mosaic: 'grid_view',
-  focus: 'featured_video',
 };
 
 /** Um retângulo do desenho: cinza (câmera) ou com a cor do tema (tela compartilhada). */
@@ -28,40 +27,21 @@ function Preview({ value }: { value: StageLayout }) {
       </span>
     );
   }
-  if (value === 'focus') {
-    return (
-      <span className="grid h-full grid-rows-[1fr_26%] gap-1">
-        <Box screen />
-        <span className="grid grid-cols-3 gap-1">
-          <Box />
-          <Box />
-          <Box />
-        </span>
-      </span>
-    );
-  }
-  // Automático: sem tela compartilhada vira mosaico; com tela, destaque.
+  // Automático: quem fala (ou a tela, que tem prioridade) grande e o resto numa faixa.
   return (
-    <span className="grid h-full grid-cols-2 gap-2">
-      <span className="grid grid-cols-2 grid-rows-2 gap-1">
+    <span className="grid h-full grid-rows-[1fr_26%] gap-1">
+      <Box screen />
+      <span className="grid grid-cols-3 gap-1">
         <Box />
         <Box />
         <Box />
-        <Box />
-      </span>
-      <span className="grid grid-rows-[1fr_30%] gap-1">
-        <Box screen />
-        <span className="grid grid-cols-2 gap-1">
-          <Box />
-          <Box />
-        </span>
       </span>
     </span>
   );
 }
 
 /**
- * Botão de layout do palco: abre uma janela com os três jeitos de organizar a tela, cada um
+ * Botão de layout do palco: abre uma janela com os jeitos de organizar a tela, cada um
  * com um desenho e o nome. Escolher aplica na hora e fecha.
  */
 export function LayoutPicker({
@@ -92,7 +72,7 @@ export function LayoutPicker({
 
       {open && (
         <Sheet title="Layout" onClose={() => setOpen(false)}>
-          <div role="radiogroup" aria-label="Layout" className="grid grid-cols-3 gap-2">
+          <div role="radiogroup" aria-label="Layout" className="grid grid-cols-2 gap-2">
             {STAGE_LAYOUTS.map((l) => {
               const on = l.value === value;
               return (
@@ -115,6 +95,11 @@ export function LayoutPicker({
               );
             })}
           </div>
+          <p className="px-1 text-xs leading-relaxed text-zinc-500">
+            <strong className="text-zinc-300">Automático</strong>: quem está compartilhando a tela
+            fica grande; sem tela, quem está falando. Para escolher, fixe a câmera ou a tela de
+            alguém (no vídeo ou na lista de pessoas).
+          </p>
         </Sheet>
       )}
     </div>

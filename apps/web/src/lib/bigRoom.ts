@@ -7,6 +7,7 @@ import {
   type TrackPublishOptions,
   type VideoCaptureOptions,
 } from 'livekit-client';
+import { parsePin } from '../room/pin';
 import type { Tile } from '../room/useParticipants';
 
 /**
@@ -104,8 +105,9 @@ export function wantedVideo(
     source: t.screenPublished ? 'screen' : 'camera',
   });
 
-  const pinned = pinnedId ? tiles.find((t) => t.identity === pinnedId) : undefined;
-  if (pinned) return pick(pinned);
+  const pin = parsePin(pinnedId);
+  const pinned = pin ? tiles.find((t) => t.identity === pin.identity) : undefined;
+  if (pinned) return pin?.camera ? { identity: pinned.identity, source: 'camera' } : pick(pinned);
 
   const sharer = stage.find((t) => t.screenPublished);
   if (sharer) return { identity: sharer.identity, source: 'screen' };

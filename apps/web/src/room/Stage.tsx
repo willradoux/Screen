@@ -12,6 +12,7 @@ import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
+import { cameraPin, parsePin, screenPin } from './pin';
 
 function Video({
   pub,
@@ -79,20 +80,24 @@ const fitStyle = (ratio: number) => ({ '--ar': ratio }) as React.CSSProperties;
  * fixado, fica sempre à vista.
  */
 function PinButton({
-  tile,
+  name,
+  value,
   pinned,
   onPin,
 }: {
-  tile: Tile;
+  /** Como o leitor de tela chama o que é fixado ("Beto" ou "tela de Beto"). */
+  name: string;
+  /** O valor fixado (ver room/pin.ts). */
+  value: string;
   pinned: boolean;
-  onPin: (identity: string) => void;
+  onPin: (value: string) => void;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onPin(tile.identity)}
+      onClick={() => onPin(value)}
       aria-pressed={pinned}
-      aria-label={`${pinned ? 'Desafixar' : 'Fixar'} ${tile.name}`}
+      aria-label={`${pinned ? 'Desafixar' : 'Fixar'} ${name}`}
       title={pinned ? 'Desafixar' : 'Fixar em destaque'}
       className="stage-pin"
       data-pinned={pinned || undefined}
@@ -169,7 +174,14 @@ function PersonTile({
           </span>
         </div>
       )}
-      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
+      {onPin && (
+        <PinButton
+          name={tile.name}
+          value={cameraPin(tile.identity)}
+          pinned={pinned}
+          onPin={onPin}
+        />
+      )}
       <figcaption className="stage-caption">
         <span className="truncate font-medium text-white">
           {tile.name}
@@ -223,7 +235,14 @@ function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & T
         onNaturalAspect={setNatural}
         quality={quality}
       />
-      {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
+      {onPin && (
+        <PinButton
+          name={`tela de ${tile.name}`}
+          value={screenPin(tile.identity)}
+          pinned={pinned}
+          onPin={onPin}
+        />
+      )}
       <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
@@ -234,19 +253,19 @@ function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & T
 
 /**
  * Como organizar o palco:
- * - `auto`: com tela compartilhada, ela em destaque; sem tela, todos em mosaico.
+ * - `auto`: um grande e o resto numa faixa. O grande é a tela compartilhada (prioridade) ou
+ *   quem está falando (fica até outra pessoa falar).
  * - `mosaic`: tudo lado a lado, preenchendo a tela.
- * - `focus`: um grande (tela, quem está falando ou a primeira pessoa) e o resto numa faixa.
  *
+ * Fixar (câmera ou tela de alguém) vence os dois: o fixado fica grande até soltar.
  * Em todos, cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé)
- * e cresce até onde couber, sem faixas pretas. Fixar alguém sempre vira "destaque".
+ * e cresce até onde couber, sem faixas pretas.
  */
-export type StageLayout = 'auto' | 'mosaic' | 'focus';
+export type StageLayout = 'auto' | 'mosaic';
 
 export const STAGE_LAYOUTS: { value: StageLayout; label: string }[] = [
   { value: 'auto', label: 'Automático' },
   { value: 'mosaic', label: 'Mosaico' },
-  { value: 'focus', label: 'Destaque' },
 ];
 
 /** Uma peça do palco: a tela de alguém ou a câmera de alguém. */
@@ -264,7 +283,7 @@ function pieces(tiles: Tile[]): Piece[] {
 
 interface StageExtras {
   pinnedId: string | null;
-  onPin: (identity: string) => void;
+  onPin: (value: string) => void;
   cameraQuality: VideoQuality | undefined;
   screenQuality: VideoQuality | undefined;
 }
@@ -278,7 +297,14 @@ function PieceView({
   small?: boolean;
   extras: StageExtras;
 }) {
-  const pinned = piece.tile.identity === extras.pinnedId;
+  const pin = parsePin(extras.pinnedId);
+  const mine = pin?.identity === piece.tile.identity;
+  // Fixado "da pessoa" (sem dizer qual) é a tela, se ela compartilha; senão a câmera.
+  const pinned =
+    mine &&
+    (piece.kind === 'screen'
+      ? !pin.camera
+      : pin.camera || !(piece.tile.screenPub || piece.tile.screenPublished));
   return piece.kind === 'screen' ? (
     <ScreenTile
       tile={piece.tile}
@@ -297,13 +323,25 @@ function PieceView({
   );
 }
 
-function featuredPiece(all: Piece[]): Piece | undefined {
+/** O automático: a tela compartilhada; senão quem falou por último; senão outra pessoa. */
+function featuredPiece(all: Piece[], lastSpeaker: string | null): Piece | undefined {
   return (
     all.find((p) => p.kind === 'screen') ??
     all.find((p) => p.kind === 'person' && p.tile.isSpeaking && !p.tile.isLocal) ??
+    all.find((p) => p.kind === 'person' && p.tile.identity === lastSpeaker) ??
     all.find((p) => p.kind === 'person' && !p.tile.isLocal) ??
     all[0]
   );
+}
+
+/** O fixado: a câmera (cam:) ou a tela da pessoa, se ela compartilha; senão a câmera. */
+function pinnedPiece(all: Piece[], pinnedId: string | null): Piece | undefined {
+  const pin = parsePin(pinnedId);
+  if (!pin) return undefined;
+  const theirs = all.filter((p) => p.tile.identity === pin.identity);
+  return pin.camera
+    ? theirs.find((p) => p.kind === 'person')
+    : (theirs.find((p) => p.kind === 'screen') ?? theirs.find((p) => p.kind === 'person'));
 }
 
 /** Colunas do mosaico: o mais perto de um quadrado (1, 2, 2, 2, 3, 3, ...). */
@@ -340,9 +378,18 @@ export function Stage({
   const [innerPin, setInnerPin] = useState<string | null>(null);
   const pinnedId = onPinnedChange ? (controlledPin ?? null) : innerPin;
   const setPinned = onPinnedChange ?? setInnerPin;
+  // Quem falou por último continua grande no automático até outra pessoa falar.
+  const lastSpeaker = useRef<string | null>(null);
+  const speakingNow = tiles.find((t) => t.isSpeaking && !t.isLocal);
+  if (speakingNow) lastSpeaker.current = speakingNow.identity;
   const extras: StageExtras = {
     pinnedId,
-    onPin: (identity) => setPinned(pinnedId === identity ? null : identity),
+    onPin: (value) => {
+      // Clicar no que já está fixado solta (vale também para o formato do destaque do admin).
+      const current = pinnedPiece(pieces(tiles), pinnedId);
+      const target = pinnedPiece(pieces(tiles), value);
+      setPinned(current && target && current.key === target.key ? null : value);
+    },
     cameraQuality: cameraQualityFor(tiles.length),
     screenQuality: screenQualityFor(tiles.length),
   };
@@ -353,7 +400,6 @@ export function Stage({
       ? tiles.filter(isActive)
       : tiles;
   const hidden = tiles.length - visible.length;
-  const pinnedTile = visible.find((t) => t.identity === pinnedId);
 
   const audience =
     hidden > 0 ? (
@@ -383,18 +429,15 @@ export function Stage({
   }
 
   const all = pieces(visible);
-  const autoMode = screenSharers(visible).length > 0 ? 'focus' : 'mosaic';
-  const mode = pinnedTile ? 'focus' : layout === 'auto' ? autoMode : layout;
+  const pinned = pinnedPiece(all, pinnedId);
+  // Automático com uma peça só (você sozinho) é o mosaico de um.
+  const mode = pinned ? 'focus' : layout === 'auto' && all.length > 1 ? 'focus' : 'mosaic';
 
   if (mode === 'focus') {
-    // Fixado: a tela da pessoa (se compartilha) ou a câmera dela, grande; na faixa, as câmeras.
-    const pinnedKind = pinnedTile?.screenPub ? 'screen' : 'person';
-    const main = pinnedTile
-      ? all.find((p) => p.tile === pinnedTile && p.kind === pinnedKind)
-      : featuredPiece(all);
-    const rest = pinnedTile
-      ? all.filter((p) => p.kind === 'person' && p !== main)
-      : all.filter((p) => p !== main);
+    // Grande: o fixado, ou a tela, ou quem está falando. Na faixa, todo o resto (dá para fixar
+    // qualquer um dali, inclusive a tela).
+    const main = pinned ?? featuredPiece(all, lastSpeaker.current);
+    const rest = all.filter((p) => p !== main);
     return (
       <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
         {main && (

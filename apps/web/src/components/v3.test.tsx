@@ -173,6 +173,7 @@ describe('Palco', () => {
   it('com 3 ou mais pessoas o mosaico vira grade uniforme', () => {
     const { container } = render(
       <Stage
+        layout="mosaic"
         tiles={[
           tile(),
           tile({ identity: 'b', name: 'Beto' }),

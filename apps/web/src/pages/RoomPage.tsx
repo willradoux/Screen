@@ -113,7 +113,7 @@ function ConnectedRoom({
   });
   const [handBusy, setHandBusy] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(false);
-  // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 5 s.
+  // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 30 s.
   // "Mais opções" abre a barra preta completa embaixo, que fica até a pessoa minimizar.
   // Com o ponteiro ou o foco nos controles (ou um painel aberto), eles não somem.
   const [holdBar, setHoldBar] = useState(false);
@@ -141,6 +141,9 @@ function ConnectedRoom({
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   // Quem a administração destacou vale para todos; fixar outra pessoa por conta própria vale só aqui.
   const effectivePin = pinnedId ?? room?.spotlightId ?? null;
+  // Fixar pela lista de pessoas: clicar no que já está fixado solta.
+  const togglePin = (value: string) => setPinnedId((v) => (v === value ? null : value));
+  const sharingIds = new Set(tiles.filter((t) => t.screenPublished).map((t) => t.identity));
   // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
   const lastSpeaker = useRef<string | null>(null);
   const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);
@@ -359,6 +362,9 @@ function ConnectedRoom({
                 recording={session.recording}
                 onInfo={toast.info}
                 onError={toast.error}
+                pinnedId={effectivePin}
+                onPin={togglePin}
+                sharingIds={sharingIds}
               />
             </div>
           </aside>
@@ -380,7 +386,7 @@ function ConnectedRoom({
  * então conecta.
  */
 /** Quanto tempo com o mouse parado até os controles sumirem. */
-const IDLE_MS = 5000;
+const IDLE_MS = 30_000;
 
 export function RoomPage({ deps = defaultSessionDeps }: { deps?: SessionDeps }) {
   const { roomId = '' } = useParams();

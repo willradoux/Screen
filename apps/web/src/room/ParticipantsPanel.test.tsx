@@ -336,3 +336,45 @@ describe('ParticipantsPanel: tela travada e destaque para todos', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('ParticipantsPanel: fixar (só na sua tela)', () => {
+  it('qualquer pessoa fixa a câmera de alguém; quem compartilha tem também "fixar tela"', async () => {
+    vi.spyOn(api.rooms, 'participants').mockResolvedValue([
+      makeParticipant({ userId: ME, displayName: 'Eu mesmo', role: 'MEMBER' }),
+      people.member,
+      people.member2,
+    ]);
+    const onPin = vi.fn();
+    render(
+      <ParticipantsPanel
+        room={makeRoom()}
+        me={{ id: ME, role: 'MEMBER' }}
+        version={0}
+        lectureMode={false}
+        onInfo={vi.fn()}
+        onError={vi.fn()}
+        pinnedId={`cam:${people.member.userId}`}
+        onPin={onPin}
+        sharingIds={new Set([people.member2.userId])}
+      />,
+    );
+    await screen.findByText('Membro Um');
+    // Fixado aparece ligado.
+    expect(
+      within(row('Membro Um')).getByRole('button', { name: 'Desafixar câmera de Membro Um' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    // Quem compartilha tem os dois botões.
+    await userEvent.click(
+      within(row('Membro Dois')).getByRole('button', { name: 'Fixar tela de Membro Dois' }),
+    );
+    expect(onPin).toHaveBeenCalledWith(people.member2.userId);
+    await userEvent.click(
+      within(row('Membro Dois')).getByRole('button', { name: 'Fixar câmera de Membro Dois' }),
+    );
+    expect(onPin).toHaveBeenLastCalledWith(`cam:${people.member2.userId}`);
+    // Quem não compartilha não tem "fixar tela".
+    expect(
+      within(row('Membro Um')).queryByRole('button', { name: /tela de Membro Um/ }),
+    ).not.toBeInTheDocument();
+  });
+});

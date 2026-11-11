@@ -12,6 +12,8 @@ import {
 } from '../lib/moderation-rules';
 import type { Participant, RaisedHand, Role, Room } from '../lib/types';
 import { RecordingControl } from './RecordingControl';
+import { Icon } from '../components/Icon';
+import { cameraPin, parsePin, screenPin } from './pin';
 
 interface Props {
   room: Room;
@@ -24,6 +26,37 @@ interface Props {
   recording?: boolean;
   onInfo: (message: string) => void;
   onError: (message: string) => void;
+  /** Fixar no palco (só na sua tela): o que está fixado e quem está compartilhando a tela. */
+  pinnedId?: string | null;
+  onPin?: (value: string) => void;
+  sharingIds?: ReadonlySet<string>;
+}
+
+/** Botão pequeno de fixar (câmera ou tela) na linha da pessoa. */
+function PinToggle({
+  label,
+  on,
+  icon,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  icon: 'keep' | 'screen_share';
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      aria-label={`${on ? 'Desafixar' : 'Fixar'} ${label}`}
+      title={`${on ? 'Desafixar' : 'Fixar'} ${label}`}
+      className="person-pin"
+      data-on={on || undefined}
+    >
+      <Icon name={on && icon === 'keep' ? 'keep_off' : icon} size="1rem" />
+    </button>
+  );
 }
 
 /** Quantas pessoas a lista desenha por vez (salas de 500 não travam). */
@@ -44,7 +77,11 @@ export function ParticipantsPanel({
   recording = false,
   onInfo,
   onError,
+  pinnedId = null,
+  onPin,
+  sharingIds,
 }: Props) {
+  const pin = parsePin(pinnedId);
   const [people, setPeople] = useState<Participant[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
@@ -306,6 +343,24 @@ export function ParticipantsPanel({
                 {p.role !== 'MEMBER' && <Badge tone="scheduled">{ROLE_LABEL[p.role]}</Badge>}
                 {p.isSpeaker && <Badge tone="open">No palco</Badge>}
                 {p.mutedByModeration && <Badge tone="warn">Silenciado</Badge>}
+                {onPin && (
+                  <span className="flex flex-none items-center gap-1">
+                    {sharingIds?.has(p.userId) && (
+                      <PinToggle
+                        label={`tela de ${p.displayName}`}
+                        icon="screen_share"
+                        on={pin?.identity === p.userId && !pin.camera}
+                        onClick={() => onPin(screenPin(p.userId))}
+                      />
+                    )}
+                    <PinToggle
+                      label={`câmera de ${p.displayName}`}
+                      icon="keep"
+                      on={pin?.identity === p.userId && (pin.camera || !sharingIds?.has(p.userId))}
+                      onClick={() => onPin(cameraPin(p.userId))}
+                    />
+                  </span>
+                )}
               </div>
 
               {canStage && p.userId === me.id && (

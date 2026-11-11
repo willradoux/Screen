@@ -2539,3 +2539,31 @@ html:not([data-call]) .backdrop {
   transform: scale(calc(1 + var(--voice, 0) * 0.06));
   transition: transform 70ms linear;
 }
+
+/* Fixar na lista de pessoas: botão redondo discreto; fixado, na cor do tema. */
+.person-pin {
+  display: inline-grid;
+  height: 30px;
+  width: 30px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--v3-text-3);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 200ms var(--v3-spring);
+}
+
+.person-pin:hover {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+.person-pin:active {
+  transform: scale(0.9);
+}
+
+.person-pin[data-on] {
+  background: var(--v3-accent);
+  color: #120a08;
+}

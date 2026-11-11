@@ -310,9 +310,48 @@ describe('Stage (layout dos vídeos)', () => {
         ]}
       />,
     );
-    await userEvent.click(screen.getAllByRole('button', { name: 'Fixar Beto' })[0]!);
-    expect(screen.getAllByTestId('screen-tile')).toHaveLength(1);
-    expect(screen.getByTestId('screen-tile')).toHaveTextContent('Tela de Beto');
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar tela de Beto' }));
+    // A tela fixada fica grande; a da Ana vai para a faixa (dá para fixar dali também).
+    const big = document.querySelector('.stage-focus > .stage-cell')!;
+    expect(big).toHaveTextContent('Tela de Beto');
+  });
+
+  it('dá para fixar a câmera de quem compartilha a tela (e não a tela)', async () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub(), screenPub: pub() }),
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar Beto' }));
+    const big = document.querySelector('.stage-focus > .stage-cell')!;
+    expect(big.querySelector('[data-testid=tile]')).toHaveTextContent('Beto');
+    expect(screen.getByRole('button', { name: 'Desafixar Beto' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fixar tela de Beto' })).toBeInTheDocument();
+  });
+
+  it('automático: a tela tem prioridade; sem tela, quem está falando fica grande', () => {
+    const { rerender } = render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub(), isSpeaking: true }),
+        ]}
+      />,
+    );
+    const big = () => document.querySelector('.stage-focus > .stage-cell')!;
+    expect(big()).toHaveTextContent('Beto');
+    rerender(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub(), screenPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub(), isSpeaking: true }),
+        ]}
+      />,
+    );
+    expect(big()).toHaveTextContent('Tela de Ana');
   });
 
   it('solta o vídeo do elemento quando o componente sai da tela', () => {
