@@ -64,7 +64,14 @@ function motionOff(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
-export function LiveLogo({ className = '' }: { className?: string }) {
+export function LiveLogo({
+  className = '',
+  color = 'brand',
+}: {
+  className?: string;
+  /** `brand`: degradê do tema (ícone do topo); `current`: a cor do texto (bichinho, avisos). */
+  color?: 'brand' | 'current';
+}) {
   const id = useId().replace(/:/g, '');
   const svgRef = useRef<SVGSVGElement>(null);
   const eyesRef = useRef<SVGGElement>(null);
@@ -162,10 +169,12 @@ export function LiveLogo({ className = '' }: { className?: string }) {
       className={`screen-logo live-logo ${className}`}
     >
       <defs>
-        <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" style={{ stopColor: 'var(--logo-1, #ffb347)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--logo-2, #ff4f93)' }} />
-        </linearGradient>
+        {color === 'brand' && (
+          <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style={{ stopColor: 'var(--logo-1, #ffb347)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--logo-2, #ff4f93)' }} />
+          </linearGradient>
+        )}
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
           <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
           <g
@@ -181,7 +190,13 @@ export function LiveLogo({ className = '' }: { className?: string }) {
           </g>
         </mask>
       </defs>
-      <rect width={LOGO_W} height={LOGO_H} rx="62" fill={`url(#${fill})`} mask={`url(#${mask})`} />
+      <rect
+        width={LOGO_W}
+        height={LOGO_H}
+        rx="62"
+        fill={color === 'brand' ? `url(#${fill})` : 'currentColor'}
+        mask={`url(#${mask})`}
+      />
     </svg>
   );
 }
