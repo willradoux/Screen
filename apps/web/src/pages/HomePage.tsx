@@ -9,7 +9,6 @@ import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import type { CallInfo, Room } from '../lib/types';
 import { useAsync } from '../lib/useAsync';
-import { usePolling } from '../lib/usePolling';
 import { useCooldown } from '../lib/useCooldown';
 
 /** Quantas colunas de card a seção ocupa (1 a 4). */
@@ -60,10 +59,6 @@ export function HomePage() {
   // As calls são buscadas uma vez só e servem às duas seções (sem pedir de novo ao servidor).
   const callsReq = useAsync(() => api.calls.list());
   const calls = callsReq.state.status === 'ready' ? callsReq.state.data : null;
-  // Atualiza sozinho (sem piscar): salas a cada 20 s (só banco); calls a cada 60 s (perguntam
-  // ao Discord, que tem limite de pedidos). Aba escondida não consulta.
-  usePolling(() => void reload({ silent: true }), 20_000);
-  usePolling(() => void callsReq.reload({ silent: true }), 60_000);
   const cooldown = useCooldown(4000);
   const rooms = state.status === 'ready' ? state.data : [];
   const open = rooms.filter((room) => room.status === 'OPEN').length;
