@@ -160,7 +160,8 @@ function PersonTile({
       {tile.cameraPub ? (
         <Video
           pub={tile.cameraPub}
-          mirror={tile.isLocal && prefs.selfie === 'mirror'}
+          // O espelho (se escolhido) já vem no próprio vídeo enviado: a prévia mostra igual.
+          mirror={false}
           fit={prefs.fit}
           label={`Câmera de ${tile.name}`}
           onNaturalAspect={setNatural}

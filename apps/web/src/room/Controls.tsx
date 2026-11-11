@@ -1,8 +1,15 @@
-import type { LocalParticipant, Room as LiveKitRoom } from 'livekit-client';
+import {
+  Track,
+  type LocalParticipant,
+  type LocalVideoTrack,
+  type Room as LiveKitRoom,
+} from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { setDeafened, useAudioPrefs } from '../lib/audioPrefs';
 import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
+import { applyCameraEffects } from '../lib/videoEffects';
+import { useVideoPrefs } from '../lib/videoPrefs';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
@@ -189,6 +196,18 @@ export function Controls({
   const mic = local.isMicrophoneEnabled;
   const cam = local.isCameraEnabled;
   const screen = local.isScreenShareEnabled;
+
+  // "Minha câmera: espelhada" sai para todo mundo: aplica no vídeo que é enviado (junto com o
+  // fundo, se houver). Reaplica quando a câmera é religada (faixa nova). Só uma vez (pílula).
+  const videoPrefs = useVideoPrefs();
+  const camTrack = local.getTrackPublication(Track.Source.Camera)?.track as
+    LocalVideoTrack | undefined;
+  useEffect(() => {
+    if (variant === 'rail' || !camTrack) return;
+    void applyCameraEffects(camTrack, { mirror: videoPrefs.selfie === 'mirror' }).catch(() =>
+      onError('Não consegui espelhar a câmera neste navegador.'),
+    );
+  }, [variant, camTrack, videoPrefs.selfie]);
 
   // Trilho da esquerda ("Mais opções"): conversa, pessoas e ajustes, um embaixo do outro.
   if (variant === 'rail') {

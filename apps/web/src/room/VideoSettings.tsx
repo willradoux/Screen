@@ -138,8 +138,8 @@ export function VideoSettings() {
       {open && (
         <Sheet title="Como ver o vídeo" onClose={() => setOpen(false)}>
           <p className="px-1 text-xs text-zinc-500">
-            <strong className="text-zinc-300">Vale só para a sua tela.</strong> Não muda o que os
-            outros veem.
+            <strong className="text-zinc-300">Vale só para a sua tela</strong>, menos &quot;Minha
+            câmera&quot;: espelhada, todo mundo te vê espelhado.
           </p>
           <Choice
             legend="Enquadramento"
@@ -175,7 +175,7 @@ export function VideoSettings() {
             ]}
           />
           <Choice
-            legend="Minha câmera"
+            legend="Minha câmera (todo mundo te vê assim)"
             columns={2}
             value={prefs.selfie}
             onChange={set('selfie')}
