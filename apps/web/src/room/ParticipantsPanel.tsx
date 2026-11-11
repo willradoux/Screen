@@ -364,7 +364,13 @@ export function ParticipantsPanel({
                 )}
               </div>
 
-              {p.userId !== me.id && <PersonAudio id={p.userId} name={p.displayName} />}
+              {p.userId !== me.id && (
+                <PersonAudio
+                  id={p.userId}
+                  name={p.displayName}
+                  sharing={sharingIds?.has(p.userId)}
+                />
+              )}
 
               {canStage && p.userId === me.id && (
                 <div className="mt-2 pl-9">

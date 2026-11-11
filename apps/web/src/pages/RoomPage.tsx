@@ -298,7 +298,7 @@ function ConnectedRoom({
                   />
                   {audioOf === t.identity && (
                     <div className="rail-audio">
-                      <PersonAudio id={t.identity} name={t.name} />
+                      <PersonAudio id={t.identity} name={t.name} sharing={t.screenPublished} />
                     </div>
                   )}
                 </li>

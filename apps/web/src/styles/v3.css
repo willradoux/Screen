@@ -3158,3 +3158,25 @@ html[data-pinning]::view-transition-new(*) {
     width: 16px;
   }
 }
+
+/* Volume por pessoa: uma linha para a voz e, se ela compartilha a tela, outra para a transmissão. */
+.person-volumes {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.person-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.person-volume-kind {
+  min-width: 30px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--v3-text-3);
+}

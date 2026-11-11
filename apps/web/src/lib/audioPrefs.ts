@@ -4,7 +4,8 @@ import { useSyncExternalStore } from 'react';
  * Como VOCÊ ouve a sala (só no seu navegador; ninguém mais é afetado e nada passa pelo
  * servidor):
  *  - `deafened`: som da sala desligado (você não ouve ninguém). Vale só nesta visita.
- *  - `volumes`: volume de cada pessoa, de 0 a 2 (até 200%). Fica salvo neste navegador.
+ *  - `volumes`: volume de cada pessoa, de 0 a 2 (até 200%). Fica salvo neste navegador. A voz
+ *    fica em `{id}` e o som da tela que a pessoa compartilha (a transmissão) em `{id}#tela`.
  *  - `muted`: pessoas silenciadas só para você. Fica salvo neste navegador.
  */
 export interface AudioPrefs {
@@ -76,10 +77,24 @@ export function setMutedForMe(identity: string, muted: boolean): void {
   write({ ...prefs, muted: next });
 }
 
-/** O volume que de fato toca para essa pessoa (0 se silenciada ou com o som da sala desligado). */
-export function effectiveVolume(prefs: AudioPrefs, identity: string): number {
+/** De onde vem o som: a voz (microfone) ou a transmissão (o som da tela compartilhada). */
+export type AudioSource = 'voz' | 'tela';
+
+/** Chave do volume: a voz é `{id}`; a transmissão, `{id}#tela`. */
+export const volumeKey = (identity: string, source: AudioSource = 'voz') =>
+  source === 'tela' ? `${identity}#tela` : identity;
+
+/**
+ * O volume que de fato toca (0 se a pessoa foi mutada para você ou com o som da sala desligado).
+ * Mutar a pessoa cala a voz e a transmissão dela.
+ */
+export function effectiveVolume(
+  prefs: AudioPrefs,
+  identity: string,
+  source: AudioSource = 'voz',
+): number {
   if (prefs.deafened || prefs.muted[identity]) return 0;
-  return prefs.volumes[identity] ?? 1;
+  return prefs.volumes[volumeKey(identity, source)] ?? 1;
 }
 
 export function useAudioPrefs(): AudioPrefs {

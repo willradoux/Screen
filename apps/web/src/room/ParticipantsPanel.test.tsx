@@ -385,6 +385,15 @@ describe('ParticipantsPanel: fixar (só na sua tela)', () => {
       within(row('Membro Dois')).getByRole('button', { name: 'Fixar câmera de Membro Dois' }),
     );
     expect(onPin).toHaveBeenLastCalledWith(`cam:${people.member2.userId}`);
+    // Quem compartilha a tela tem também o volume da transmissão (só para você).
+    expect(
+      within(row('Membro Dois')).getByRole('slider', {
+        name: 'Volume da transmissão de Membro Dois (só para você)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(row('Membro Um')).queryByRole('slider', { name: /transmissão/ }),
+    ).not.toBeInTheDocument();
     // Quem não compartilha não tem "fixar tela".
     expect(
       within(row('Membro Um')).queryByRole('button', { name: /tela de Membro Um/ }),

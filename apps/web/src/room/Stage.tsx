@@ -8,7 +8,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
-import { effectiveVolume, useAudioPrefs } from '../lib/audioPrefs';
+import { effectiveVolume, useAudioPrefs, type AudioSource } from '../lib/audioPrefs';
 import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
@@ -538,7 +538,13 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
   prefsRef.current = prefs;
   /** Cada som tocando: de quem é, o elemento e (só acima de 100%) o amplificador. */
   const playing = useRef<
-    { identity: string; track: MediaStreamTrack; el: HTMLMediaElement; boost?: Boost }[]
+    {
+      identity: string;
+      source: AudioSource;
+      track: MediaStreamTrack;
+      el: HTMLMediaElement;
+      boost?: Boost;
+    }[]
   >([]);
 
   useEffect(() => {
@@ -552,11 +558,12 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
         if (!track) continue;
         const el = track.attach();
         root.appendChild(el);
-        const entry = { identity: p.identity, track: track.mediaStreamTrack, el };
+        const kind: AudioSource = source === Track.Source.Microphone ? 'voz' : 'tela';
+        const entry = { identity: p.identity, source: kind, track: track.mediaStreamTrack, el };
         playing.current.push(entry);
         applyVolume(
           entry,
-          effectiveVolume(prefsRef.current, p.identity),
+          effectiveVolume(prefsRef.current, p.identity, kind),
           prefsRef.current.outputId,
         );
         cleanups.push(() => {
@@ -572,7 +579,7 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
   // Mudou o volume de alguém, silenciou ou desligou o som da sala: aplica sem recriar nada.
   useEffect(() => {
     for (const entry of playing.current) {
-      applyVolume(entry, effectiveVolume(prefs, entry.identity), prefs.outputId);
+      applyVolume(entry, effectiveVolume(prefs, entry.identity, entry.source), prefs.outputId);
     }
   }, [prefs]);
 

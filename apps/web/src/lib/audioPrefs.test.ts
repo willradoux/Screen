@@ -6,6 +6,7 @@ import {
   setMutedForMe,
   setVolume,
   useAudioPrefs,
+  volumeKey,
 } from './audioPrefs';
 import { renderHook } from '@testing-library/react';
 
@@ -37,6 +38,15 @@ describe('como você ouve a sala (só no seu navegador)', () => {
     expect(effectiveVolume(prefs(), 'z')).toBe(0);
     setDeafened(false);
     expect(effectiveVolume(prefs(), 'z')).toBe(1);
+  });
+
+  it('voz e transmissão (som da tela) têm volumes separados; mutar cala as duas', () => {
+    setVolume(volumeKey('a', 'voz'), 0.5);
+    setVolume(volumeKey('a', 'tela'), 1.8);
+    expect(effectiveVolume(prefs(), 'a', 'voz')).toBe(0.5);
+    expect(effectiveVolume(prefs(), 'a', 'tela')).toBe(1.8);
+    setMutedForMe('a', true);
+    expect(effectiveVolume(prefs(), 'a', 'tela')).toBe(0);
   });
 
   it('o som da sala desligado não fica salvo (volta ligado na próxima visita)', () => {
