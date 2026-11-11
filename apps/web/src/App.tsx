@@ -27,6 +27,8 @@ function usePrefetchRoom() {
     if (import.meta.env.MODE === 'test') return;
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     if (conn?.saveData) return;
+    // No celular, preparar a sala em segundo plano disputa o processador com a página aberta.
+    if (window.matchMedia?.('(hover: none)').matches) return;
     const go = () => void loadRoomPage().catch(() => undefined);
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(go, { timeout: 5000 });

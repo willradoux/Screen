@@ -3867,3 +3867,25 @@ html[data-pinning]::view-transition-new(*) {
 :root[data-motion='off'] .chat-typing-dots > span {
   animation: none;
 }
+
+/* ---- Desempenho na chamada ----
+   Vidro desfocado por cima de vídeo obriga o aparelho a refazer o desfoque a cada quadro (pesa
+   muito no celular). Dentro da chamada nada desfoca: os botões já têm fundo escuro próprio. */
+html[data-call] *,
+html[data-call] *::before,
+html[data-call] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-call] .stage-pin,
+html[data-call] .stage-max-btn,
+html[data-call] .zoom-controls {
+  background: rgb(0 0 0 / 0.68);
+}
+
+@media (max-width: 640px) {
+  .call-rail:not([data-open]) .call-rail-inner {
+    background: rgb(0 0 0 / 0.75);
+  }
+}

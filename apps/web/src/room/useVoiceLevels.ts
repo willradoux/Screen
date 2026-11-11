@@ -108,7 +108,20 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
   useEffect(() => {
     if (!enabled || typeof window === 'undefined' || import.meta.env.MODE === 'test') return;
     let raf = 0;
+    let idleTimer = 0;
+    let lastFrame = 0;
     const tick = (now: number) => {
+      // Leve no celular: 30 vezes por segundo (não 60) e, sem ninguém com o mic aberto,
+      // dorme e só confere de novo a cada 0,5 s.
+      if (meters.current.size === 0) {
+        idleTimer = window.setTimeout(() => (raf = requestAnimationFrame(tick)), 500);
+        return;
+      }
+      if (now - lastFrame < 30) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      lastFrame = now;
       const still = motionOff();
       for (const [id, m] of meters.current) {
         // Sem som pra você: some o medidor e fica o aviso do servidor.
@@ -147,6 +160,7 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
     const map = meters.current;
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(idleTimer);
       for (const [id, m] of map) {
         void m.cleanup();
         markAll(id, (el) => {

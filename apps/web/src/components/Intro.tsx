@@ -14,7 +14,7 @@ function shouldPlay(): boolean {
  * vazados) salta, dá a piscadinha (o olho direito dobra em "<", o "|<" do logo), olha para os
  * lados e pisca de novo; então o logo sai de cena e fica só o nome da Acelera DEV,
  * sem fundo nenhum. Depois tudo some e o app entra. A cada carregamento
- * da página, ~3,8 s; pula com clique ou tecla; não existe com movimento reduzido ou com as
+ * da página, ~2,6 s; pula com clique ou tecla; não existe com movimento reduzido ou com as
  * animações desligadas. Decorativa.
  */
 export function Intro() {
@@ -73,15 +73,15 @@ export function Intro() {
       }),
     );
     // 2. Pisca, olha para um lado e para o outro, pisca de novo.
-    at(0.85, blink);
-    at(1.25, () => look(-16));
-    at(1.65, () => look(16));
-    at(2.0, () => look(0));
-    at(2.2, blink);
+    at(0.55, blink);
+    at(0.85, () => look(-16));
+    at(1.1, () => look(16));
+    at(1.35, () => look(0));
+    at(1.45, blink);
     // 3. O logo sai de cena e fica só o nome da Acelera DEV (sem fundo).
-    at(2.55, () => (svg.dataset.gone = ''));
-    at(2.75, () => setMark(true));
-    at(3.85, finish);
+    at(1.8, () => (svg.dataset.gone = ''));
+    at(1.95, () => setMark(true));
+    at(2.6, finish);
 
     const skip = () => finish();
     window.addEventListener('pointerdown', skip, { once: true });
