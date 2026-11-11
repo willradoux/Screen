@@ -1162,3 +1162,20 @@ html:not([data-call]) .backdrop {
     0 0 0 3px var(--v3-panel),
     0 0 0 5px var(--v3-text);
 }
+
+/* A barra da sala não é um bloco à parte: os ícones ficam direto no preto, na borda da tela
+   (como no desenho). Só o item sob o mouse ganha um fundo. */
+.call-rail-inner {
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 2px;
+}
+
+.rail-me {
+  background: transparent;
+}
+
+.rail-room,
+.rail-people {
+  border-color: rgb(255 255 255 / 0.06);
+}
