@@ -168,6 +168,20 @@ describe('embeds', () => {
     expect(m.content).toBeUndefined();
   });
 
+  it('visual: cores do Screen, ícone https no rodapé e emoji no botão', () => {
+    const m = buildRoomMessage(live, ctx);
+    const embed = m.embeds[0] as { color: number; footer: { text: string; icon_url?: string } };
+    expect(embed.color).toBe(0xff7a45);
+    expect(embed.footer).toEqual({
+      text: 'Screen · Acelera DEV',
+      icon_url: 'https://app.exemplo.com/icon-192.png',
+    });
+    expect(JSON.stringify(m.components)).toContain('"emoji":{"name":"▶️"}');
+    // Site sem https (desenvolvimento): o Discord recusaria o ícone, então ele não vai.
+    const dev = buildRoomMessage(live, { ...ctx, webUrl: 'http://localhost:5173' });
+    expect((dev.embeds[0] as { footer: object }).footer).toEqual({ text: 'Screen · Acelera DEV' });
+  });
+
   it('live encerrada: sem botão', () => {
     const m = buildRoomMessage({ ...live, status: 'ENDED' }, ctx);
     expect(m.embeds[0]!.title).toBe('Live encerrada');

@@ -108,7 +108,7 @@ export class DiscordOpsLogger {
                 }
               : {}),
             timestamp: new Date(this.now()).toISOString(),
-            footer: { text: 'Screem' },
+            footer: { text: 'Screen' },
           },
         ],
         components: [],

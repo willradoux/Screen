@@ -13,21 +13,33 @@ export interface EmbedContext {
   summary?: MeetingSummary | null | undefined;
 }
 
+// Cores do Screen: laranja quando está acontecendo, pêssego quando está marcado, cinza quando acabou.
 const COLORS = {
-  live: 0x3d8bfd,
-  open: 0x34d399,
-  scheduled: 0x6db0ff,
-  ended: 0x747f8d,
-  canceled: 0x747f8d,
+  live: 0xff7a45,
+  open: 0xff7a45,
+  scheduled: 0xffb347,
+  ended: 0x4e5058,
+  canceled: 0x4e5058,
 } as const;
 
-const FOOTER = { text: 'Acelera DEV · Screem' };
+/** Ícone do Screen servido pelo próprio site (o Discord só aceita https). */
+const iconUrl = (webUrl: string): string | undefined =>
+  /^https:\/\//.test(webUrl) ? `${webUrl.replace(/\/$/, '')}/icon-192.png` : undefined;
+
+/** Rodapé com o ícone do Screen (sem ícone quando o site não é https, como no desenvolvimento). */
+const footer = (webUrl: string) => {
+  const icon = iconUrl(webUrl);
+  return { text: 'Screen · Acelera DEV', ...(icon ? { icon_url: icon } : {}) };
+};
 
 export const roomUrl = (webUrl: string, roomId: string) =>
   `${webUrl.replace(/\/$/, '')}/r/${roomId}`;
 
-const linkButton = (label: string, url: string): Record<string, unknown>[] => [
-  { type: 1, components: [{ type: 2, style: 5, label, url }] },
+const linkButton = (label: string, url: string, emoji?: string): Record<string, unknown>[] => [
+  {
+    type: 1,
+    components: [{ type: 2, style: 5, label, url, ...(emoji ? { emoji: { name: emoji } } : {}) }],
+  },
 ];
 
 /**
@@ -46,9 +58,9 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
       embeds: [
         {
           title: 'Live encerrada',
-          description: `A sala de ${channel} foi encerrada.`,
+          description: `A live em ${channel} terminou. Valeu a todo mundo que passou por lá!`,
           color: COLORS.ended,
-          footer: FOOTER,
+          footer: footer(ctx.webUrl),
         },
       ],
       components: [],
@@ -61,22 +73,23 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
       {
         title: `Live aberta: ${room.title.replace(/^Live - /, '')}`,
         description:
-          `<@${room.createdBy}> iniciou uma sala. Entre no canal de voz e abra o Screem ` +
-          'para transmitir câmera e tela.',
+          `🔴 <@${room.createdBy}> abriu uma live em ${channel}.\n` +
+          'Entre no canal de voz e abra o **Screen** para mostrar câmera e tela.',
         color: COLORS.live,
         fields: [
           { name: 'Participantes', value: String(ctx.participants), inline: true },
           { name: 'Canal', value: channel, inline: true },
           {
             name: 'Sessão',
-            value: room.mediaState === 'ACTIVE' ? 'Em uso' : 'Em espera: abra a sala para ativar',
+            value:
+              room.mediaState === 'ACTIVE' ? '🟢 Em uso' : '⏸️ Em espera: abra a sala para ativar',
             inline: true,
           },
         ],
-        footer: FOOTER,
+        footer: footer(ctx.webUrl),
       },
     ],
-    components: linkButton('Abrir sala', roomUrl(ctx.webUrl, room.id)),
+    components: linkButton('Abrir sala', roomUrl(ctx.webUrl, room.id), '▶️'),
     allowed_mentions: { parse: [] },
   };
 }
@@ -96,7 +109,7 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
     ...(description ? { description } : {}),
     color,
     fields,
-    footer: FOOTER,
+    footer: footer(ctx.webUrl),
   });
 
   if (room.status === 'ENDED') {
@@ -119,8 +132,9 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
     open ? `Reunião aberta agora: ${room.title}` : `Reunião: ${room.title}`,
     open ? COLORS.open : COLORS.scheduled,
     [
-      { name: 'Quando', value: when, inline: false },
-      { name: 'Quem pode entrar', value: who, inline: false },
+      { name: 'Quando', value: `🗓️ ${when}`, inline: false },
+      { name: 'Quem pode entrar', value: who, inline: true },
+      { name: 'Vagas', value: `até ${room.maxParticipants} pessoas`, inline: true },
     ],
   );
 
@@ -129,7 +143,7 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
   return {
     ...mention,
     embeds: [embed],
-    components: linkButton(open ? 'Entrar na reunião' : 'Ver sala', url),
+    components: linkButton(open ? 'Entrar na reunião' : 'Ver sala', url, open ? '▶️' : '🗓️'),
   };
 }
 
@@ -174,7 +188,11 @@ export function buildMeetingNotice(
   if (kind === 'canceled') {
     return {
       embeds: [
-        { title: `Reunião cancelada: ${room.title}`, color: COLORS.canceled, footer: FOOTER },
+        {
+          title: `Reunião cancelada: ${room.title}`,
+          color: COLORS.canceled,
+          footer: footer(ctx.webUrl),
+        },
       ],
       components: [],
       allowed_mentions: { parse: [] },
@@ -188,19 +206,19 @@ export function buildMeetingNotice(
           title: `Reunião em breve: ${room.title}`,
           description: `Começa ${room.startsAt ? discordTime(room.startsAt, 'R') : 'agora'}.`,
           color: COLORS.scheduled,
-          fields: [{ name: 'Quando', value: when, inline: false }],
-          footer: FOOTER,
+          fields: [{ name: 'Quando', value: `🗓️ ${when}`, inline: false }],
+          footer: footer(ctx.webUrl),
         }
       : {
           title: `Reunião reagendada: ${room.title}`,
-          description: `Nova data: ${when}`,
+          description: `🗓️ Nova data: ${when}`,
           color: COLORS.scheduled,
-          footer: FOOTER,
+          footer: footer(ctx.webUrl),
         };
 
   return {
     ...mention,
     embeds: [embed],
-    components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id)),
+    components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id), '🗓️'),
   };
 }

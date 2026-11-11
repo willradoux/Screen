@@ -50,7 +50,15 @@ describe('entrada num canal da categoria de lives', () => {
     expect(payload.components).toEqual([
       {
         type: 1,
-        components: [{ type: 2, style: 5, label: 'Abrir sala', url: `${WEB_URL}/r/${room.id}` }],
+        components: [
+          {
+            type: 2,
+            style: 5,
+            label: 'Abrir sala',
+            url: `${WEB_URL}/r/${room.id}`,
+            emoji: { name: '▶️' },
+          },
+        ],
       },
     ]);
     // O ID da mensagem fica guardado para as próximas edições.
