@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Room as LkRoom } from 'livekit-client';
 import type { Socket } from 'socket.io-client';
@@ -275,6 +275,25 @@ describe('RoomPage: entrar e usar a sala', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Fechar opções' }));
     expect(screen.getByRole('button', { name: 'Mais opções' })).toBeInTheDocument();
+  });
+
+  it('pílula de mídia: Efeitos fica logo depois da câmera e antes da tela', async () => {
+    setup();
+    vi.spyOn(api.rooms, 'join').mockResolvedValue(joinResult());
+    await enter();
+    const media = within(screen.getByRole('toolbar', { name: /controles da sala/i })).getByRole(
+      'group',
+      { name: 'Mídia' },
+    );
+    const names = within(media)
+      .getAllByRole('button')
+      .map((b) => b.getAttribute('aria-label') ?? '');
+    const cam = names.findIndex((n) => /^câmera:/i.test(n));
+    const fx = names.indexOf('Efeitos');
+    const tela = names.findIndex((n) => /^tela:/i.test(n));
+    expect(cam).toBeGreaterThan(-1);
+    expect(fx).toBe(cam + 1);
+    expect(tela).toBeGreaterThan(fx);
   });
 
   it('liga e desliga microfone e câmera pelos botões', async () => {
