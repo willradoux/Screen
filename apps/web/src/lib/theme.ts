@@ -1,15 +1,14 @@
 /**
  * Aparência do Screen em duas escolhas independentes:
  *
- * - **Modo** (`data-mode`): escuro (componentes pretos, o padrão) ou claro (componentes
- *   brancos). A chamada é sempre escura.
- * - **Fundo** (`data-theme`): degradê animado ou foto. O padrão usa as cores do logo.
+ * - **Modo** (`data-mode`): escuro (padrão) ou claro.
+ * - **Cor** (`data-theme`): a cor dos detalhes (botão de entrar, chaves ligadas, item ativo,
+ *   capas dos cards). O padrão é a do Screen: laranja indo para o rosa, como o logo.
  *
- * Para criar um fundo novo: adicione aqui e defina as cores em index.css
- * (`:root[data-theme='nome']`). Fundo com foto só precisa de `photo`.
+ * Para criar uma cor: adicione aqui, em `public/theme-init.js` e as cores em `styles/v3.css`.
  */
 export type Mode = 'dark' | 'light';
-export type Theme = 'screem' | 'acelera' | 'brasil' | 'portugal' | 'alemanha' | 'mono' | 'preto';
+export type Theme = 'screem' | 'verde' | 'acelera';
 
 export interface ThemeInfo {
   value: Theme;
@@ -27,50 +26,22 @@ export const THEMES: ThemeInfo[] = [
   {
     value: 'screem',
     label: 'Screen',
-    text: 'As cores do logo. É o padrão.',
-    swatch: ['#ffaa7f', '#ff4f93'],
-    bar: '#fde3da',
+    text: 'Laranja e rosa, como o logo. É o padrão.',
+    swatch: ['#ffb347', '#ff4f93'],
+    bar: '#000000',
+  },
+  {
+    value: 'verde',
+    label: 'Verde',
+    text: 'Verde vivo.',
+    swatch: ['#6ee7a0', '#1db954'],
+    bar: '#000000',
   },
   {
     value: 'acelera',
     label: 'Acelera',
-    text: 'A Acelera UI: menta e turquesa.',
-    swatch: ['#00c8b2', '#00e0a4'],
-    bar: '#cfeee4',
-  },
-  {
-    value: 'brasil',
-    label: 'Brasil',
-    text: 'Verde, amarelo e azul, em tons suaves.',
-    swatch: ['#f2d36b', '#2f9e66'],
-    bar: '#f6ecc4',
-  },
-  {
-    value: 'portugal',
-    label: 'Portugal',
-    text: 'Verde e vermelho sobre um creme quente.',
-    swatch: ['#3a8a5c', '#c4473f'],
-    bar: '#f3e6cf',
-  },
-  {
-    value: 'alemanha',
-    label: 'Alemanha',
-    text: 'Dourado e vermelho, com o preto no texto.',
-    swatch: ['#e2b04a', '#b8322f'],
-    bar: '#f5e6bd',
-  },
-  {
-    value: 'mono',
-    label: 'Preto e branco',
-    text: 'Sem cor nenhuma: só tons de cinza.',
-    swatch: ['#d9d9d9', '#2b2b2b'],
-    bar: '#e6e6e6',
-  },
-  {
-    value: 'preto',
-    label: 'Preto',
-    text: 'Só escuro, sem cor nenhuma.',
-    swatch: ['#2a2a2a', '#000000'],
+    text: 'Menta e turquesa, da Acelera DEV.',
+    swatch: ['#5ef0d0', '#00b39c'],
     bar: '#000000',
   },
 ];
@@ -121,7 +92,7 @@ function write(key: string, value: string) {
 export function readTheme(): Theme {
   const saved = read(THEME_KEY);
   if (THEMES.some((t) => t.value === saved)) return saved as Theme;
-  // Fundos que deixaram de existir (claro/escuro antigos, nuvens, noite) voltam ao padrão.
+  // Cores e temas que deixaram de existir (Acelera, Brasil, Preto, Dark, Light...) voltam ao padrão.
   return 'screem';
 }
 
@@ -131,18 +102,19 @@ export function readMode(): Mode {
 
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeInfo(theme).bar);
 }
 
 export function applyMode(mode: Mode): void {
   document.documentElement.dataset.mode = mode;
+  // Cor da barra do navegador no celular: a do fundo.
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', mode === 'light' ? '#e9e9ec' : '#000000');
 }
 
-/** O fundo "Preto" é só escuro: escolher ele liga também o modo escuro. */
 export function saveTheme(theme: Theme): void {
   write(THEME_KEY, theme);
   applyTheme(theme);
-  if (theme === 'preto') saveMode('dark');
 }
 
 export function saveMode(mode: Mode): void {

@@ -91,7 +91,6 @@ export function Layout() {
   const items: NavItem[] = [
     { to: '/', label: 'Salas', icon: 'videocam', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
-    { to: '/features', label: 'Guia', icon: 'info' },
     { to: '/preferencias', label: 'Preferências', icon: 'tune' },
   ];
 
@@ -162,6 +161,11 @@ export function Layout() {
               </nav>
 
               <div className="hub-footer">
+                {/* O Guia fica à parte, embaixo: ele abre a página de ajuda (fora das telas de uso). */}
+                <HubLink
+                  item={{ to: '/features', label: 'Guia', icon: 'info' }}
+                  pathname={location.pathname}
+                />
                 {accountOpen && (
                   <div className="hub-account-menu" role="group" aria-label="Sua conta">
                     <NavLink to="/preferencias" className="hub-link">
@@ -174,9 +178,15 @@ export function Layout() {
                         <span>Instalar app</span>
                       </button>
                     )}
-                    <p className="px-3 pt-1 text-[11px] leading-relaxed text-zinc-500">
-                      O login é feito pelo Discord: o Screen não guarda senha.
-                    </p>
+                    <ThemeToggle variant="menu" />
+                    <button
+                      type="button"
+                      onClick={() => void logout()}
+                      className="hub-link hub-logout"
+                    >
+                      <Icon name="logout" size="1.15rem" />
+                      <span>Sair</span>
+                    </button>
                   </div>
                 )}
                 <div className="flex items-center gap-1">
@@ -203,12 +213,12 @@ export function Layout() {
                       </span>
                     )}
                   </button>
-                  <ThemeToggle />
+                  <Icon
+                    name={accountOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
+                    size="1.1rem"
+                    className="mr-2 text-zinc-500"
+                  />
                 </div>
-                <button type="button" onClick={() => void logout()} className="hub-link hub-logout">
-                  <Icon name="logout" size="1.15rem" />
-                  <span>Sair</span>
-                </button>
               </div>
             </aside>
           </>

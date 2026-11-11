@@ -122,7 +122,15 @@ export function PreferencesPage() {
               </div>
             }
           />
-          <div role="radiogroup" aria-label="Tema" className="pref-themes">
+          <div className="pref-row pt-3">
+            <div>
+              <p className="pref-label">Cor dos detalhes</p>
+              <p className="pref-hint">
+                Vale no escuro e no claro: botão de entrar, chaves, item ativo e capas.
+              </p>
+            </div>
+          </div>
+          <div role="radiogroup" aria-label="Cor dos detalhes" className="pref-themes">
             {THEMES.map((o) => {
               const on = theme === o.value;
               return (

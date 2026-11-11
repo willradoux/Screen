@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { QrCode } from '../components/QrCode';
 import { Button } from '../components/ui';
+import { Loader } from '../components/Loader';
 import { StatusCard } from '../components/StatusCard';
 import { CoverChip, WidgetCover, WidgetStat } from '../components/Widget';
 import { api } from '../lib/api';
@@ -31,9 +32,7 @@ const BackHome = () => (
 export function CheckingScreen() {
   return (
     <Center>
-      <StatusCard icon="lock" tone="wait" title="Só um instante" waiting="Verificando seu acesso…">
-        Conferindo se você pode entrar nesta sala.
-      </StatusCard>
+      <Loader label="Verificando seu acesso">Conferindo se você pode entrar nesta sala.</Loader>
     </Center>
   );
 }
@@ -261,16 +260,11 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
 export function JoiningScreen({ activating = false }: { activating?: boolean }) {
   return (
     <Center>
-      <StatusCard
-        icon="videocam"
-        tone="wait"
-        title={activating ? 'Ativando a sessão' : 'Entrando na sala'}
-        waiting={activating ? 'Ativando sessão…' : 'Conectando à sala…'}
-      >
-        {activating && (
-          <p>A sessão estava em espera porque ninguém estava usando. Em instantes você entra.</p>
-        )}
-      </StatusCard>
+      <Loader label={activating ? 'Ativando a sessão' : 'Entrando na sala'}>
+        {activating
+          ? 'A sessão estava em espera porque ninguém estava usando. Em instantes você entra.'
+          : 'Conectando ao vídeo e ao áudio da sala.'}
+      </Loader>
     </Center>
   );
 }

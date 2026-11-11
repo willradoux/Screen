@@ -211,54 +211,72 @@ function ConnectedRoom({
       data-idle={hideFloating || undefined}
       data-panel={side ? 'open' : undefined}
     >
-      {/* Trilho de opções na borda direita ("Mais opções"): abre e fecha deslizando. */}
-      <div className="call-rail" data-open={expanded || undefined} inert={!expanded}>
-        {expanded && (
-          <div className="call-rail-inner" {...holdHandlers}>
-            {/* A sala: nome, estado e quantas pessoas. */}
-            <div className="rail-room">
-              <p className="rail-room-title">{room.title}</p>
-              <p className="rail-room-sub">
-                <StatusBadge room={room} />
-                <span>
-                  {tiles.length} {tiles.length === 1 ? 'pessoa' : 'pessoas'}
-                </span>
-              </p>
-            </div>
-
-            {controlsFor('rail')}
-
-            {/* Quem está na chamada (como a lista de membros do Discord). */}
-            <div className="rail-people">
-              <p className="rail-heading">Na chamada · {tiles.length}</p>
-              <ul aria-label="Na chamada">
-                {tiles.slice(0, 40).map((t) => (
-                  <li key={t.identity} data-speaking={t.isSpeaking || undefined}>
-                    <Avatar name={t.name} url={t.avatarUrl} size="sm" />
-                    <span className="min-w-0 flex-1 truncate">
-                      {t.name}
-                      {t.isLocal && ' (você)'}
-                    </span>
-                    <Icon
-                      name={t.micOn ? 'mic' : 'mic_off'}
-                      size="0.95rem"
-                      label={t.micOn ? 'microfone ligado' : 'microfone desligado'}
-                    />
-                  </li>
-                ))}
-              </ul>
-              {tiles.length > 40 && <p className="rail-more">e mais {tiles.length - 40} pessoas</p>}
-            </div>
-
-            <div className="rail-me" title={`${me.displayName} · ${ROLE_LABEL[me.role]}`}>
-              <Avatar name={me.displayName} url={me.avatarUrl} size="sm" />
-              <span className="min-w-0 leading-tight">
-                <span className="block truncate text-[13px] font-semibold">{me.displayName}</span>
-                <span className="block text-[11px] text-zinc-500">{ROLE_LABEL[me.role]}</span>
+      {/*
+       * Barra de opções na borda direita: sempre à mão (recolhida, só os ícones; expandida,
+       * com os nomes, a sala e quem está na chamada). Some com o mouse parado e volta ao mexer.
+       */}
+      <div
+        className="call-rail"
+        data-open={expanded || undefined}
+        data-idle={hideFloating || undefined}
+      >
+        <div className="call-rail-inner" {...holdHandlers}>
+          <button
+            type="button"
+            onClick={() => {
+              setHoldBar(false);
+              setExpanded((v) => !v);
+            }}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Fechar opções' : 'Mais opções'}
+            title={expanded ? 'Recolher' : 'Expandir'}
+            className="rail-toggle"
+          >
+            <Icon name={expanded ? 'right_panel_close' : 'right_panel_open'} size="1.25rem" />
+          </button>
+          {/* A sala: nome, estado e quantas pessoas. */}
+          <div className="rail-room">
+            <p className="rail-room-title">{room.title}</p>
+            <p className="rail-room-sub">
+              <StatusBadge room={room} />
+              <span>
+                {tiles.length} {tiles.length === 1 ? 'pessoa' : 'pessoas'}
               </span>
-            </div>
+            </p>
           </div>
-        )}
+
+          {controlsFor('rail')}
+
+          {/* Quem está na chamada (como a lista de membros do Discord). */}
+          <div className="rail-people">
+            <p className="rail-heading">Na chamada · {tiles.length}</p>
+            <ul aria-label="Na chamada">
+              {tiles.slice(0, 40).map((t) => (
+                <li key={t.identity} data-speaking={t.isSpeaking || undefined}>
+                  <Avatar name={t.name} url={t.avatarUrl} size="sm" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {t.name}
+                    {t.isLocal && ' (você)'}
+                  </span>
+                  <Icon
+                    name={t.micOn ? 'mic' : 'mic_off'}
+                    size="0.95rem"
+                    label={t.micOn ? 'microfone ligado' : 'microfone desligado'}
+                  />
+                </li>
+              ))}
+            </ul>
+            {tiles.length > 40 && <p className="rail-more">e mais {tiles.length - 40} pessoas</p>}
+          </div>
+
+          <div className="rail-me" title={`${me.displayName} · ${ROLE_LABEL[me.role]}`}>
+            <Avatar name={me.displayName} url={me.avatarUrl} size="sm" />
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-[13px] font-semibold">{me.displayName}</span>
+              <span className="block text-[11px] text-zinc-500">{ROLE_LABEL[me.role]}</span>
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="call-main" data-panel={side ? 'open' : undefined}>
@@ -337,24 +355,6 @@ function ConnectedRoom({
         {controlsFor('media')}
       </div>
 
-      {/* Canto inferior direito: abre e fecha a faixa de opções. */}
-      <div className="call-corner" data-idle={hideFloating || undefined} {...holdHandlers}>
-        <button
-          type="button"
-          onClick={() => {
-            setHoldBar(false);
-            setExpanded((v) => !v);
-          }}
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Fechar opções' : 'Mais opções'}
-          data-tip={expanded ? 'Fechar opções' : 'Mais opções'}
-          className="ctl-button"
-        >
-          <span className="ctl" data-on={expanded || undefined}>
-            <Icon name={expanded ? 'right_panel_close' : 'right_panel_open'} size="1.3rem" />
-          </span>
-        </button>
-      </div>
       <RemoteAudio participants={remote} />
     </div>
   );
@@ -365,6 +365,9 @@ function ConnectedRoom({
  * docs/frontend/README.md: checa o acesso, mostra o motivo de qualquer bloqueio e só
  * então conecta.
  */
+/** Tempo mínimo do carregamento ao abrir a sala (0 nos testes). */
+const MIN_LOADING_MS = import.meta.env.MODE === 'test' ? 0 : 1400;
+
 export function RoomPage({ deps = defaultSessionDeps }: { deps?: SessionDeps }) {
   const { roomId = '' } = useParams();
   const { user } = useAuth();
@@ -398,6 +401,14 @@ function RoomPageInner({
   const session = useRoomSession(roomId, user.id, deps);
   const { state, room } = session;
   const phase = state.phase;
+  // Chegando pelo link: o carregamento fica pelo menos um instante na tela (o bichinho aparece
+  // direito, sem piscar). Só visual: a verificação de acesso segue no tempo dela.
+  const [warming, setWarming] = useState(MIN_LOADING_MS > 0);
+  useEffect(() => {
+    if (!warming) return;
+    const id = window.setTimeout(() => setWarming(false), MIN_LOADING_MS);
+    return () => window.clearTimeout(id);
+  }, [warming]);
 
   async function leave() {
     await session.leave();
@@ -443,6 +454,8 @@ function RoomPageInner({
       body = <ErrorScreen code={phase.code} message={phase.message} onRetry={session.retry} />;
       break;
   }
+
+  if (warming && (phase.kind === 'ready' || phase.kind === 'blocked')) body = <CheckingScreen />;
 
   // Na chamada, a tela é só a chamada: o topo do site some.
   useImmersive(phase.kind === 'connected' || phase.kind === 'disconnected');

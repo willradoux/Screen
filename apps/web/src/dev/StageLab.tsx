@@ -1,5 +1,6 @@
 import type { TrackPublication } from 'livekit-client';
 import { useMemo, useState } from 'react';
+import { Creature } from '../components/Creature';
 import { Stage, STAGE_LAYOUTS, type StageLayout } from '../room/Stage';
 import type { Tile } from '../room/useParticipants';
 
@@ -116,7 +117,18 @@ const SIZES = [
   { id: 'tablet', label: 'Tablet (768×900)', w: 768, h: 900 },
 ];
 
-export default function StageLab() {
+/** /__lab?pet mostra só o bichinho, grande, para ver a animação. */
+export default function Lab() {
+  return new URLSearchParams(window.location.search).has('pet') ? (
+    <div className="grid h-dvh place-items-center bg-[#121212] text-white">
+      <Creature className="h-40" />
+    </div>
+  ) : (
+    <StageLab />
+  );
+}
+
+function StageLab() {
   const [scene, setScene] = useState(SCENES[0]!.id);
   const [layout, setLayout] = useState<StageLayout>('auto');
   const [lecture, setLecture] = useState(false);

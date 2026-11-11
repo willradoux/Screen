@@ -15,7 +15,7 @@
   --v3-pill-hover: #333333;
   --v3-text: #ffffff;
   --v3-text-2: #b3b3b3;
-  --v3-text-3: #7c7c7c;
+  --v3-text-3: #969696; /* 4,7:1 sobre #2a2a2a, 6,3:1 sobre #121212 */
   --v3-line: rgb(255 255 255 / 0.07);
   --v3-r: 8px;
   --v3-gap: 8px;
@@ -33,7 +33,7 @@
   --v3-pill-hover: #d9d9de;
   --v3-text: #0a0a0a;
   --v3-text-2: #52525b;
-  --v3-text-3: #71717a;
+  --v3-text-3: #5f5f68; /* 5,3:1 sobre #e4e4e7 */
   --v3-line: rgb(0 0 0 / 0.08);
   --v3-accent: var(--brand-600);
 }
@@ -78,29 +78,6 @@ html:not([data-call]) .backdrop {
   --ink-soft: var(--v3-text-2);
   padding: 0 clamp(16px, 3vw, 32px) 48px;
   animation: v3-fade 420ms var(--ease-out) both;
-  /* O topo do painel ganha um degradê da cor do tema que some ao descer (como uma capa). */
-  background:
-    linear-gradient(
-        to bottom,
-        color-mix(in oklab, var(--bg-2) 34%, var(--v3-panel)) 0,
-        var(--v3-panel) 300px
-      )
-      local,
-    var(--v3-panel);
-}
-
-:root[data-theme='preto'] .hub-main,
-:root[data-theme='mono'] .hub-main {
-  background:
-    linear-gradient(to bottom, #262626 0, var(--v3-panel) 300px) local,
-    var(--v3-panel);
-}
-
-:root[data-mode='light'] .hub-main {
-  background:
-    linear-gradient(to bottom, color-mix(in oklab, var(--bg-2) 18%, #fff) 0, var(--v3-panel) 300px)
-      local,
-    var(--v3-panel);
 }
 
 @keyframes v3-fade {
@@ -826,15 +803,16 @@ html:not([data-call]) .backdrop {
 
 .creature .screen-logo {
   transform-origin: 50% 100%;
-  animation: v3-pet-body 4.2s infinite;
+  will-change: transform;
+  animation: v3-pet-body 4.8s infinite;
 }
 
 .creature .logo-glyph {
-  animation: v3-pet-look 4.2s infinite;
+  animation: v3-pet-look 4.8s infinite;
 }
 
 .creature .logo-eye {
-  animation: v3-pet-blink 4.2s infinite;
+  animation: v3-pet-blink 4.8s infinite;
 }
 
 @keyframes v3-pet-body {
@@ -843,7 +821,7 @@ html:not([data-call]) .backdrop {
     animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   30% {
-    transform: translateY(0) scale(1.015, 0.985);
+    transform: translateY(0) scale(1.01, 0.99);
     animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   62% {
@@ -852,17 +830,17 @@ html:not([data-call]) .backdrop {
   }
   /* agacha */
   68% {
-    transform: translateY(0) scale(1.08, 0.9);
+    transform: translateY(0) scale(1.04, 0.95);
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
   }
   /* sobe esticado */
   76% {
-    transform: translateY(-12%) scale(0.95, 1.06);
+    transform: translateY(-7%) scale(0.98, 1.03);
     animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.4);
   }
   /* cai e amassa um pouco */
   84% {
-    transform: translateY(0) scale(1.06, 0.93);
+    transform: translateY(0) scale(1.03, 0.97);
     animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.2);
   }
   92%,
@@ -879,12 +857,12 @@ html:not([data-call]) .backdrop {
   }
   26%,
   36% {
-    transform: translateX(-13px);
+    transform: translateX(-8px);
     animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1.25);
   }
   46%,
   54% {
-    transform: translateX(13px);
+    transform: translateX(8px);
     animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1.1);
   }
   62%,
@@ -957,4 +935,230 @@ html:not([data-call]) .backdrop {
 .countdown li {
   border-radius: 6px;
   background: var(--v3-pill);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Cor dos detalhes (escolha da pessoa; o modo escuro/claro é à parte). Padrão: a do Screen,
+ * laranja indo para o rosa como o logo. Vai no botão de entrar, chaves ligadas, item ativo,
+ * bichinho do carregamento e capas dos cards. No modo claro, um tom mais escuro (contraste).
+ * ------------------------------------------------------------------------------------- */
+
+:root,
+:root[data-theme='screem'] {
+  --brand-200: #ffd8bf;
+  --brand-300: #ffb27a;
+  --brand-400: #ff7a45;
+  --brand-500: #f45d48;
+  --brand-600: #c2410c;
+  /* Capas: amarelo-laranja, laranja e rosa. */
+  --bg-1: #ffc35c;
+  --bg-3: #ff7a45;
+  --bg-2: #ff3d8b;
+  --grain-opacity: 0.35;
+}
+
+:root[data-theme='verde'] {
+  --brand-200: #b9f6cf;
+  --brand-300: #6ee7a0;
+  --brand-400: #1ed760;
+  --brand-500: #1db954;
+  --brand-600: #15803d;
+  --bg-1: #9cf0bd;
+  --bg-3: #1db954;
+  --bg-2: #0b5a2e;
+  --grain-opacity: 0.3;
+}
+
+:root[data-theme='acelera'] {
+  --brand-200: #c6fbef;
+  --brand-300: #7ff3d9;
+  --brand-400: #2ee6c1;
+  --brand-500: #00c8b2;
+  --brand-600: #00806f;
+  --bg-1: #a8f5e3;
+  --bg-3: #00c8b2;
+  --bg-2: #00556e;
+  --grain-opacity: 0.3;
+}
+
+/* Modo claro: o detalhe num tom mais escuro, para ler sobre o branco. */
+:root[data-mode='light'] {
+  --v3-accent: var(--brand-600);
+}
+
+/* Chave liga/desliga: desligada em cinza médio (o botão branco aparece), ligada na cor do tema. */
+.switch {
+  background: #535353;
+}
+
+:root[data-mode='light'] .switch {
+  background: #71717a; /* o botão branco fica com 4,8:1 */
+}
+
+.switch[data-on] {
+  background: var(--v3-accent);
+}
+
+.switch-knob {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+/* Botão de entrar (laranja/verde) com texto preto: contraste alto nos dois. */
+:root[data-mode='light'] .sp-play[data-open] {
+  background: var(--brand-600);
+  color: #fff;
+}
+
+/* O bichinho do carregamento na cor do tema (laranja no Screen e no Light, verde no Dark). */
+.loader-pet {
+  color: var(--v3-accent);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Barra de opções da sala: recolhida (só ícones, 60 px) ou expandida (232 px, com nomes,
+ * a sala e as pessoas). O botão de abrir/fechar fica no topo dela. Com o mouse parado ela
+ * desliza para fora e a tela cresce; ao mexer, volta deslizando.
+ * ------------------------------------------------------------------------------------- */
+
+.call-rail {
+  width: 60px;
+  overflow: hidden;
+  opacity: 1;
+  transform: none;
+  transition:
+    width 420ms var(--ease-glide),
+    opacity 280ms var(--ease-out),
+    transform 420ms var(--ease-glide);
+}
+
+.call-rail[data-open] {
+  width: 232px;
+}
+
+.call-rail[data-idle] {
+  width: 0;
+  opacity: 0;
+  transform: translateX(16px);
+  pointer-events: none;
+}
+
+.call-rail-inner {
+  animation: none;
+  padding: 8px 6px;
+}
+
+/* Botão de abrir/fechar: no topo, à direita (no lugar de onde a barra abre). */
+.rail-toggle {
+  display: grid;
+  height: 40px;
+  width: 40px;
+  flex: none;
+  place-items: center;
+  align-self: flex-end;
+  margin: 0 4px 6px;
+  border-radius: 8px;
+  color: var(--v3-text-2);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+
+.rail-toggle:hover {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+.call-rail:not([data-open]) .rail-toggle {
+  align-self: center;
+  margin-inline: 0;
+}
+
+/* Recolhida: só os ícones centralizados; os nomes, a sala e a lista ficam para a expandida. */
+.call-rail:not([data-open]) .ctl-button {
+  justify-content: center;
+  padding: 3px;
+}
+
+.call-rail:not([data-open]) .ctl-button[data-tip]::after,
+.call-rail:not([data-open]) .rail-room,
+.call-rail:not([data-open]) .rail-people,
+.call-rail:not([data-open]) .rail-me > span {
+  display: none;
+}
+
+.call-rail:not([data-open]) .rail-me {
+  justify-content: center;
+  background: transparent;
+  padding: 6px 0;
+}
+
+/* Expandida: o conteúdo entra suave depois que a barra abre. */
+.call-rail[data-open] .rail-room,
+.call-rail[data-open] .rail-people,
+.call-rail[data-open] .ctl-button[data-tip]::after {
+  animation: v3-fade 320ms 140ms var(--ease-out) both;
+}
+
+/* Janela de tema: modo em pílula e a cor dos detalhes em bolinhas com o nome. */
+.theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.theme-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.theme-row-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--v3-text);
+}
+
+.theme-dots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.theme-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--v3-r);
+  padding: 10px 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v3-text-2);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+
+.theme-dot > span {
+  display: block;
+  height: 34px;
+  width: 34px;
+  border-radius: 999px;
+  transition: box-shadow 200ms var(--ease-out);
+}
+
+.theme-dot:hover {
+  background: var(--v3-card-hover);
+  color: var(--v3-text);
+}
+
+.theme-dot[aria-checked='true'] {
+  color: var(--v3-text);
+}
+
+.theme-dot[aria-checked='true'] > span {
+  box-shadow:
+    0 0 0 3px var(--v3-panel),
+    0 0 0 5px var(--v3-text);
 }

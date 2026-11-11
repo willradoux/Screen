@@ -164,12 +164,7 @@ export function Controls({
   // Trilho da esquerda ("Mais opções"): conversa, pessoas e ajustes, um embaixo do outro.
   if (variant === 'rail') {
     return (
-      <div
-        role="toolbar"
-        aria-label="Mais opções da sala"
-        aria-orientation="vertical"
-        className="rail-tools"
-      >
+      <div role="group" aria-label="Opções da sala" className="rail-tools">
         <RoundButton
           icon="group"
           short="Pessoas"

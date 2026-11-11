@@ -1,20 +1,31 @@
+import type { ReactNode } from 'react';
 import { Creature } from './Creature';
 
 /**
- * Carregando: o bichinho (o badge do Screen piscando o olho) e o que está acontecendo, em
- * texto curto. `label` também vai para leitores de tela.
+ * Carregando: o bichinho (o logo do Screen, vivo) na cor do tema e o que está acontecendo, em
+ * texto curto. Aparece com um pequeno atraso (CSS), para um carregamento rápido não piscar.
+ * `label` também vai para leitores de tela; `children` é uma explicação opcional embaixo.
  */
-export function Loader({ label = 'Carregando' }: { label?: string }) {
+export function Loader({
+  label = 'Carregando',
+  children,
+}: {
+  label?: string;
+  children?: ReactNode;
+}) {
   return (
     <div
       role="status"
       aria-label={label}
-      className="loader ink flex min-h-[40dvh] flex-col items-center justify-center gap-3"
+      className="loader flex min-h-[40dvh] flex-col items-center justify-center gap-4 text-center"
     >
-      <Creature className="h-12" />
-      <p aria-hidden="true" className="ink-soft text-[13px] font-medium">
-        {label.endsWith('…') ? label : `${label}…`}
-      </p>
+      <Creature className="loader-pet h-14" />
+      <div className="space-y-1">
+        <p aria-hidden="true" className="ink text-[15px] font-bold">
+          {label.endsWith('…') ? label : `${label}…`}
+        </p>
+        {children && <div className="ink-soft max-w-sm text-[13px]">{children}</div>}
+      </div>
     </div>
   );
 }

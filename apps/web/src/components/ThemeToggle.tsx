@@ -27,7 +27,7 @@ export function ThemeToggle({
 }: {
   withLabel?: boolean;
   /** `ctl`: botão redondo dos controles da chamada. */
-  variant?: 'icon' | 'ctl';
+  variant?: 'icon' | 'ctl' | 'menu';
 }) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => readTheme());
@@ -44,7 +44,22 @@ export function ThemeToggle({
 
   return (
     <>
-      {variant === 'ctl' ? (
+      {variant === 'menu' ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-label={`Tema: ${info.label}. Trocar tema`}
+          className="hub-link"
+        >
+          <span
+            aria-hidden="true"
+            className="h-[18px] w-[18px] flex-none rounded-full"
+            style={{ background: swatch(info) }}
+          />
+          <span>Tema</span>
+        </button>
+      ) : variant === 'ctl' ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -80,57 +95,49 @@ export function ThemeToggle({
 
       {open && (
         <Sheet title="Tema" onClose={() => setOpen(false)}>
-          <div role="radiogroup" aria-label="Fundo" className="grid grid-cols-3 gap-2">
-            {THEMES.map((t) => {
-              const on = t.value === theme;
-              return (
-                <button
-                  key={t.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => {
-                    saveTheme(t.value);
-                    setTheme(t.value);
-                  }}
-                  className={`layout-option ${on ? 'layout-option-on' : ''}`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="block aspect-[16/10] w-full rounded-[10px]"
-                    style={{ background: swatch(t) }}
-                  />
-                  <span className="text-[12px] font-semibold leading-tight">{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            role="radiogroup"
-            aria-label="Modo"
-            className="grid grid-cols-2 gap-1 rounded-full bg-white/6 p-1"
-          >
-            {MODES.map((m) => {
-              const on = m.value === mode;
-              return (
+          <div className="theme-row">
+            <p className="theme-row-label">Modo</p>
+            <div role="radiogroup" aria-label="Modo" className="pref-segment">
+              {MODES.map((m) => (
                 <button
                   key={m.value}
                   type="button"
                   role="radio"
-                  aria-checked={on}
+                  aria-checked={m.value === mode}
                   onClick={() => {
                     saveMode(m.value);
                     setMode(m.value);
                   }}
-                  className={`h-9 rounded-full text-[13px] font-semibold transition-colors ${
-                    on ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
                 >
                   {m.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          <div className="theme-row theme-row-stack">
+            <p className="theme-row-label">Cor dos detalhes</p>
+            <div role="radiogroup" aria-label="Cor dos detalhes" className="theme-dots">
+              {THEMES.map((t) => {
+                const on = t.value === theme;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      saveTheme(t.value);
+                      setTheme(t.value);
+                    }}
+                    className="theme-dot"
+                  >
+                    <span aria-hidden="true" style={{ background: swatch(t) }} />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button
