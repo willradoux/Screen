@@ -16,7 +16,7 @@ describe('FeaturesPage', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Transmita tela/);
     expect(screen.getAllByTestId('feature').length).toBeGreaterThanOrEqual(10);
-    for (const t of ['Gravação de reuniões', 'Pedir a palavra', 'Economia de recursos']) {
+    for (const t of ['Pedir a palavra', 'Economia de recursos']) {
       expect(screen.getByRole('heading', { name: t })).toBeInTheDocument();
     }
     expect(screen.getByRole('tab', { name: 'O que tem' })).toHaveAttribute('aria-selected', 'true');
@@ -31,8 +31,8 @@ describe('FeaturesPage', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: 'Tutorial para admins' }));
     const admins = screen.getByRole('region', { name: 'Tutorial para admins' });
-    expect(within(admins).getByText(/Gravar uma reunião/)).toBeInTheDocument();
-    expect(within(admins).getByText(/10 dias/, { selector: 'strong' })).toBeInTheDocument();
+    expect(within(admins).getByText(/Moderar uma reunião/)).toBeInTheDocument();
+    expect(within(admins).queryByText(/Gravar uma reunião/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('feature')).not.toBeInTheDocument();
   });
 

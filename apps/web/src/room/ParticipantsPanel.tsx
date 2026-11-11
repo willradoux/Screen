@@ -11,7 +11,6 @@ import {
   isStaff,
 } from '../lib/moderation-rules';
 import type { Participant, RaisedHand, Role, Room } from '../lib/types';
-import { RecordingControl } from './RecordingControl';
 import { Icon } from '../components/Icon';
 import { cameraPin, parsePin, screenPin } from './pin';
 import { PersonAudio } from './PersonAudio';
@@ -115,7 +114,6 @@ export function ParticipantsPanel({
   version,
   lectureMode,
   hands = [],
-  recording = false,
   onInfo,
   onError,
   pinnedId = null,
@@ -320,16 +318,7 @@ export function ParticipantsPanel({
         </div>
       )}
 
-      {staff && isAdmin(me.role) && (
-        <RecordingControl
-          roomId={room.id}
-          recording={recording}
-          people={people ?? []}
-          onInfo={onInfo}
-          onError={onError}
-        />
-      )}
-
+      {/* Gravação fora da tela por enquanto (o servidor continua com ela). */}
       {staff && hands.length > 0 && (
         <section aria-label="Querem falar" className="space-y-2 rounded-xl bg-brand-500/10 p-3">
           <h3 className="text-sm font-semibold text-brand-300">Querem falar ({hands.length})</h3>

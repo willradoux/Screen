@@ -48,11 +48,6 @@ const FEATURES: Feature[] = [
     text: 'Se ninguém está transmitindo, o vídeo entra em espera e volta quando alguém abre o link. A live continua aberta.',
   },
   {
-    icon: 'radio_button_checked',
-    title: 'Gravação de reuniões',
-    text: 'Os admins gravam a reunião inteira, só o áudio, uma pessoa ou só a tela. Todos são avisados. O arquivo fica 10 dias.',
-  },
-  {
     icon: 'qr_code_2',
     title: 'QR code e app',
     text: 'Abra a sala no celular lendo o QR code e instale o Screen como aplicativo.',
@@ -240,18 +235,7 @@ const ADMIN_STEPS: Step[] = [
     ),
   },
   {
-    title: '6. Gravar uma reunião',
-    body: (
-      <>
-        Com a reunião aberta, use <strong>Gravação</strong>, escolha o que gravar (todos, quem fala,
-        só áudio, uma pessoa ou a tela de uma pessoa) e comece. Todos veem o aviso de gravação.
-        Depois, em <strong>Gravações</strong>, baixe o arquivo em até <strong>10 dias</strong>:
-        passado o prazo ele é apagado de vez. Avise os participantes no convite.
-      </>
-    ),
-  },
-  {
-    title: '7. Estatísticas e auditoria',
+    title: '6. Estatísticas e auditoria',
     body: (
       <>
         <strong>Estatísticas</strong> mostra lives, reuniões, pessoas, tempo conectado e o ranking
@@ -261,7 +245,7 @@ const ADMIN_STEPS: Step[] = [
     ),
   },
   {
-    title: '8. Canal de logs',
+    title: '7. Canal de logs',
     body: (
       <>
         Se você escolheu um canal de logs, o bot escreve nele: quem abriu e encerrou lives, quem
@@ -282,10 +266,6 @@ const ADMIN_STEPS: Step[] = [
           <strong>Bot não escreve no chat da call:</strong> dê a ele Ver Canal, Enviar Mensagens e
           Inserir Links nesse canal. Enquanto isso, o link vai para o canal de texto alternativo, se
           você escolheu um.
-        </li>
-        <li>
-          <strong>Gravação não inicia:</strong> confira se os serviços “egress” e “redis” estão no
-          ar no Coolify.
         </li>
         <li>
           <strong>Login não funciona:</strong> o endereço de retorno do Discord e o domínio do site
@@ -391,7 +371,7 @@ export function FeaturesPage() {
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
           O Screen liga o Discord a salas de vídeo: lives nas calls, reuniões agendadas, pedir a
-          palavra, gravação e um painel para os admins.{' '}
+          palavra e um painel para os admins.{' '}
           <strong className="text-zinc-200">Sem instalar nada.</strong>
         </p>
       </header>
