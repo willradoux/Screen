@@ -12,6 +12,8 @@ function fakeChat(over: Partial<RoomChat> = {}): RoomChat {
     messages: [],
     poll: null,
     pendingPolls: [],
+    typing: [],
+    notifyTyping: vi.fn(),
     send: vi.fn(ok),
     remove: vi.fn(ok),
     propose: vi.fn(ok),
@@ -48,8 +50,16 @@ const poll = (over: Partial<Poll> = {}): Poll => ({
   ...over,
 });
 
-const renderChat = (chat: RoomChat, role: 'MEMBER' | 'MOD' = 'MEMBER') =>
-  render(<ChatPanel chat={chat} me={{ id: 'u1', role }} onError={vi.fn()} onInfo={vi.fn()} />);
+const renderChat = (chat: RoomChat, role: 'MEMBER' | 'MOD' = 'MEMBER', live = true) =>
+  render(
+    <ChatPanel
+      chat={chat}
+      me={{ id: 'u1', role }}
+      pollsEnabled={live}
+      onError={vi.fn()}
+      onInfo={vi.fn()}
+    />,
+  );
 
 describe('ChatPanel', () => {
   it('mostra as mensagens e manda a sua; depois espera 3 s para a próxima', async () => {
@@ -62,6 +72,17 @@ describe('ChatPanel', () => {
     expect(chat.send).toHaveBeenCalledWith('salve');
     // O botão passa a contar a espera.
     expect(screen.getByRole('button', { name: /Espere \d s/ })).toBeDisabled();
+  });
+
+  it('fora do modo live (salinhas e reunião sem palco) não tem enquete, só o chat', () => {
+    renderChat(fakeChat({ poll: poll() }), 'MOD', false);
+    expect(screen.queryByRole('region', { name: 'Enquete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enquete/i })).not.toBeInTheDocument();
+  });
+
+  it('mostra quem está digitando acima da caixa', () => {
+    renderChat(fakeChat({ typing: ['Beto'] }));
+    expect(screen.getByText('Beto está digitando…')).toBeInTheDocument();
   });
 
   it('membro vota na enquete do topo e passa a ver o resultado', async () => {

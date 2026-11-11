@@ -3,6 +3,7 @@ import type { Server, Socket } from 'socket.io';
 import { z } from 'zod';
 import { ROLE_RANK, type Role } from '@screem/shared';
 import type { ParticipationRepo } from '../modules/rooms/participations.js';
+import type { RoomRepo } from '../modules/rooms/rooms.types.js';
 import type { Logger } from '../shared/logger.js';
 
 /*
@@ -24,6 +25,10 @@ const pollPropose = z.object({
 });
 const pollRef = z.object({ roomId, pollId: z.string().min(1).max(64) });
 const pollVote = pollRef.extend({ option: z.number().int().min(0).max(4) });
+const typing = z.object({ roomId });
+
+/** "Fulano está digitando": no máximo um aviso a cada 1,5 s por pessoa. */
+export const TYPING_EVERY_MS = 1_500;
 
 /** Uma mensagem a cada 3 s por pessoa (contra spam), valendo para todas as abas dela. */
 export const CHAT_COOLDOWN_MS = 3_000;
@@ -109,6 +114,7 @@ export interface ChatDeps {
   userId: string;
   role: () => Role;
   participations: ParticipationRepo;
+  rooms: Pick<RoomRepo, 'findById'>;
   state: ChatState;
   logger: Logger;
   now?: () => number;
@@ -119,6 +125,9 @@ const isStaff = (role: Role) => ROLE_RANK[role] >= ROLE_RANK.MOD;
 /** Liga os eventos de chat e enquete num socket já autenticado. */
 export function registerChat(deps: ChatDeps): void {
   const { io, socket, userId, participations, state, logger } = deps;
+  // Nome de quem digita, guardado por sala (o aviso de digitando não consulta o banco toda vez).
+  const names = new Map<string, string>();
+  let lastTyping = 0;
   const now = deps.now ?? Date.now;
   const room = (id: string) => `room:${id}`;
 
@@ -195,6 +204,38 @@ export function registerChat(deps: ChatDeps): void {
     }),
   );
 
+  // Digitando: avisa os outros da sala (não quem digita). Só repassa, nada é guardado.
+  socket.on('chat:typing', async (payload: unknown) => {
+    try {
+      const parsed = typing.safeParse(payload);
+      if (!parsed.success) return;
+      const { roomId } = parsed.data;
+      const t = now();
+      if (t - lastTyping < TYPING_EVERY_MS || !socket.rooms.has(room(roomId))) return;
+      lastTyping = t;
+      let name = names.get(roomId);
+      if (!name) {
+        const me = await participations.findOpen(roomId, userId);
+        if (!me || me.mutedByModeration) return;
+        name = me.displayName;
+        names.set(roomId, name);
+      }
+      socket.to(room(roomId)).emit('chat:typing', { roomId, userId, displayName: name });
+    } catch (err) {
+      logger.error({ err }, 'falha em chat:typing');
+    }
+  });
+
+  // Enquete só existe no modo live (reunião com o palco ligado: apresentador e plateia).
+  const pollsAllowed = async (roomId: string, reply: Ack) => {
+    const r = await deps.rooms.findById(roomId);
+    if (!r?.lectureMode) {
+      reply(fail('POLLS_DISABLED', 'Enquete só existe no modo live (com o palco ligado).'));
+      return false;
+    }
+    return true;
+  };
+
   // Apagar mensagem: só a moderação (some da tela de todos).
   socket.on(
     'chat:delete',
@@ -213,6 +254,7 @@ export function registerChat(deps: ChatDeps): void {
     handler(pollPropose, 'poll:propose', async ({ roomId, question, options }, reply) => {
       const me = await inRoom(roomId, reply);
       if (!me) return;
+      if (!(await pollsAllowed(roomId, reply))) return;
       const staff = isStaff(deps.role());
       const t = now();
       if (!staff && t - (state.lastProposal.get(userId) ?? 0) < POLL_PROPOSE_COOLDOWN_MS) {

@@ -91,6 +91,23 @@ async function joinRoom(
 }
 
 describe('chat da sala', () => {
+  it('"fulano está digitando" chega aos outros (não a quem digita), no máximo 1 a cada 1,5 s', async () => {
+    const { ctx, server, room } = await start();
+    const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');
+    const b = await joinRoom(ctx, server.url, room.id, OTHER, 'Ciclano');
+    let mine = 0;
+    a.socket.on('chat:typing', () => mine++);
+    let theirs = 0;
+    const got = once<{ displayName: string }>(b.socket, 'chat:typing');
+    b.socket.on('chat:typing', () => theirs++);
+    a.socket.emit('chat:typing', { roomId: room.id });
+    a.socket.emit('chat:typing', { roomId: room.id });
+    expect((await got).displayName).toBe('Fulano');
+    await new Promise((r) => setTimeout(r, 150));
+    expect(theirs).toBe(1);
+    expect(mine).toBe(0);
+  });
+
   it('a mensagem chega a todos da sala, com nome; o texto vem aparado', async () => {
     const { ctx, server, room } = await start();
     const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');
@@ -156,9 +173,27 @@ describe('chat da sala', () => {
   });
 });
 
+/** Liga o palco (modo live), onde a enquete existe. */
+const liveMode = (ctx: RoomsCtx, roomId: string) => {
+  ctx.rooms.rooms.get(roomId)!.lectureMode = true;
+};
+
 describe('enquete', () => {
+  it('só existe no modo live (palco ligado); na sala comum o servidor recusa', async () => {
+    const { ctx, server, room } = await start();
+    const mod = await joinRoom(ctx, server.url, room.id, MOD, 'Mod', [MOD_ROLE]);
+    expect(
+      await emitAck(mod.socket, 'poll:propose', {
+        roomId: room.id,
+        question: 'Pausa?',
+        options: ['Sim', 'Não'],
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'POLLS_DISABLED' } });
+  });
+
   it('membro sugere, a moderação aceita, todos veem no topo e votam uma vez', async () => {
     const { ctx, server, room } = await start();
+    liveMode(ctx, room.id);
     const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');
     const mod = await joinRoom(ctx, server.url, room.id, MOD, 'Mod', [MOD_ROLE]);
     expect(mod.sub.data.pendingPolls).toEqual([]);
@@ -205,6 +240,7 @@ describe('enquete', () => {
 
   it('enquete da moderação já abre; encerrar mostra o resultado e tirar remove do topo', async () => {
     const { ctx, server, room } = await start();
+    liveMode(ctx, room.id);
     const mod = await joinRoom(ctx, server.url, room.id, MOD, 'Mod', [MOD_ROLE]);
     const opened = once<{ poll: { status: string } }>(mod.socket, 'poll:state');
     const sent = await emitAck<{ ok: boolean; data: { id: string; status: string } }>(

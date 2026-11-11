@@ -41,11 +41,14 @@ Resposta `data`: snapshot `{ room, participants[], bans[] (MOD+) }`.
 ### `chat:send`
 `{ roomId, text }` (1 a 500 caracteres, aparado). Precisa acompanhar a sala (`room:subscribe`) e estar conectado nela. **Uma mensagem a cada 3 s por pessoa** (todas as abas). Quem foi silenciado pela moderação recebe `MUTED`. Mensagens **não** são persistidas: o servidor só repassa (`chat:message`); o histórico fica no navegador de cada um e some quando a sala fecha.
 
+### `chat:typing`
+`{ roomId }`. Avisa os outros da sala que a pessoa está digitando (`chat:typing` `{ roomId, userId, displayName }`, não volta para quem digita). No máximo um aviso a cada 1,5 s por pessoa; nada é guardado.
+
 ### `chat:delete`
 `{ roomId, id }`. Só MOD+. Avisa todos com `chat:deleted` para tirar a mensagem da tela.
 
 ### `poll:propose`
-`{ roomId, question, options }` (pergunta até 200 caracteres; 2 a 5 opções de até 80). Membro: vira sugestão (`poll:pending` só para a moderação da sala; uma sugestão a cada 30 s; no máximo 10 esperando). MOD+: a enquete já abre (`poll:state`).
+`{ roomId, question, options }` (pergunta até 200 caracteres; 2 a 5 opções de até 80). **Só no modo live** (sala com o palco ligado, `lectureMode`); fora dele: `POLLS_DISABLED`. Membro: vira sugestão (`poll:pending` só para a moderação da sala; uma sugestão a cada 30 s; no máximo 10 esperando). MOD+: a enquete já abre (`poll:state`).
 
 ### `poll:approve` / `poll:reject`
 `{ roomId, pollId }`. Só MOD+. Aceitar põe a enquete no topo para todos (`poll:state`); a lista de sugestões é reenviada à moderação.

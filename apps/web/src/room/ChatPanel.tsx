@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
 import { ROLE_LABEL } from '../lib/moderation-rules';
-import type { ChatAck, Poll, Role } from '../lib/types';
+import type { ChatAck, ChatMessage, Poll, Role } from '../lib/types';
 import type { RoomChat } from './useRoomSession';
 
 /** Uma mensagem a cada 3 s (o servidor confere; aqui é só para o botão esperar junto). */
@@ -12,6 +12,67 @@ const MAX_TEXT = 500;
 const isStaff = (role: Role) => role === 'MOD' || role === 'ADMIN';
 const time = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+/** Uma mensagem. Memorizada: chegar mensagem nova não redesenha as antigas. */
+const MessageRow = memo(function MessageRow({
+  m,
+  mine,
+  canDelete,
+  onDelete,
+}: {
+  m: ChatMessage;
+  mine: boolean;
+  canDelete: boolean;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <article className="chat-msg" data-mine={mine || undefined}>
+      <Avatar name={m.displayName} url={m.avatarUrl} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="chat-msg-head">
+          <span className="truncate font-semibold text-zinc-100">{m.displayName}</span>
+          {m.role !== 'MEMBER' && <span className="chat-role">{ROLE_LABEL[m.role]}</span>}
+          <time className="text-zinc-500" dateTime={m.at}>
+            {time(m.at)}
+          </time>
+        </p>
+        <p className="chat-msg-text">{m.text}</p>
+      </div>
+      {canDelete && (
+        <button
+          type="button"
+          className="chat-msg-del"
+          aria-label={`Apagar a mensagem de ${m.displayName}`}
+          title="Apagar para todos"
+          onClick={() => onDelete(m.id)}
+        >
+          <Icon name="close" size="0.9rem" />
+        </button>
+      )}
+    </article>
+  );
+});
+
+/** "Fulano está digitando..." (uma linha só; não mexe na lista de mensagens). */
+function TypingLine({ names }: { names: string[] }) {
+  if (names.length === 0) return <p className="chat-typing" aria-hidden="true" />;
+  const text =
+    names.length === 1
+      ? `${names[0]} está digitando…`
+      : names.length === 2
+        ? `${names[0]} e ${names[1]} estão digitando…`
+        : 'Várias pessoas estão digitando…';
+  return (
+    <p className="chat-typing" aria-live="polite">
+      <span className="chat-typing-dots" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </span>
+      {text}
+    </p>
+  );
+}
 
 /** Enquete fixada no topo do chat (como no YouTube): vota uma vez e vê o resultado ao vivo. */
 function PollCard({
@@ -162,11 +223,14 @@ function PollForm({
 export function ChatPanel({
   chat,
   me,
+  pollsEnabled = false,
   onError,
   onInfo,
 }: {
   chat: RoomChat;
   me: { id: string; role: Role };
+  /** Enquete só no modo live (reunião com o palco ligado). */
+  pollsEnabled?: boolean;
   onError: (message: string) => void;
   onInfo: (message: string) => void;
 }) {
@@ -178,6 +242,10 @@ export function ChatPanel({
   const listRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const waiting = waitUntil > now;
+  // Função estável para as mensagens memorizadas não redesenharem.
+  const chatRef = useRef(chat);
+  chatRef.current = chat;
+  const [remove] = useState(() => (id: string) => void chatRef.current.remove(id));
 
   // Conta o tempo de espera para o botão (só enquanto há espera).
   useEffect(() => {
@@ -214,11 +282,11 @@ export function ChatPanel({
 
   return (
     <section aria-label="Chat" className="chat-panel">
-      {chat.poll && (
+      {pollsEnabled && chat.poll && (
         <PollCard key={chat.poll.id} poll={chat.poll} staff={staff} chat={chat} onError={onError} />
       )}
 
-      {staff && chat.pendingPolls.length > 0 && (
+      {pollsEnabled && staff && chat.pendingPolls.length > 0 && (
         <section aria-label="Enquetes sugeridas" className="chat-pending">
           <p className="chat-pending-title">Sugestões de enquete · {chat.pendingPolls.length}</p>
           {chat.pendingPolls.map((p) => (
@@ -253,41 +321,29 @@ export function ChatPanel({
           stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
         }}
       >
-        {chat.messages.length === 0 ? (
-          <p className="chat-empty">
-            Ninguém escreveu ainda. As mensagens somem quando a sala fecha.
-          </p>
-        ) : (
-          chat.messages.map((m) => (
-            <article key={m.id} className="chat-msg" data-mine={m.userId === me.id || undefined}>
-              <Avatar name={m.displayName} url={m.avatarUrl} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="chat-msg-head">
-                  <span className="truncate font-semibold text-zinc-100">{m.displayName}</span>
-                  {m.role !== 'MEMBER' && <span className="chat-role">{ROLE_LABEL[m.role]}</span>}
-                  <time className="text-zinc-500" dateTime={m.at}>
-                    {time(m.at)}
-                  </time>
-                </p>
-                <p className="chat-msg-text">{m.text}</p>
-              </div>
-              {staff && (
-                <button
-                  type="button"
-                  className="chat-msg-del"
-                  aria-label={`Apagar a mensagem de ${m.displayName}`}
-                  title="Apagar para todos"
-                  onClick={() => void chat.remove(m.id)}
-                >
-                  <Icon name="close" size="0.9rem" />
-                </button>
-              )}
-            </article>
-          ))
-        )}
+        {/* As mensagens começam embaixo e vão subindo; quando enche, a lista rola. */}
+        <div className="chat-list-inner">
+          {chat.messages.length === 0 ? (
+            <p className="chat-empty">
+              Ninguém escreveu ainda. As mensagens somem quando a sala fecha.
+            </p>
+          ) : (
+            chat.messages.map((m) => (
+              <MessageRow
+                key={m.id}
+                m={m}
+                mine={m.userId === me.id}
+                canDelete={staff}
+                onDelete={remove}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      {pollForm ? (
+      <TypingLine names={chat.typing} />
+
+      {pollsEnabled && pollForm ? (
         <PollForm
           staff={staff}
           chat={chat}
@@ -297,30 +353,39 @@ export function ChatPanel({
         />
       ) : (
         <form onSubmit={(e) => void send(e)} className="chat-compose">
-          <button
-            type="button"
-            className="chat-icon-btn"
-            aria-label={staff ? 'Criar enquete' : 'Sugerir enquete'}
-            title={staff ? 'Criar enquete' : 'Sugerir enquete'}
-            onClick={() => setPollForm(true)}
-          >
-            <Icon name="campaign" size="1.1rem" />
-          </button>
+          {pollsEnabled && (
+            <button
+              type="button"
+              className="chat-icon-btn"
+              aria-label={staff ? 'Criar enquete' : 'Sugerir enquete'}
+              title={staff ? 'Criar enquete' : 'Sugerir enquete'}
+              onClick={() => setPollForm(true)}
+            >
+              <Icon name="campaign" size="1.1rem" />
+            </button>
+          )}
           <input
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (e.target.value.trim()) chat.notifyTyping();
+            }}
             maxLength={MAX_TEXT}
             placeholder="Mensagem para a sala"
             aria-label="Mensagem para a sala"
-            className="chat-input"
+            className="chat-compose-input"
           />
           <button
             type="submit"
             disabled={!text.trim() || waiting}
-            className="btn btn-primary chat-send-btn"
+            className="chat-send"
             aria-label={waiting ? `Espere ${seconds} s` : 'Enviar'}
           >
-            {waiting ? `${seconds}s` : <Icon name="arrow_forward" size="1.05rem" />}
+            {waiting ? (
+              <span className="tabular text-[12px] font-bold">{seconds}</span>
+            ) : (
+              <Icon name="arrow_forward" size="1.15rem" />
+            )}
           </button>
         </form>
       )}

@@ -381,7 +381,13 @@ function ConnectedRoom({
               </button>
             </div>
             {side === 'chat' ? (
-              <ChatPanel chat={session.chat} me={me} onError={toast.error} onInfo={toast.info} />
+              <ChatPanel
+                chat={session.chat}
+                me={me}
+                pollsEnabled={state.lectureMode}
+                onError={toast.error}
+                onInfo={toast.info}
+              />
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <ParticipantsPanel

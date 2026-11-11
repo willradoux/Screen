@@ -111,6 +111,7 @@ export function createSocketServer(deps: SocketDeps): SocketServer {
       userId,
       role: () => data(socket).role,
       participations: deps.participations,
+      rooms: deps.rooms,
       state: chat,
       logger,
     });

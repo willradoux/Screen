@@ -98,6 +98,9 @@ export function useRoomSession(
   const [messages, setMessages] = useState<ChatMessage[]>(() => readChat(chatKey));
   const [poll, setPoll] = useState<Poll | null>(null);
   const [pendingPolls, setPendingPolls] = useState<Poll[]>([]);
+  // Quem está digitando agora (some 3,5 s depois do último aviso).
+  const [typing, setTyping] = useState<{ userId: string; name: string; until: number }[]>([]);
+  const lastTypingSent = useRef(0);
   const saveMessages = useCallback(
     (update: (list: ChatMessage[]) => ChatMessage[]) =>
       setMessages((list) => {
@@ -189,13 +192,22 @@ export function useRoomSession(
       // Também ao reconectar: a resposta traz o estado atual (docs/backend/eventos-socketio.md).
       socket.on('connect', subscribe);
 
-      socket.on('chat:message', (m: ChatMessage) =>
-        saveMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m])),
-      );
+      socket.on('chat:message', (m: ChatMessage) => {
+        // Quem mandou a mensagem parou de digitar.
+        setTyping((list) => list.filter((t) => t.userId !== m.userId));
+        saveMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m]));
+      });
       socket.on('chat:deleted', (p: { id: string }) =>
         saveMessages((list) => list.filter((m) => m.id !== p.id)),
       );
       socket.on('poll:state', (p: { poll: Poll | null }) => setPoll(p.poll));
+      socket.on('chat:typing', (p: { userId: string; displayName: string }) => {
+        const until = Date.now() + TYPING_SHOW_MS;
+        setTyping((list) => [
+          ...list.filter((t) => t.userId !== p.userId && t.until > Date.now()),
+          { userId: p.userId, name: p.displayName, until },
+        ]);
+      });
       socket.on('poll:pending', (p: { polls: Poll[] }) => setPendingPolls(p.polls ?? []));
 
       socket.on('room:ended', (p: { reason: EndReason }) => {
@@ -377,6 +389,17 @@ export function useRoomSession(
     [roomId],
   );
 
+  // Tira da lista quem parou de digitar (só roda enquanto tem alguém digitando).
+  useEffect(() => {
+    if (typing.length === 0) return;
+    const next = Math.min(...typing.map((t) => t.until)) - Date.now();
+    const id = window.setTimeout(
+      () => setTyping((list) => list.filter((t) => t.until > Date.now())),
+      Math.max(100, next),
+    );
+    return () => window.clearTimeout(id);
+  }, [typing]);
+
   /** Manda um evento do chat/enquete e espera a confirmação do servidor. */
   const ask = useCallback(
     (event: string, payload: Record<string, unknown>) =>
@@ -404,6 +427,14 @@ export function useRoomSession(
       messages,
       poll,
       pendingPolls,
+      typing: typing.map((t) => t.name),
+      notifyTyping: () => {
+        // Avisa no máximo a cada 1,5 s (o servidor também limita).
+        const t = Date.now();
+        if (t - lastTypingSent.current < 1_500) return;
+        lastTypingSent.current = t;
+        socketRef.current?.emit('chat:typing', { roomId });
+      },
       send: (text) => ask('chat:send', { text }),
       remove: (id) => ask('chat:delete', { id }),
       propose: (question, options) => ask('poll:propose', { question, options }),
@@ -413,7 +444,7 @@ export function useRoomSession(
       close: (pollId) => ask('poll:close', { pollId }),
       clear: (pollId) => ask('poll:clear', { pollId }),
     }),
-    [messages, poll, pendingPolls, ask],
+    [messages, poll, pendingPolls, typing, ask, roomId],
   );
 
   const retry = useCallback(() => {
@@ -456,6 +487,10 @@ export interface RoomChat {
   poll: Poll | null;
   /** Sugestões esperando a moderação (só a moderação recebe). */
   pendingPolls: Poll[];
+  /** Nomes de quem está digitando agora. */
+  typing: string[];
+  /** Avisa que você está digitando (limitado). */
+  notifyTyping: () => void;
   send: (text: string) => Promise<ChatAck>;
   remove: (id: string) => Promise<ChatAck>;
   propose: (question: string, options: string[]) => Promise<ChatAck>;
@@ -465,6 +500,9 @@ export interface RoomChat {
   close: (pollId: string) => Promise<ChatAck>;
   clear: (pollId: string) => Promise<ChatAck>;
 }
+
+/** Por quanto tempo o "fulano está digitando" fica na tela depois do último aviso. */
+const TYPING_SHOW_MS = 3_500;
 
 /** Quantas mensagens o navegador guarda por sala (as mais antigas saem). */
 const CHAT_KEEP = 200;
