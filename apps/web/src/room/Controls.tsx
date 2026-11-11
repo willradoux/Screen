@@ -1,6 +1,7 @@
 import {
   Track,
   type LocalParticipant,
+  type LocalAudioTrack,
   type LocalVideoTrack,
   type Room as LiveKitRoom,
 } from 'livekit-client';
@@ -9,6 +10,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { setDeafened, useAudioPrefs } from '../lib/audioPrefs';
 import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
 import { applyCameraEffects } from '../lib/videoEffects';
+import { applyMicEffects, micPrefs } from '../lib/micEffects';
 import { useVideoPrefs } from '../lib/videoPrefs';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
 import type { MediaSource } from '../lib/types';
@@ -162,7 +164,14 @@ export function Controls({
       if (kind === 'microphone')
         await local.setMicrophoneEnabled(
           !local.isMicrophoneEnabled,
-          profile.microphone.capture,
+          // Redução de ruído desligada nos Efeitos: o microfone já abre sem ela.
+          micPrefs().suppression
+            ? profile.microphone.capture
+            : ({
+                ...profile.microphone.capture,
+                noiseSuppression: false,
+                voiceIsolation: false,
+              } as typeof profile.microphone.capture),
           profile.microphone.publish,
         );
       else if (kind === 'camera') {
@@ -201,6 +210,16 @@ export function Controls({
   const mic = local.isMicrophoneEnabled;
   const cam = local.isCameraEnabled;
   const screen = local.isScreenShareEnabled;
+
+  // Filtro de barulho escolhido nos Efeitos: volta sozinho quando o microfone é religado.
+  const micTrack = local.getTrackPublication(Track.Source.Microphone)?.track as
+    LocalAudioTrack | undefined;
+  useEffect(() => {
+    if (variant === 'rail' || !micTrack || micPrefs().gate === 'off') return;
+    void applyMicEffects(micTrack).catch(() =>
+      onError('Não consegui ligar o filtro de barulho neste navegador.'),
+    );
+  }, [variant, micTrack]);
 
   // "Minha câmera: espelhada" sai para todo mundo: aplica no vídeo que é enviado (junto com o
   // fundo, se houver). Reaplica quando a câmera é religada (faixa nova). Só uma vez (pílula).

@@ -10,6 +10,27 @@ export const VOICE_PRESETS: { value: VoicePreset; label: string; hint: string }[
   { value: 'radio', label: 'Rádio', hint: 'Soa como num rádio antigo.' },
 ];
 
+/** Filtro de barulho: corta o som abaixo de um volume (o fundo), deixando passar a voz. */
+export type GateLevel = 'off' | 'leve' | 'medio' | 'forte';
+
+export const GATE_LEVELS: { value: GateLevel; label: string; hint: string }[] = [
+  { value: 'off', label: 'Desligado', hint: 'Passa tudo o que o microfone ouve.' },
+  { value: 'leve', label: 'Leve', hint: 'Corta chiado e barulho bem baixinho.' },
+  {
+    value: 'medio',
+    label: 'Médio',
+    hint: 'Corta ventilador, teclado de longe e conversa ao fundo.',
+  },
+  { value: 'forte', label: 'Forte', hint: 'Só passa voz perto do microfone (fale normal).' },
+];
+
+/** Limite de volume (RMS, 0 a 1) de cada nível: abaixo disso é barulho. */
+const GATE_THRESHOLD: Record<Exclude<GateLevel, 'off'>, number> = {
+  leve: 0.004, // ~ -48 dB
+  medio: 0.009, // ~ -41 dB
+  forte: 0.02, // ~ -34 dB
+};
+
 /** Curva de distorção suave, usada no efeito de rádio. */
 function distortionCurve(amount: number): Float32Array<ArrayBuffer> {
   const n = 256;
@@ -26,19 +47,39 @@ function distortionCurve(amount: number): Float32Array<ArrayBuffer> {
  * Web Audio e devolve a faixa já modificada, que é a que vai para a sala.
  */
 export function createVoiceProcessor(
-  preset: Exclude<VoicePreset, 'none'>,
+  preset: VoicePreset,
+  gate: GateLevel = 'off',
 ): TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> {
   let nodes: AudioNode[] = [];
   let osc: OscillatorNode | null = null;
   let processed: MediaStreamTrack | undefined;
 
-  function build(opts: AudioProcessorOptions) {
+  async function build(opts: AudioProcessorOptions) {
     const ctx = opts.audioContext;
-    const source = ctx.createMediaStreamSource(new MediaStream([opts.track]));
+    const mic = ctx.createMediaStreamSource(new MediaStream([opts.track]));
     const dest = ctx.createMediaStreamDestination();
-    nodes = [source, dest];
+    nodes = [mic, dest];
 
-    if (preset === 'robot') {
+    // Filtro de barulho antes do efeito (roda na thread de áudio, não trava a página).
+    let source: AudioNode = mic;
+    if (gate !== 'off') {
+      try {
+        // Arquivo do próprio site (public/): a política de segurança só aceita scripts de 'self'.
+        await ctx.audioWorklet.addModule('/noise-gate.worklet.js');
+        const gateNode = new AudioWorkletNode(ctx, 'screen-noise-gate', {
+          parameterData: { threshold: GATE_THRESHOLD[gate] },
+        });
+        mic.connect(gateNode);
+        source = gateNode;
+        nodes.push(gateNode);
+      } catch {
+        // Sem AudioWorklet: segue sem o filtro.
+      }
+    }
+
+    if (preset === 'none') {
+      source.connect(dest);
+    } else if (preset === 'robot') {
       // Modulação em anel: multiplica a voz por uma onda de 50 Hz.
       const gain = ctx.createGain();
       gain.gain.value = 0;
@@ -96,13 +137,13 @@ export function createVoiceProcessor(
   }
 
   return {
-    name: `screem-voice-${preset}`,
+    name: `screem-voice-${preset}-${gate}`,
     async init(opts) {
-      build(opts);
+      await build(opts);
     },
     async restart(opts) {
       await teardown();
-      build(opts);
+      await build(opts);
     },
     async destroy() {
       await teardown();
