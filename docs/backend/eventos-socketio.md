@@ -39,7 +39,7 @@ Resposta `data`: snapshot `{ room, participants[], bans[] (MOD+) }`.
 `{ roomId }`.
 
 ### `chat:send`
-`{ roomId, text }` (1 a 500 caracteres, aparado). Precisa acompanhar a sala (`room:subscribe`) e estar conectado nela. **Uma mensagem a cada 3 s por pessoa** (todas as abas) e **modo lento da sala**: no máximo 10 mensagens por segundo na sala (folga de 20 de uma vez); acima disso `ROOM_BUSY` com `retryInMs`. Quem foi silenciado pela moderação recebe `MUTED`. Mensagens **não** são persistidas: o servidor só repassa (`chat:message`); o histórico fica no navegador de cada um e some quando a sala fecha.
+`{ roomId, text }` (1 a 500 caracteres, aparado). Precisa acompanhar a sala (`room:subscribe`) e estar conectado nela. **Uma mensagem a cada 3 s por pessoa** (todas as abas; **5 s para a plateia do modo live** — quem não está no palco nem é MOD+; a resposta traz `cooldownMs`) e **modo lento da sala**: no máximo 10 mensagens por segundo na sala (folga de 20 de uma vez); acima disso `ROOM_BUSY` com `retryInMs`. Quem foi silenciado pela moderação recebe `MUTED`. Mensagens **não** são persistidas: o servidor só repassa (`chat:message`); o histórico fica no navegador de cada um e some quando a sala fecha.
 
 ### `chat:typing`
 `{ roomId }`. Marca que a pessoa está digitando (no máximo 1 aviso a cada 1,5 s por pessoa). O servidor junta todo mundo da sala e manda **um resumo por segundo**: `chat:typing` `{ roomId, people: [{ userId, name }] (até 4), count }` (cada um tira o próprio nome). Quem manda mensagem sai da lista; quem não avisa há 3 s também.

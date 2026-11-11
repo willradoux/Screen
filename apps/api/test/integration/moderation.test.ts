@@ -619,6 +619,28 @@ describe('palestrantes e modo palestra', () => {
     expect(ctx.livekit.permissions.at(-1)).toMatchObject({ identity: ADMIN, canPublish: true });
   });
 
+  it('admin não muda outro admin no palco (nem sobe, nem tira); a si mesmo pode', async () => {
+    const { ctx, room } = await setup([staff.admin, staff.admin2]);
+    const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+    await act(admin, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
+
+    const promote = await act(
+      admin,
+      ctx,
+      'post',
+      `/rooms/${room.id}/participants/${ADMIN2}/promote`,
+    );
+    expect(promote.status).toBe(403);
+    expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([]);
+
+    const admin2 = await loginAs(ctx, ADMIN2, [ADMIN_ROLE]);
+    await act(admin2, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN2}/promote`);
+    expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([ADMIN2]);
+    const demote = await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN2}/demote`);
+    expect(demote.status).toBe(403);
+    expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([ADMIN2]);
+  });
+
   it('fora do modo palestra, promover não mexe nas permissões', async () => {
     const { ctx, room } = await setup([staff.admin]);
     const admin = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);

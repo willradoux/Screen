@@ -134,6 +134,33 @@ describe('chat da sala', () => {
     });
   });
 
+  it('no modo live a plateia espera 5 s; quem está no palco, 3 s', async () => {
+    const { ctx, server, room } = await start();
+    const r = ctx.rooms.rooms.get(room.id)!;
+    r.lectureMode = true;
+    r.speakerIds = [OTHER];
+    const a = await joinRoom(ctx, server.url, room.id, USER, 'Fulano');
+    const b = await joinRoom(ctx, server.url, room.id, OTHER, 'Ciclano');
+    const audience = await emitAck<{ ok: boolean; data: { cooldownMs: number } }>(
+      a.socket,
+      'chat:send',
+      { roomId: room.id, text: 'oi' },
+    );
+    expect(audience.data.cooldownMs).toBe(5_000);
+    const speaker = await emitAck<{ ok: boolean; data: { cooldownMs: number } }>(
+      b.socket,
+      'chat:send',
+      { roomId: room.id, text: 'oi' },
+    );
+    expect(speaker.data.cooldownMs).toBe(3_000);
+    const again = await emitAck<{ ok: boolean; retryInMs: number }>(a.socket, 'chat:send', {
+      roomId: room.id,
+      text: 'de novo',
+    });
+    expect(again.ok).toBe(false);
+    expect(again.retryInMs).toBeGreaterThan(3_000);
+  });
+
   it('quem não está na sala não escreve; silenciado pela moderação também não', async () => {
     const { ctx, server, room } = await start();
     const outsider = connect(server.url, await sessionCookie(ctx, OTHER));

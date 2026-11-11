@@ -44,6 +44,8 @@ const PRUNE_ABOVE = 5_000;
 
 /** Uma mensagem a cada 3 s por pessoa (contra spam), valendo para todas as abas dela. */
 export const CHAT_COOLDOWN_MS = 3_000;
+/** No modo live, a plateia (quem não está no palco nem é da moderação) espera 5 s. */
+export const AUDIENCE_COOLDOWN_MS = 5_000;
 /** Sugerir enquete: uma a cada 30 s por pessoa. */
 export const POLL_PROPOSE_COOLDOWN_MS = 30_000;
 /** Enquetes esperando o admin, por sala (as mais antigas saem). */
@@ -250,11 +252,16 @@ export function registerChat(deps: ChatDeps): void {
     'chat:send',
     handler(chatSend, 'chat:send', async ({ roomId, text }, reply) => {
       const t = now();
+      // Plateia no modo live: 5 s entre mensagens; palco e moderação: 3 s.
+      const r = await deps.rooms.findById(roomId);
+      const audience =
+        Boolean(r?.lectureMode) && !r?.speakerIds.includes(userId) && !isStaff(deps.role());
+      const cooldown = audience ? AUDIENCE_COOLDOWN_MS : CHAT_COOLDOWN_MS;
       const last = state.lastMessage.get(userId) ?? 0;
-      if (t - last < CHAT_COOLDOWN_MS) {
+      if (t - last < cooldown) {
         return reply({
           ...fail('RATE_LIMITED', 'Espere um pouco antes de mandar outra mensagem.'),
-          retryInMs: CHAT_COOLDOWN_MS - (t - last),
+          retryInMs: cooldown - (t - last),
         });
       }
       const me = await inRoom(roomId, reply);
@@ -282,7 +289,7 @@ export function registerChat(deps: ChatDeps): void {
         at: new Date(t).toISOString(),
       };
       io.to(room(roomId)).emit('chat:message', message);
-      reply({ ok: true, data: { id: message.id } });
+      reply({ ok: true, data: { id: message.id, cooldownMs: cooldown } });
     }),
   );
 

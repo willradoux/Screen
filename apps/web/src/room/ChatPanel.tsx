@@ -5,7 +5,7 @@ import { ROLE_LABEL } from '../lib/moderation-rules';
 import type { ChatAck, ChatMessage, Poll, Role } from '../lib/types';
 import type { RoomChat } from './useRoomSession';
 
-/** Uma mensagem a cada 3 s (o servidor confere; aqui é só para o botão esperar junto). */
+/** Espera padrão entre mensagens (o servidor confere e diz a de cada um; aqui é o botão). */
 const COOLDOWN_MS = 3_000;
 const MAX_TEXT = 500;
 
@@ -282,12 +282,14 @@ export function ChatPanel({
     e.preventDefault();
     const value = text.trim();
     if (!value || waiting) return;
-    const res: ChatAck & { retryInMs?: number } = await chat.send(value);
+    const res: ChatAck & { retryInMs?: number; data?: { cooldownMs?: number } } =
+      await chat.send(value);
     if (res.ok) {
       setText('');
       stick.current = true;
       setNow(Date.now());
-      setWaitUntil(Date.now() + COOLDOWN_MS);
+      // O servidor diz quanto esperar (plateia do modo live: 5 s; os outros: 3 s).
+      setWaitUntil(Date.now() + (res.data?.cooldownMs ?? COOLDOWN_MS));
     } else if (res.error?.code === 'RATE_LIMITED' || res.error?.code === 'ROOM_BUSY') {
       if (res.error.code === 'ROOM_BUSY') onInfo(res.error.message);
       setNow(Date.now());

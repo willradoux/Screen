@@ -39,13 +39,13 @@ O papel **não** é gravado de forma permanente na sessão. É recalculado, ent�
 | Entrar em reunião (cargo permitido) | sim | sim | sim |
 | Publicar câmera / microfone / tela | sim* | sim | sim |
 | Assistir | sim | sim | sim |
-| Enviar mensagem no chat da sala | sim | sim | sim |
+| Enviar mensagem no chat da sala (1 a cada 3 s; **plateia do modo live: 1 a cada 5 s**) | sim | sim | sim |
 | Mutar áudio/vídeo/tela de outro | não | sim | sim |
 | Expulsar da sala | não | sim | sim |
 | Banir temporariamente da sala | não | sim | sim |
 | Encerrar sala de live | não | sim | sim |
 | Ligar o palco (só quem está no palco transmite, **inclusive moderação e admin**) | não | sim | sim |
-| Subir/tirar pessoas do palco (e subir a si mesmo) | não | não | sim |
+| Subir/tirar pessoas do palco (e subir a si mesmo; **admin não muda outro admin**) | não | não | sim |
 | Travar a tela (`screenLock`): só o palco e o admin compartilham tela; câmera e microfone seguem livres | não | sim | sim |
 | Destacar alguém para todos (`spotlightId`) | não | não | sim |
 | Criar reunião (comando e API) | não | não | sim |

@@ -347,7 +347,12 @@ export class ModerationService {
   private async setSpeaker(actor: Actor, roomId: string, targetId: string, speaker: boolean) {
     this.act('moderation.speaker', actor);
     const open = await this.openRoom(roomId);
-    const participation = await this.inRoom(open, targetId);
+    // A si mesmo pode (o admin sobe e desce do palco); outra pessoa, só de papel abaixo:
+    // admin não muda admin.
+    const participation =
+      targetId === actor.id
+        ? await this.inRoom(open, targetId)
+        : (await this.moderatable(open, actor, targetId)).participation;
 
     const room = await this.deps.rooms.updateSpeakers(
       open.id,
