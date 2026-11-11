@@ -2603,3 +2603,78 @@ html[data-pinning]::view-transition-new(*) {
 :root[data-motion='off'] .person-pin[data-on] {
   animation: none;
 }
+
+/* ---- Zoom na tela compartilhada (room/ZoomPan.tsx) ---- */
+.zoom-box {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  border-radius: inherit;
+}
+
+.zoom-box[data-zoomed] {
+  cursor: grab;
+}
+
+.zoom-box[data-zoomed]:active {
+  cursor: grabbing;
+}
+
+.zoom-layer {
+  height: 100%;
+  width: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.zoom-controls {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.72);
+  padding: 3px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.zoom-box:hover .zoom-controls,
+.zoom-box:focus-within .zoom-controls,
+.zoom-box[data-zoomed] .zoom-controls,
+.stage-tile[data-reveal] .zoom-controls {
+  opacity: 1;
+  transform: none;
+}
+
+.zoom-controls button {
+  display: inline-grid;
+  height: 28px;
+  min-height: 0;
+  min-width: 28px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 140ms var(--ease-out);
+}
+
+.zoom-controls button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.zoom-controls button:disabled {
+  opacity: 0.35;
+}
+
+.zoom-controls .zoom-value {
+  padding: 0 6px;
+}

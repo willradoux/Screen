@@ -1,3 +1,5 @@
+import addIcon from '@material-symbols/svg-400/rounded/add.svg?url';
+import removeIcon from '@material-symbols/svg-400/rounded/remove.svg?url';
 import arrowDown from '@material-symbols/svg-400/rounded/keyboard_arrow_down.svg?url';
 import arrowUp from '@material-symbols/svg-400/rounded/keyboard_arrow_up.svg?url';
 import gridView from '@material-symbols/svg-400/rounded/grid_view.svg?url';
@@ -69,6 +71,8 @@ import wifiOff from '@material-symbols/svg-400/rounded/wifi_off.svg?url';
  * (só entram no site os que estão nesta lista). Sem emoji em nenhum lugar da interface.
  */
 const ICONS = {
+  add: addIcon,
+  remove: removeIcon,
   arrow_back: arrowBack,
   bedtime,
   block,

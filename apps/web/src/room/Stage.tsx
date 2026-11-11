@@ -12,6 +12,7 @@ import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
+import { ZoomPan } from './ZoomPan';
 import { cameraPin, parsePin, screenPin, transitionName, withPinTransition } from './pin';
 
 function Video({
@@ -228,13 +229,26 @@ function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & T
       style={fitStyle(natural ?? 16 / 9)}
       className="stage-tile stage-tile-screen"
     >
-      <Video
-        pub={tile.screenPub}
-        fit="contain"
-        label={`Tela de ${tile.name}`}
-        onNaturalAspect={setNatural}
-        quality={quality}
-      />
+      {tile.isLocal ? (
+        <Video
+          pub={tile.screenPub}
+          fit="contain"
+          label={`Tela de ${tile.name}`}
+          onNaturalAspect={setNatural}
+          quality={quality}
+        />
+      ) : (
+        // Quem assiste pode dar zoom na tela dos outros (só na própria tela).
+        <ZoomPan name={`tela de ${tile.name}`}>
+          <Video
+            pub={tile.screenPub}
+            fit="contain"
+            label={`Tela de ${tile.name}`}
+            onNaturalAspect={setNatural}
+            quality={quality}
+          />
+        </ZoomPan>
+      )}
       {onPin && (
         <PinButton
           name={`tela de ${tile.name}`}

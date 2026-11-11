@@ -354,6 +354,20 @@ describe('Stage (layout dos vídeos)', () => {
     expect(big()).toHaveTextContent('Tela de Ana');
   });
 
+  it('zoom só na tela dos outros: quem compartilha não tem zoom na própria tela', () => {
+    render(
+      <Stage
+        layout="mosaic"
+        tiles={[
+          tile({ identity: 'me', name: 'Eu', isLocal: true, screenPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', screenPub: pub() }),
+        ]}
+      />,
+    );
+    expect(screen.getByRole('group', { name: 'Zoom na tela de Beto' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Zoom na tela de Eu' })).not.toBeInTheDocument();
+  });
+
   it('solta o vídeo do elemento quando o componente sai da tela', () => {
     const camera = pub();
     const { unmount } = render(<Stage tiles={[tile({ cameraPub: camera })]} />);
