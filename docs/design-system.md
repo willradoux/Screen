@@ -147,3 +147,4 @@ Registro do trabalho feito sozinho à noite (só front, só commits locais, sem 
 - **Tema Verde saiu**: ficam só Screen e Acelera (quem tinha Verde salvo volta para Screen).
 - **Mais leve**: o código da sala (LiveKit, ~200 kB comprimido) é baixado em segundo plano quando o navegador fica ocioso, então entrar numa sala não espera download (não baixa com "economia de dados"); os cards dentro do painel perderam o desfoque de vidro (o fundo é sólido: não aparecia e pesava ao rolar). O resto do pacote já estava dividido por página.
 - **Abertura com a piscadinha nova**: o bonequinho entra com os olhos "| |" e a piscada é o olho direito dobrando em "<" (mesma função `wink` do `LiveLogo`), em vez da barra achatando.
+- **Capa viva**: a live com a sessão em espera não escurece mais a capa (o filtro tirava a cor do tema e apagava o selo "Ao vivo"); só encerrada ou cancelada fica cinza.

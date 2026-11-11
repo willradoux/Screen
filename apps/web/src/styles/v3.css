@@ -262,10 +262,8 @@ html:not([data-call]) .backdrop {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
-.sp-cover[data-tone='idle'] {
-  filter: saturate(0.4) brightness(0.8);
-}
-
+/* Live com a sessão em espera: capa na cor viva do tema, igual às outras (só o texto diz que
+   está em espera). Encerrada ou cancelada: cinza. */
 .sp-cover[data-tone='off'] {
   filter: grayscale(1) brightness(0.65);
 }
