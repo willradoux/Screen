@@ -2762,3 +2762,24 @@ html[data-pinning]::view-transition-new(*) {
   margin-top: 4px;
   padding-left: 0;
 }
+
+/* Alfinete de fixar como no Discord: sempre à vista, apagado; acende quando o mouse passa no
+   vídeo (e fica aceso quando fixado). Só o botão fixa: clicar no vídeo não faz nada. */
+.stage-pin {
+  opacity: 0.38;
+}
+
+.stage-tile:hover .stage-pin,
+.stage-tile[data-reveal] .stage-pin,
+.stage-pin:focus-visible,
+.stage-pin[data-pinned] {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  /* No celular dá para tocar direto no alfinete (sem tocar no vídeo antes). */
+  .stage-pin:not([data-pinned]) {
+    opacity: 0.6;
+    pointer-events: auto;
+  }
+}
