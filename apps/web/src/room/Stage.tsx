@@ -160,7 +160,12 @@ function PersonTile({
         />
       ) : (
         <div className="flex h-full items-center justify-center">
-          <Avatar name={tile.name} url={tile.avatarUrl} size={size === 'small' ? 'md' : 'lg'} />
+          {/* Anel verde que "respira" em volta do avatar enquanto a pessoa fala. */}
+          <span className="speak-avatar">
+            <span aria-hidden="true" className="speak-ring" />
+            <span aria-hidden="true" className="speak-ring speak-ring-2" />
+            <Avatar name={tile.name} url={tile.avatarUrl} size={size === 'small' ? 'md' : 'lg'} />
+          </span>
         </div>
       )}
       {onPin && <PinButton tile={tile} pinned={pinned} onPin={onPin} />}
@@ -178,8 +183,20 @@ function PersonTile({
           className={`ml-auto ${tile.micOn ? 'text-emerald-300' : 'text-red-300'}`}
           title={tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}
         >
-          <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.05rem" />
-          <span className="sr-only">{tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}</span>
+          {tile.micOn && tile.isSpeaking ? (
+            // Falando: o ícone vira três barrinhas de som mexendo.
+            <span aria-hidden="true" className="speak-bars">
+              <span />
+              <span />
+              <span />
+            </span>
+          ) : (
+            <Icon name={tile.micOn ? 'mic' : 'mic_off'} size="1.05rem" />
+          )}
+          <span className="sr-only">
+            {tile.micOn ? 'Microfone ligado' : 'Microfone desligado'}
+            {tile.isSpeaking && ', falando'}
+          </span>
         </span>
       </figcaption>
     </figure>

@@ -388,9 +388,10 @@ html:not([data-call]) .backdrop {
   border-radius: var(--v3-r);
 }
 
-/* ---- Carregando: o bichinho aparece com atraso (carregamento rápido não pisca) ---- */
+/* ---- Carregando: só quando a espera é de verdade. Carregou em menos de 0,3 s, nada aparece
+   (não pisca); passou disso, o bichinho entra rápido. ---- */
 .loader {
-  animation: v3-loader-in 420ms var(--ease-out) 450ms both;
+  animation: v3-loader-in 200ms var(--ease-out) 300ms both;
 }
 
 @keyframes v3-loader-in {
@@ -1260,17 +1261,17 @@ html:not([data-call]) .backdrop {
 }
 
 .device-menu > * {
-  animation: v3-rise 420ms var(--v3-spring) both;
+  animation: v3-rise 280ms var(--v3-spring) both;
 }
 
 .device-menu > :nth-child(2) {
-  animation-delay: 60ms;
+  animation-delay: 30ms;
 }
 .device-menu > :nth-child(3) {
-  animation-delay: 120ms;
+  animation-delay: 60ms;
 }
 .device-menu > :nth-child(n + 4) {
-  animation-delay: 170ms;
+  animation-delay: 85ms;
 }
 
 @keyframes v3-emerge {
@@ -1315,43 +1316,43 @@ html:not([data-call]) .backdrop {
 }
 
 .sheet-in > .space-y-5 > * {
-  animation: v3-rise 440ms var(--v3-spring) both;
+  animation: v3-rise 280ms var(--v3-spring) both;
 }
 
 .sheet-in > .space-y-5 > :nth-child(1) {
-  animation-delay: 80ms;
+  animation-delay: 40ms;
 }
 .sheet-in > .space-y-5 > :nth-child(2) {
-  animation-delay: 130ms;
+  animation-delay: 65ms;
 }
 .sheet-in > .space-y-5 > :nth-child(3) {
-  animation-delay: 180ms;
+  animation-delay: 90ms;
 }
 .sheet-in > .space-y-5 > :nth-child(n + 4) {
-  animation-delay: 230ms;
+  animation-delay: 115ms;
 }
 
 /* Barra da sala expandindo: os nomes e os blocos aparecem em sequência. */
 .call-rail[data-open] .rail-tools > * {
-  animation: v3-rise 420ms var(--v3-spring) both;
+  animation: v3-rise 280ms var(--v3-spring) both;
 }
 
 .call-rail[data-open] .rail-tools > :nth-child(2) {
-  animation-delay: 40ms;
+  animation-delay: 20ms;
 }
 .call-rail[data-open] .rail-tools > :nth-child(3) {
-  animation-delay: 80ms;
+  animation-delay: 40ms;
 }
 .call-rail[data-open] .rail-tools > :nth-child(4) {
-  animation-delay: 120ms;
+  animation-delay: 60ms;
 }
 .call-rail[data-open] .rail-tools > :nth-child(n + 5) {
-  animation-delay: 160ms;
+  animation-delay: 80ms;
 }
 
 /* O botão de Efeitos chega na pílula com um pequeno "salto". */
 .call-float [aria-label='Efeitos'] {
-  animation: v3-rise 460ms var(--v3-spring) both;
+  animation: v3-rise 280ms var(--v3-spring) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1922,18 +1923,18 @@ html:not([data-call]) .backdrop {
 }
 
 .page-enter {
-  animation: v3-page 460ms var(--v3-spring) both;
+  animation: v3-page 280ms var(--v3-spring) both;
 }
 
 .rise {
-  animation: v3-page 480ms var(--v3-spring) both;
+  animation: v3-page 280ms var(--v3-spring) both;
 }
 
 /* Cards entram um depois do outro. */
 .widget-grid > li,
 .shortcuts > *,
 .login-cards > * {
-  animation: v3-rise 460ms var(--v3-spring) both;
+  animation: v3-rise 280ms var(--v3-spring) both;
 }
 
 .widget-grid > li:nth-child(2),
@@ -2154,4 +2155,152 @@ html:not([data-call]) .backdrop {
 .intro-svg[data-gone] {
   opacity: 0;
   transform: scale(0.82);
+}
+
+/* ---- Quem está falando (como no Discord): acende em verde ----
+   Card: borda verde que entra rápido, sai devagar e pulsa de leve. Sem câmera: anel em volta do
+   avatar que "respira" em ondas. Legenda: o microfone vira três barrinhas de som. Lista da barra:
+   anel no avatar. Só opacity/transform; com animações desligadas fica aceso, parado. */
+.stage-tile[data-speaking] {
+  box-shadow: none;
+}
+
+.stage-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 2px #23a55a,
+    inset 0 0 18px rgb(35 165 90 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms var(--ease-out);
+}
+
+.stage-tile[data-speaking]::after {
+  opacity: 1;
+  transition-duration: 90ms;
+  animation: v3-speak-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes v3-speak-glow {
+  50% {
+    opacity: 0.72;
+  }
+}
+
+.speak-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.speak-avatar > :last-child {
+  position: relative;
+  transition: transform 200ms var(--v3-spring);
+}
+
+.speak-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  border: 3px solid #23a55a;
+  opacity: 0;
+  transform: scale(0.94);
+  pointer-events: none;
+  transition:
+    opacity 280ms var(--ease-out),
+    transform 280ms var(--ease-out);
+}
+
+[data-speaking] .speak-ring {
+  opacity: 1;
+  transform: none;
+  transition-duration: 90ms;
+}
+
+[data-speaking] .speak-ring-2 {
+  animation: v3-speak-wave 1.5s ease-out infinite;
+}
+
+[data-speaking] .speak-avatar > :last-child {
+  transform: scale(1.04);
+}
+
+@keyframes v3-speak-wave {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.speak-bars {
+  display: inline-flex;
+  height: 1.05rem;
+  width: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #3fd07a;
+}
+
+.speak-bars > span {
+  height: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: center;
+  animation: v3-speak-bar 0.9s ease-in-out infinite;
+}
+
+.speak-bars > span:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.speak-bars > span:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+@keyframes v3-speak-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.rail-people li .avatar,
+.rail-people li img {
+  transition: box-shadow 280ms var(--ease-out);
+}
+
+.rail-people li[data-speaking] .avatar,
+.rail-people li[data-speaking] img {
+  transition-duration: 90ms;
+}
+
+:root[data-motion='off'] .stage-tile[data-speaking]::after,
+:root[data-motion='off'] [data-speaking] .speak-ring-2,
+:root[data-motion='off'] .speak-bars > span {
+  animation: none;
+}
+
+:root[data-motion='off'] .speak-bars > span:nth-child(2) {
+  transform: scaleY(0.8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-tile[data-speaking]::after,
+  [data-speaking] .speak-ring-2,
+  .speak-bars > span {
+    animation: none;
+  }
 }

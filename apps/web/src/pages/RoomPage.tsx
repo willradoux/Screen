@@ -365,9 +365,6 @@ function ConnectedRoom({
  * docs/frontend/README.md: checa o acesso, mostra o motivo de qualquer bloqueio e só
  * então conecta.
  */
-/** Tempo mínimo do carregamento ao abrir a sala (0 nos testes). */
-const MIN_LOADING_MS = import.meta.env.MODE === 'test' ? 0 : 1400;
-
 export function RoomPage({ deps = defaultSessionDeps }: { deps?: SessionDeps }) {
   const { roomId = '' } = useParams();
   const { user } = useAuth();
@@ -401,15 +398,6 @@ function RoomPageInner({
   const session = useRoomSession(roomId, user.id, deps);
   const { state, room } = session;
   const phase = state.phase;
-  // Chegando pelo link: o carregamento fica pelo menos um instante na tela (o bichinho aparece
-  // direito, sem piscar). Só visual: a verificação de acesso segue no tempo dela.
-  const [warming, setWarming] = useState(MIN_LOADING_MS > 0);
-  useEffect(() => {
-    if (!warming) return;
-    const id = window.setTimeout(() => setWarming(false), MIN_LOADING_MS);
-    return () => window.clearTimeout(id);
-  }, [warming]);
-
   async function leave() {
     await session.leave();
     navigate('/');
@@ -454,8 +442,6 @@ function RoomPageInner({
       body = <ErrorScreen code={phase.code} message={phase.message} onRetry={session.retry} />;
       break;
   }
-
-  if (warming && (phase.kind === 'ready' || phase.kind === 'blocked')) body = <CheckingScreen />;
 
   // Na chamada, a tela é só a chamada: o topo do site some.
   useImmersive(phase.kind === 'connected' || phase.kind === 'disconnected');

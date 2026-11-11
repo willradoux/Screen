@@ -93,7 +93,7 @@ const SCENES: { id: string; label: string; make: () => Tile[] }[] = [
     make: () => [
       person('a', 'Ana', { cameraPub: fakePub(1280, 720, 20, 'Cam'), isSpeaking: true }),
       person('b', 'Beto', { cameraPub: fakePub(720, 1280, 140, 'Cam') }),
-      person('c', 'Caio'),
+      person('c', 'Caio', { isSpeaking: true }),
       person('d', 'Duda', { cameraPub: fakePub(1280, 720, 260, 'Cam') }),
       person('e', 'Edu', { micOn: false }),
       person('me', 'Você', { isLocal: true, cameraPub: fakePub(1280, 720, 90, 'Cam') }),
