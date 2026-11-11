@@ -128,3 +128,11 @@ Sintetizados (Web Audio, `lib/sounds.ts`): você entrou, alguém entrou, alguém
 - `prefers-contrast: more` deixa tudo opaco; `forced-colors` (alto contraste do Windows) ganha bordas reais.
 
 **Conferido:** checagem automática no navegador (nomes, alt, headings, ids, contraste, alvos) nas páginas do hub, sem falhas. **Falta:** axe e teclado em testes automáticos (Playwright) e teste com leitor de tela (NVDA).
+
+## Noite (10 → 11/11/2026): v3, testes e acabamento
+
+Registro do trabalho feito sozinho à noite (só front, só commits locais, sem push):
+
+- **Testes de componente** (`apps/web/src/components/v3.test.tsx`, 19 testes): logo e carregamento, card de sala, calls sem repetição, preferências (chaves, modo e cor), janela de tema, palco (grade uniforme, fixar no toque), login, atalhos do painel só para admin, resumo de gravações e menu da conta (Esc devolve o foco, clique fora fecha). Total do front: 302 testes passando.
+- **Movimento fluido**: troca de página e entradas com mola só com transform e opacidade (o desfoque saiu: pesava no celular); cards entram em sequência; capa sobe no hover e o card encolhe ao apertar; número da contagem "vira"; avisos com mola. Tudo some com "Animações desligadas" ou movimento reduzido.
+- **Contraste conferido** em 10 páginas × 2 modos × 3 cores (checagem automática no navegador): no escuro o cinza dos textos menores subiu (`--z-500: #969696`) e a chave ligada tem o botão preto sobre a cor viva. Sem falhas depois disso.

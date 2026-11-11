@@ -2059,3 +2059,14 @@ html:not([data-call]) .backdrop {
     transition-property: background-color, color, box-shadow;
   }
 }
+
+/* Contraste no escuro: o cinza dos textos menores (zinc-500) sobe para passar de 4,5:1 sobre
+   os cards (#181818, #1f1f1f); a chave ligada tem o botão preto sobre a cor viva. */
+:root[data-mode='dark'] {
+  --z-500: #969696;
+}
+
+:root[data-mode='dark'] .switch[data-on] .switch-knob {
+  background: #000000;
+  box-shadow: none;
+}
