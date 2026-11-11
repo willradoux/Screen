@@ -963,6 +963,9 @@ html:not([data-call]) .backdrop {
   --bg-3: #ff7a45;
   --bg-2: #ff3d8b;
   --grain-opacity: 0.35;
+  /* Degradê do ícone do topo (o mesmo da amostra em Preferências). */
+  --logo-1: #ffb347;
+  --logo-2: #ff4f93;
 }
 
 :root[data-theme='verde'] {
@@ -975,6 +978,8 @@ html:not([data-call]) .backdrop {
   --bg-3: #1db954;
   --bg-2: #0b5a2e;
   --grain-opacity: 0.3;
+  --logo-1: #6ee7a0;
+  --logo-2: #1db954;
 }
 
 :root[data-theme='acelera'] {
@@ -987,6 +992,8 @@ html:not([data-call]) .backdrop {
   --bg-3: #00c8b2;
   --bg-2: #00556e;
   --grain-opacity: 0.3;
+  --logo-1: #5ef0d0;
+  --logo-2: #00b39c;
 }
 
 /* Modo claro: o detalhe num tom mais escuro, para ler sobre o branco. */

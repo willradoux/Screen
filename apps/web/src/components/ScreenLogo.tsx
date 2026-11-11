@@ -18,7 +18,7 @@ export function ScreenLogo({
   brand = false,
 }: {
   className?: string;
-  /** Com as cores do ícone do Screen (laranja para rosa) em vez da cor do texto. */
+  /** Com o degradê do ícone (as cores do tema; laranja → rosa no padrão) em vez da cor do texto. */
   brand?: boolean;
   /** Nome para leitores de tela; sem ele o logo é decorativo. */
   title?: string;
@@ -35,8 +35,9 @@ export function ScreenLogo({
       <defs>
         {brand && (
           <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ffb347" />
-            <stop offset="1" stopColor="#ff4f93" />
+            {/* As cores seguem o tema escolhido (--logo-1/--logo-2); sem tema, laranja → rosa. */}
+            <stop offset="0" style={{ stopColor: 'var(--logo-1, #ffb347)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--logo-2, #ff4f93)' }} />
           </linearGradient>
         )}
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
