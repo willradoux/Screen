@@ -5,6 +5,7 @@ import {
   type TrackPublication,
 } from 'livekit-client';
 import { useEffect, useRef } from 'react';
+import { effectiveVolume, useAudioPrefs } from '../lib/audioPrefs';
 
 /** Quem pode estar falando: a pessoa e a publicação do microfone dela. */
 export interface VoiceSource {
@@ -35,11 +36,17 @@ const motionOff = () =>
  * vem do servidor (`data-speaking`).
  */
 export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
+  // Som cortado para você (fone ou "mutar só para mim"): o Chrome para de entregar esse som ao
+  // medidor, então para essa pessoa vale o "falando" do servidor (a animação continua).
+  const audio = useAudioPrefs();
+  const audioRef = useRef(audio);
+  audioRef.current = audio;
   const meters = useRef(
     new Map<
       string,
       {
         track: unknown;
+        pub: TrackPublication;
         volume: () => number;
         cleanup: () => Promise<void> | void;
         level: number;
@@ -84,6 +91,7 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
         });
         map.set(id, {
           track: pub.track,
+          pub,
           volume: analyser.calculateVolume,
           cleanup: analyser.cleanup,
           level: 0,
@@ -103,7 +111,21 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
     const tick = (now: number) => {
       const still = motionOff();
       for (const [id, m] of meters.current) {
-        const v = Math.min(1, m.volume() * 2.2);
+        // Sem som pra você: some o medidor e fica o aviso do servidor.
+        if (!m.pub.isLocal && effectiveVolume(audioRef.current, id) === 0) {
+          if (m.talking || m.level > 0) {
+            m.talking = false;
+            m.level = 0;
+          }
+          markAll(id, (el) => {
+            delete el.dataset.voice;
+            delete el.dataset.talking;
+            el.style.removeProperty('--voice');
+          });
+          continue;
+        }
+        // Microfone mutado: nunca acende, mesmo se escapar algum som.
+        const v = m.pub.isMuted ? 0 : Math.min(1, m.volume() * 2.2);
         // Sobe rápido e desce devagar: segue a voz sem tremer.
         m.level += (v - m.level) * (v > m.level ? 0.55 : 0.12);
         if (v > TALK_ON) m.lastLoud = now;
