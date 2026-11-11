@@ -86,6 +86,7 @@ function ConnectedRoom({
     role: 'MEMBER' | 'MOD' | 'ADMIN';
     displayName: string;
     avatarUrl: string | null;
+    owner?: boolean;
   };
   onLeave: () => void;
   toast: ReturnType<typeof useToasts>;

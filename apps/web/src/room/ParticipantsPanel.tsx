@@ -18,7 +18,7 @@ import { PersonAudio } from './PersonAudio';
 
 interface Props {
   room: Room;
-  me: { id: string; role: Role };
+  me: { id: string; role: Role; owner?: boolean };
   /** Muda quando alguém entra, sai ou é alterado: recarrega a lista. */
   version: number;
   lectureMode: boolean;

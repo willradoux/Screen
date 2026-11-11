@@ -8,10 +8,12 @@ import { ROLE_RANK, type Role } from '@screem/shared';
 
 /** Ninguém age sobre papel igual ou superior, nem sobre si mesmo. */
 export function canModerateTarget(
-  actor: { id: string; role: Role },
+  actor: { id: string; role: Role; owner?: boolean },
   target: { id: string; role: Role },
 ): boolean {
   if (actor.id === target.id) return false;
+  // Admin geral (dono do Screen) passa por cima de todos (o servidor não deixa um mexer no outro).
+  if (actor.owner) return true;
   return ROLE_RANK[actor.role] > ROLE_RANK[target.role];
 }
 

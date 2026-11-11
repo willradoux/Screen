@@ -167,6 +167,17 @@ describe('loadEnv (auth)', () => {
     expect(() => loadEnv({ NODE_ENV: 'test', BOOTSTRAP_ADMIN_IDS: 'abc' })).toThrow(
       /BOOTSTRAP_ADMIN_IDS/,
     );
+    expect(() => loadEnv({ NODE_ENV: 'test', OWNER_IDS: '123' })).toThrow(/OWNER_IDS/);
+  });
+
+  it('admins gerais (OWNER_IDS) também são sempre admin', () => {
+    const env = loadEnv({
+      NODE_ENV: 'test',
+      BOOTSTRAP_ADMIN_IDS: '333333333333333333',
+      OWNER_IDS: '444444444444444444, 333333333333333333',
+    });
+    expect(env.ownerIds).toEqual(['444444444444444444', '333333333333333333']);
+    expect(env.bootstrapAdminIds.sort()).toEqual(['333333333333333333', '444444444444444444']);
   });
 });
 

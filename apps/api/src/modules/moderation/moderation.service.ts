@@ -36,6 +36,8 @@ export interface ModerationDeps {
   hands?: { lower(roomId: string, userId: string): void };
   logger: Logger;
   now?: () => Date;
+  /** Admins gerais (OWNER_IDS): moderam qualquer pessoa, inclusive admins (não um ao outro). */
+  ownerIds?: string[];
 }
 
 export const DEFAULT_BAN_MINUTES = 60;
@@ -100,6 +102,16 @@ export class ModerationService {
     return room;
   }
 
+  /**
+   * Quem age está acima do alvo? Regra geral: papel maior (admin não mexe em admin). Admin geral
+   * (OWNER_IDS) passa por cima de todo mundo, menos de outro admin geral.
+   */
+  private outranks(actor: Actor, targetId: string, targetRole: Role): boolean {
+    const owners = this.deps.ownerIds ?? [];
+    if (owners.includes(actor.id) && !owners.includes(targetId)) return true;
+    return ROLE_RANK[actor.role] > ROLE_RANK[targetRole];
+  }
+
   /** Alvo conectado e hierarquicamente abaixo de quem age. */
   private async moderatable(
     room: RoomRecord,
@@ -114,7 +126,7 @@ export class ModerationService {
     const fresh = await this.deps.roles.resolveUser(targetId).catch(() => participation.roleAtJoin);
     const role =
       ROLE_RANK[fresh] > ROLE_RANK[participation.roleAtJoin] ? fresh : participation.roleAtJoin;
-    if (ROLE_RANK[actor.role] <= ROLE_RANK[role]) throw err.hierarchy();
+    if (!this.outranks(actor, targetId, role)) throw err.hierarchy();
     return { participation, role };
   }
 
@@ -410,7 +422,7 @@ export class ModerationService {
       if (p.userId === actor.id) continue;
       const fresh = await this.deps.roles.resolveUser(p.userId).catch(() => p.roleAtJoin);
       const role = ROLE_RANK[fresh] > ROLE_RANK[p.roleAtJoin] ? fresh : p.roleAtJoin;
-      if (ROLE_RANK[actor.role] <= ROLE_RANK[role]) continue;
+      if (!this.outranks(actor, p.userId, role)) continue;
       try {
         await this.liveKit(() => this.deps.livekit.muteSources(room.id, p.userId, sources));
         this.deps.realtime.toUser(p.userId, 'moderation:action', {

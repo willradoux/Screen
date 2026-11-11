@@ -60,6 +60,7 @@ Aba **Environment Variables** do recurso (o Coolify lê o compose e lista as var
 | `DISCORD_BOT_TOKEN` | Developer Portal → Bot |
 | `ADMIN_ROLE_IDS` | IDs dos **cargos** de administrador (separados por vírgula, sem espaços). Quem tem qualquer um deles é ADMIN |
 | `BOOTSTRAP_ADMIN_IDS` | (opcional) IDs de **pessoas** que são admin independentemente de cargo, útil como reserva |
+| `OWNER_IDS` | (opcional) IDs dos **admins gerais** (donos), que moderam qualquer um, inclusive outros admins |
 
 Opcionais (têm padrão): `MEETING_MENTION_ROLE_ID`, `CORS_ORIGINS`, `TRUST_PROXY` (use `2` se a Cloudflare estiver na frente), `LOG_LEVEL`, `EMPTY_LIVE_END_SECONDS`, `EMPTY_MEETING_END_MINUTES`.
 

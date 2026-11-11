@@ -32,6 +32,11 @@ const schema = z.object({
   DISCORD_GUILD_ID: snowflake,
   DISCORD_REDIRECT_URI: z.string().url(),
   BOOTSTRAP_ADMIN_IDS: z.string().optional(),
+  /**
+   * Admins gerais (donos do Screen), IDs Discord separados por vírgula: sempre ADMIN e podem
+   * moderar qualquer pessoa, inclusive outros admins (mas não um ao outro).
+   */
+  OWNER_IDS: z.string().optional(),
   /** IDs de cargos (separados por vírgula) que sempre são ADMIN, além dos de /config cargo-admin. */
   ADMIN_ROLE_IDS: z.string().optional(),
   /** Sem o token o bot não inicia (a API sobe normalmente). Obrigatório em produção. */
@@ -67,6 +72,8 @@ export type Env = z.infer<typeof schema> & {
   /** Chave AES-256 já decodificada (32 bytes). */
   encryptionKey: Buffer;
   bootstrapAdminIds: string[];
+  /** Admins gerais (ver OWNER_IDS). */
+  ownerIds: string[];
   adminRoleIds: string[];
 };
 
@@ -148,6 +155,13 @@ export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
     );
   }
 
+  const ownerIds = list(env.OWNER_IDS);
+  const badOwner = ownerIds.find((id) => !snowflake.safeParse(id).success);
+  if (badOwner) {
+    throw new Error(`Variáveis de ambiente inválidas:
+OWNER_IDS: ID inválido "${badOwner}"`);
+  }
+
   const adminRoleIds = list(env.ADMIN_ROLE_IDS);
   const badRole = adminRoleIds.find((id) => !snowflake.safeParse(id).success);
   if (badRole) {
@@ -161,7 +175,9 @@ ADMIN_ROLE_IDS: ID inválido "${badRole}"`);
     // Sem a barra final: o navegador manda a origem sem ela e a comparação é exata.
     corsOrigins: list(env.CORS_ORIGINS?.trim() || env.WEB_URL).map((o) => o.replace(/\/+$/, '')),
     encryptionKey,
-    bootstrapAdminIds,
+    // Os admins gerais são sempre ADMIN (mesmo sem cargo no Discord e com o bot fora do ar).
+    bootstrapAdminIds: [...new Set([...bootstrapAdminIds, ...ownerIds])],
+    ownerIds,
     adminRoleIds,
   };
 }

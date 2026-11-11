@@ -160,7 +160,7 @@ export class MemoryBans implements BanRepo {
  * Sistema completo com dublês: login (Discord falso), bot (gateway falso),
  * salas, LiveKit falso e emissor de eventos que grava o que foi enviado.
  */
-export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
+export function buildRoomsApp(opts: { graceSeconds?: number; ownerIds?: string[] } = {}) {
   const bot = buildBot();
   bot.configureLives();
   if (opts.graceSeconds !== undefined) bot.settings.settings.graceSeconds = opts.graceSeconds;
@@ -273,6 +273,7 @@ export function buildRoomsApp(opts: { graceSeconds?: number } = {}) {
     },
     logger,
     now: bot.clock.now,
+    ownerIds: opts.ownerIds ?? [],
   });
   const settingsService = new SettingsService({
     settings: bot.settings,

@@ -82,7 +82,15 @@ export function authRoutes(service: AuthService, env: Env): Router {
     // requireAuth garante a identidade.
     const { user, role, displayName, avatarUrl } = req.auth!.identity!;
     res.json({
-      data: { id: user.id, username: user.username, displayName, avatarUrl, role },
+      data: {
+        id: user.id,
+        username: user.username,
+        displayName,
+        avatarUrl,
+        role,
+        // Admin geral (OWNER_IDS): o site mostra a moderação também sobre outros admins.
+        ...(env.ownerIds?.includes(user.id) ? { owner: true } : {}),
+      },
     });
   });
 

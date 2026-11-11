@@ -10,6 +10,8 @@ export interface User {
   displayName: string;
   avatarUrl: string | null;
   role: Role;
+  /** Admin geral (dono do Screen): modera qualquer pessoa, inclusive outros admins. */
+  owner?: boolean;
 }
 
 export interface Room {

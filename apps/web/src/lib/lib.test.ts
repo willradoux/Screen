@@ -121,7 +121,10 @@ describe('moderation-rules', () => {
     expect(canModerateTarget(m('a', 'MOD'), m('b', 'ADMIN'))).toBe(false);
     expect(canModerateTarget(m('a', 'ADMIN'), m('b', 'ADMIN'))).toBe(false);
     expect(canModerateTarget(m('a', 'MEMBER'), m('b', 'MEMBER'))).toBe(false);
-    expect(canModerateTarget(m('a', 'ADMIN'), m('a', 'MEMBER'))).toBe(false);
+    expect(canModerateTarget(m('a', 'ADMIN'), m('a', 'MEMBER'))).toBe(false); // Admin geral (dono) alcança outro admin, mas nunca a si mesmo.
+    const owner = { ...m('a', 'ADMIN'), owner: true };
+    expect(canModerateTarget(owner, m('b', 'ADMIN'))).toBe(true);
+    expect(canModerateTarget(owner, m('a', 'ADMIN'))).toBe(false);
   });
 
   it('isStaff e isAdmin', () => {

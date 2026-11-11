@@ -174,6 +174,7 @@ if (discord) {
       roles: discord.roles,
       onRoomChanged: (room) => discord.announcer.refresh(room),
       logger,
+      ownerIds: env.ownerIds,
     }),
     access,
     participations,

@@ -26,8 +26,9 @@ async function loginAs(ctx: RoomsCtx, userId: string, roles: string[] = []) {
 /** Reunião aberta (moderação só existe em reuniões), com algumas pessoas já conectadas. */
 async function setup(
   people: { id: string; role?: 'MEMBER' | 'MOD' | 'ADMIN'; roles?: string[] }[] = [],
+  ownerIds: string[] = [],
 ) {
-  const ctx = buildRoomsApp();
+  const ctx = buildRoomsApp({ ownerIds });
   const room = await openMeeting(ctx);
   for (const p of [{ id: MEMBER }, { id: MEMBER2 }, ...people]) {
     const role = (p as { role?: 'MEMBER' | 'MOD' | 'ADMIN' }).role ?? 'MEMBER';
@@ -639,6 +640,27 @@ describe('palestrantes e modo palestra', () => {
     const demote = await act(admin, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN2}/demote`);
     expect(demote.status).toBe(403);
     expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([ADMIN2]);
+  });
+
+  it('admin geral (OWNER_IDS) muda outro admin no palco e silencia; não mexe no outro admin geral', async () => {
+    const { ctx, room } = await setup([staff.admin, staff.admin2], [ADMIN, MOD]);
+    const owner = await loginAs(ctx, ADMIN, [ADMIN_ROLE]);
+    await act(owner, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
+
+    // Admin comum (ADMIN2) é alcançado pelo admin geral.
+    expect(
+      (await act(owner, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN2}/promote`)).status,
+    ).toBe(204);
+    expect(ctx.rooms.rooms.get(room.id)!.speakerIds).toEqual([ADMIN2]);
+    expect(
+      (await act(owner, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN2}/mute`, {})).status,
+    ).toBe(204);
+
+    // O admin comum continua sem poder mexer no admin geral.
+    const admin2 = await loginAs(ctx, ADMIN2, [ADMIN_ROLE]);
+    expect(
+      (await act(admin2, ctx, 'post', `/rooms/${room.id}/participants/${ADMIN}/mute`, {})).status,
+    ).toBe(403);
   });
 
   it('fora do modo palestra, promover não mexe nas permissões', async () => {
