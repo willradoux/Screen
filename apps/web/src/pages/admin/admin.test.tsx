@@ -556,6 +556,23 @@ describe('AuditPage', () => {
     expect(screen.queryByRole('button', { name: /carregar mais/i })).not.toBeInTheDocument();
   });
 
+  it('no celular cada linha vira cartão: toda célula diz o que é (data-label)', async () => {
+    vi.spyOn(api.audit, 'list').mockResolvedValue({
+      data: [entry(1)],
+      page: { next: null, limit: 50 },
+    });
+    render(<AuditPage />);
+    await screen.findByText('motivo 1');
+    const cells = within(screen.getByTestId('audit-row')).getAllByRole('cell');
+    expect(cells.map((c) => c.getAttribute('data-label'))).toEqual([
+      'Quando',
+      'Ação',
+      'Quem',
+      'Alvo',
+      'Motivo',
+    ]);
+  });
+
   it('carrega mais usando o cursor e acrescenta no fim', async () => {
     const list = vi
       .spyOn(api.audit, 'list')

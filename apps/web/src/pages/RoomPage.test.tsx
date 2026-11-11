@@ -252,6 +252,31 @@ describe('RoomPage: entrar e usar a sala', () => {
     expect(screen.getByRole('heading', { name: 'Live - Live 1' })).toBeInTheDocument();
   });
 
+  it('barra da direita: recolhida mostra só ícones; expandir mostra a sala e quem está na call', async () => {
+    setup();
+    vi.spyOn(api.rooms, 'join').mockResolvedValue(joinResult());
+    await enter();
+
+    const toggle = screen.getByRole('button', { name: 'Mais opções' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const rail = toggle.closest('.call-rail')!;
+    expect(rail).not.toHaveAttribute('data-open');
+    // mesmo recolhida, os botões da sala funcionam
+    expect(screen.getByRole('group', { name: 'Opções da sala' })).toBeInTheDocument();
+
+    await userEvent.click(toggle);
+    expect(screen.getByRole('button', { name: 'Fechar opções' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(rail).toHaveAttribute('data-open');
+    const people = screen.getByRole('list', { name: 'Na chamada' });
+    expect(people).toHaveTextContent('Fulano (você)');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar opções' }));
+    expect(screen.getByRole('button', { name: 'Mais opções' })).toBeInTheDocument();
+  });
+
   it('liga e desliga microfone e câmera pelos botões', async () => {
     setup();
     vi.spyOn(api.rooms, 'join').mockResolvedValue(joinResult());

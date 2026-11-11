@@ -90,7 +90,7 @@ export function PreferencesPage() {
   function choose(next: Theme) {
     saveTheme(next);
     setTheme(next);
-    setMode(readMode()); // o tema Preto liga o modo escuro
+    setMode(readMode()); // modo e cor são independentes; relê só por garantia
   }
 
   return (
