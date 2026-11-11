@@ -250,9 +250,8 @@ function ScreenTile({
   maximized = false,
 }: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
-  // A sua própria tela não aparece por padrão: mostrar o que você compartilha dentro do que você
-  // compartilha cria o "espelho infinito". Dá para ver uma prévia pequena, se quiser.
-  const [preview, setPreview] = useState(false);
+  // A sua própria tela nunca aparece: mostrar o que você compartilha dentro do que você
+  // compartilha cria o "espelho infinito" (e trava). No lugar, só o aviso.
   const reveal = useTouchReveal();
   if (!tile.screenPub) return null;
   return (
@@ -264,31 +263,13 @@ function ScreenTile({
       data-own={tile.isLocal || undefined}
     >
       {tile.isLocal ? (
-        preview ? (
-          <>
-            <Video
-              pub={tile.screenPub}
-              fit="contain"
-              label={`Tela de ${tile.name}`}
-              onNaturalAspect={setNatural}
-              quality={quality}
-            />
-            <button type="button" className="own-screen-hide" onClick={() => setPreview(false)}>
-              Esconder prévia
-            </button>
-          </>
-        ) : (
-          <div className="own-screen">
-            <Icon name="screen_share" size="1.8rem" />
-            <p className="text-sm font-bold text-zinc-50">Você está compartilhando a sua tela</p>
-            <p className="max-w-[18rem] text-xs text-zinc-400">
-              Todo mundo está vendo. Ela não aparece aqui para não virar um espelho infinito.
-            </p>
-            <button type="button" className="own-screen-btn" onClick={() => setPreview(true)}>
-              Ver prévia
-            </button>
-          </div>
-        )
+        <div className="own-screen">
+          <Icon name="screen_share" size="1.8rem" />
+          <p className="text-sm font-bold text-zinc-50">Você está compartilhando a sua tela</p>
+          <p className="max-w-[18rem] text-xs text-zinc-400">
+            Todo mundo está vendo. Ela não aparece aqui para não virar um espelho infinito.
+          </p>
+        </div>
       ) : (
         // Quem assiste pode dar zoom na tela dos outros (só na própria tela).
         <ZoomPan name={`tela de ${tile.name}`}>

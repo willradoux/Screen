@@ -416,8 +416,7 @@ describe('Stage (layout dos vídeos)', () => {
       screen.queryByRole('button', { name: 'Tela cheia: tela de Eu' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tela cheia: tela de Beto' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Ver prévia' }));
-    expect(screen.getByLabelText('Tela de Eu')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver prévia' })).not.toBeInTheDocument();
   });
 
   it('solta o vídeo do elemento quando o componente sai da tela', () => {
