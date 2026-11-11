@@ -2310,3 +2310,112 @@ html:not([data-call]) .backdrop {
 .hub-brand:hover .brand-logo {
   transform: rotate(-6deg) scale(1.06);
 }
+
+/* ---- Microfone e câmera com setinha: uma peça só ----
+   A pílula inteira (setinha + botão) é o botão: ela ganha a cor do estado (vermelho desligado,
+   cor do tema ligado) e por dentro não tem bolinha nenhuma. O hover clareia a peça toda. */
+.ctl-split {
+  position: relative;
+  gap: 0;
+  padding-left: 4px;
+  background: rgb(255 255 255 / 0.08);
+  transition: background-color 180ms var(--ease-out);
+}
+
+.ctl-split:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.ctl-split .ctl,
+.ctl-split .ctl-button:hover > .ctl,
+.ctl-split .ctl-chevron,
+.ctl-split .ctl-chevron:hover,
+.ctl-split .ctl-chevron[data-open] {
+  background: transparent;
+}
+
+.ctl-split:has(.ctl[data-off='true']) {
+  background: rgb(229 72 58 / 0.18);
+}
+
+.ctl-split:has(.ctl[data-off='true']):hover {
+  background: rgb(229 72 58 / 0.28);
+}
+
+.ctl-split:has(.ctl[data-off='true']) .ctl-chevron {
+  color: #ff9d94;
+}
+
+.ctl-split:has(.ctl[data-on='true']) {
+  background: var(--v3-accent);
+}
+
+.ctl-split:has(.ctl[data-on='true']):hover {
+  background: var(--brand-300);
+}
+
+.ctl-split:has(.ctl[data-on='true']) .ctl-chevron,
+.ctl-split:has(.ctl[data-on='true']) .ctl {
+  color: #120a08;
+}
+
+/* O foco do teclado contorna a peça toda, não cada metade. */
+.ctl-split .ctl-button:focus-visible,
+.ctl-split .ctl-chevron:focus-visible {
+  outline: none;
+}
+
+.ctl-split:has(:focus-visible) {
+  outline: 2px solid var(--v3-accent);
+  outline-offset: 2px;
+}
+
+/* A seta gira (indo e voltando) em vez de trocar de ícone. */
+.ctl-chevron-icon {
+  display: inline-flex;
+  transition: transform 320ms var(--v3-spring);
+}
+
+.ctl-chevron[data-open] .ctl-chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* O menu de aparelhos também volta para dentro ao fechar. */
+.device-menu[data-closing] {
+  pointer-events: none;
+  animation: v3-submerge 180ms var(--ease-out) both;
+}
+
+.device-menu[data-closing] > * {
+  animation: none;
+}
+
+@keyframes v3-submerge {
+  from {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 20px);
+    transform: translate(-50%, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    clip-path: inset(70% 8% 0 8% round 20px);
+    transform: translate(-50%, 10px) scale(0.94);
+  }
+}
+
+:root[data-motion='off'] .ctl-chevron-icon {
+  transition: none;
+}
+
+/* Prévia "Minha câmera": a mão acenando de um lado (espelhada, do outro). */
+.video-wave {
+  position: absolute;
+  bottom: 24%;
+  left: 24%;
+  height: 34%;
+  width: 9%;
+  border-radius: 999px;
+  background: #0a0a0a;
+  transform: rotate(-16deg);
+  transform-origin: 50% 100%;
+}

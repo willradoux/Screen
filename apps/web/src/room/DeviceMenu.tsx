@@ -24,11 +24,14 @@ const canPickOutput = () =>
 export function DeviceMenu({
   room,
   kind,
+  closing = false,
   onClose,
   onError,
 }: {
   room: LiveKitRoom;
   kind: Kind;
+  /** Fechando: fica na tela só o tempo da animação de saída. */
+  closing?: boolean;
   onClose: () => void;
   onError: (message: string) => void;
 }) {
@@ -95,6 +98,7 @@ export function DeviceMenu({
       role="dialog"
       aria-label={kind === 'audio' ? 'Aparelhos de áudio' : 'Aparelhos de vídeo'}
       className="device-menu"
+      data-closing={closing || undefined}
     >
       {SECTIONS[kind].map((section) => {
         const list = devices[section.kind];

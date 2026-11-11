@@ -98,15 +98,15 @@ const Shape = ({ ratio }: { ratio: 'auto' | 'landscape' | 'portrait' | 'square' 
   );
 };
 
-/** Prévia da própria câmera: um "R" que fica ao contrário quando espelha. */
+/** Prévia da própria câmera: a pessoa acenando; espelhada, a mão troca de lado. */
 function Selfie({ mirror = false }: { mirror?: boolean }) {
   return (
-    <span
-      aria-hidden="true"
-      className={`text-lg font-black leading-none ${mirror ? '-scale-x-100' : ''}`}
-      style={{ display: 'inline-block' }}
-    >
-      R
+    <span className="video-frame">
+      <span className="video-image inset-0" />
+      <span className={`absolute inset-0 ${mirror ? '-scale-x-100' : ''}`}>
+        <Person />
+        <span className="video-wave" />
+      </span>
     </span>
   );
 }

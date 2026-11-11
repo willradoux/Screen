@@ -1,5 +1,5 @@
 import type { LocalParticipant, Room as LiveKitRoom } from 'livekit-client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
 import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../lib/media';
@@ -36,6 +36,13 @@ interface Props {
   hand?: { raised: boolean; busy: boolean; onToggle: () => void };
   captions?: { on: boolean; onToggle: () => void };
 }
+
+/** Duração da saída do menu de aparelhos (0 nos testes: some na hora). */
+const MENU_EXIT_MS = import.meta.env.MODE === 'test' ? 0 : 180;
+
+const motionOff = () =>
+  document.documentElement.dataset.motion === 'off' ||
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 const SCREEN_UNSUPPORTED_SHORT = 'Compartilhar tela só funciona no computador.';
 const SCREEN_LOCKED_SHORT = 'A tela está liberada só para quem está no palco.';
@@ -112,7 +119,25 @@ export function Controls({
   room,
   profile = NORMAL_PROFILE,
 }: Props) {
-  const [menu, setMenu] = useState<'audio' | 'video' | null>(null);
+  const [menu, setMenuState] = useState<'audio' | 'video' | null>(null);
+  // O menu que está saindo fica na tela o tempo da animação de fechar (indo e voltando).
+  const [leaving, setLeaving] = useState<'audio' | 'video' | null>(null);
+  const leaveTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+  const setMenu = (
+    next: 'audio' | 'video' | null | ((m: 'audio' | 'video' | null) => 'audio' | 'video' | null),
+  ) => {
+    const value = typeof next === 'function' ? next(menu) : next;
+    window.clearTimeout(leaveTimer.current);
+    if (value === null && menu && MENU_EXIT_MS > 0 && !motionOff()) {
+      setLeaving(menu);
+      leaveTimer.current = window.setTimeout(() => setLeaving(null), MENU_EXIT_MS);
+    } else {
+      setLeaving(null);
+    }
+    setMenuState(value);
+  };
+  const shownMenu = menu ?? leaving;
   const micPermission = usePermission('microphone');
   const camPermission = usePermission('camera');
   const [busy, setBusy] = useState<'microphone' | 'camera' | 'screen' | null>(null);
@@ -200,8 +225,15 @@ export function Controls({
       aria-label="Controles da sala"
       className="relative flex flex-col items-center"
     >
-      {menu && room && (
-        <DeviceMenu room={room} kind={menu} onClose={() => setMenu(null)} onError={onError} />
+      {shownMenu && room && (
+        <DeviceMenu
+          key={shownMenu}
+          room={room}
+          kind={shownMenu}
+          closing={!menu}
+          onClose={() => setMenu(null)}
+          onError={onError}
+        />
       )}
       <div className="ctl-row">
         <div className="ctl-group" role="group" aria-label="Mídia">
@@ -334,7 +366,10 @@ function DeviceToggle({
       className="ctl-button ctl-chevron"
       data-open={open || undefined}
     >
-      <Icon name={open ? 'keyboard_arrow_down' : 'keyboard_arrow_up'} size="1.05rem" />
+      {/* Uma seta só, que gira: para cima fechado, para baixo aberto. */}
+      <span className="ctl-chevron-icon">
+        <Icon name="keyboard_arrow_up" size="1.05rem" />
+      </span>
     </button>
   );
 }
