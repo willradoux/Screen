@@ -2090,8 +2090,8 @@ html:not([data-call]) .backdrop {
   }
 
   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track,
@@ -2106,8 +2106,8 @@ html:not([data-call]) .backdrop {
   }
 
   ::-webkit-scrollbar-thumb {
-    min-height: 40px;
-    border: 3px solid transparent;
+    min-height: 32px;
+    border: 1px solid transparent;
     border-radius: 999px;
     background: color-mix(in srgb, var(--v3-text) 28%, transparent) padding-box;
   }
