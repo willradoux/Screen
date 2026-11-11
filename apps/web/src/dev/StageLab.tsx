@@ -105,7 +105,9 @@ const SCENES: { id: string; label: string; make: () => Tile[] }[] = [
     make: () => [
       person('a', 'Ana', { cameraPub: fakePub(1280, 720, 20, 'Cam') }),
       person('me', 'Você', { isLocal: true }),
-      ...Array.from({ length: 40 }, (_, i) => person(`q${i}`, `P${i}`, { micOn: false })),
+      ...Array.from({ length: 40 }, (_, i) =>
+        person(`q${i}`, `P${i}`, { micOn: false, canPublish: false }),
+      ),
     ],
   },
 ];
