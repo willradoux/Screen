@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { ROLE_LABEL, isAdmin, isStaff } from '../lib/moderation-rules';
@@ -76,6 +76,26 @@ export function Layout() {
   const [immersive, setImmersive] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
+  // Menu da conta: fecha com Esc (e o foco volta para o cartão) ou clicando fora.
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setAccountOpen(false);
+      accountButtonRef.current?.focus();
+    };
+    const onDown = (e: PointerEvent) => {
+      if (!footerRef.current?.contains(e.target as Node)) setAccountOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [accountOpen]);
   const { available: canInstall, install } = useInstallPrompt();
   const location = useLocation();
   useEffect(() => {
@@ -160,40 +180,53 @@ export function Layout() {
                 )}
               </nav>
 
-              <div className="hub-footer">
+              <div className="hub-footer" ref={footerRef}>
                 {/* O Guia fica à parte, embaixo: ele abre a página de ajuda (fora das telas de uso). */}
                 <HubLink
                   item={{ to: '/features', label: 'Guia', icon: 'info' }}
                   pathname={location.pathname}
                 />
-                {accountOpen && (
-                  <div className="hub-account-menu" role="group" aria-label="Sua conta">
-                    <NavLink to="/preferencias" className="hub-link">
-                      <Icon name="tune" size="1.15rem" />
-                      <span>Preferências</span>
-                    </NavLink>
-                    {canInstall && (
-                      <button type="button" onClick={install} className="hub-link">
-                        <Icon name="download" size="1.15rem" />
-                        <span>Instalar app</span>
+                {/* O menu da conta flutua logo acima do cartão (não empurra o menu): sai de dentro
+                    dele com mola e os itens sobem um a um; fechado, fica fora do teclado e do
+                    leitor de tela. */}
+                <div
+                  id="hub-account-menu"
+                  className="unfold account-pop"
+                  data-open={accountOpen || undefined}
+                  inert={!accountOpen}
+                  aria-hidden={!accountOpen || undefined}
+                >
+                  <div className="unfold-inner">
+                    <div className="hub-account-menu" role="group" aria-label="Sua conta">
+                      <NavLink to="/preferencias" className="hub-link">
+                        <Icon name="tune" size="1.15rem" />
+                        <span>Preferências</span>
+                      </NavLink>
+                      {canInstall && (
+                        <button type="button" onClick={install} className="hub-link">
+                          <Icon name="download" size="1.15rem" />
+                          <span>Instalar app</span>
+                        </button>
+                      )}
+                      <ThemeToggle variant="menu" />
+                      <button
+                        type="button"
+                        onClick={() => void logout()}
+                        className="hub-link hub-logout"
+                      >
+                        <Icon name="logout" size="1.15rem" />
+                        <span>Sair</span>
                       </button>
-                    )}
-                    <ThemeToggle variant="menu" />
-                    <button
-                      type="button"
-                      onClick={() => void logout()}
-                      className="hub-link hub-logout"
-                    >
-                      <Icon name="logout" size="1.15rem" />
-                      <span>Sair</span>
-                    </button>
+                    </div>
                   </div>
-                )}
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     aria-label="Sua conta"
+                    ref={accountButtonRef}
                     aria-expanded={accountOpen}
+                    aria-controls="hub-account-menu"
                     onClick={() => setAccountOpen((v) => !v)}
                     className="hub-account"
                   >

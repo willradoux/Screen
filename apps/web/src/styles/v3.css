@@ -1179,3 +1179,257 @@ html:not([data-call]) .backdrop {
 .rail-people {
   border-color: rgb(255 255 255 / 0.06);
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Movimento "saindo do componente" (como a navbar do portfólio): o painel cresce a partir do
+ * que foi clicado, com uma mola, e os itens sobem um depois do outro. Ao fechar, recolhem
+ * juntos e mais rápido. Tudo vira só troca de opacidade com movimento reduzido.
+ * ------------------------------------------------------------------------------------- */
+
+:root {
+  --v3-spring: cubic-bezier(0.34, 1.28, 0.5, 1);
+}
+
+/* Desdobrar: altura de 0 até o conteúdo (grid 0fr -> 1fr). */
+.unfold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 480ms var(--v3-spring);
+}
+
+.unfold[data-open] {
+  grid-template-rows: 1fr;
+}
+
+.unfold-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.unfold .hub-account-menu {
+  animation: none;
+  margin-bottom: 6px;
+}
+
+.unfold .hub-account-menu > * {
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  transition:
+    opacity 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+
+.unfold[data-open] .hub-account-menu > * {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 240ms var(--ease-out),
+    transform 440ms var(--v3-spring);
+}
+
+.unfold[data-open] .hub-account-menu > :nth-child(1) {
+  transition-delay: 90ms;
+}
+.unfold[data-open] .hub-account-menu > :nth-child(2) {
+  transition-delay: 140ms;
+}
+.unfold[data-open] .hub-account-menu > :nth-child(3) {
+  transition-delay: 190ms;
+}
+.unfold[data-open] .hub-account-menu > :nth-child(4) {
+  transition-delay: 240ms;
+}
+
+/* A seta da conta gira junto. */
+.hub-account + svg,
+.hub-account ~ img {
+  transition: transform 460ms var(--v3-spring);
+}
+
+/* Menu de aparelhos: sai de dentro da pílula (revela de baixo para cima) e os itens sobem. */
+.device-menu {
+  transform-origin: 50% 100%;
+  animation: v3-emerge 460ms var(--v3-spring) both;
+}
+
+.device-menu > * {
+  animation: v3-rise 420ms var(--v3-spring) both;
+}
+
+.device-menu > :nth-child(2) {
+  animation-delay: 60ms;
+}
+.device-menu > :nth-child(3) {
+  animation-delay: 120ms;
+}
+.device-menu > :nth-child(n + 4) {
+  animation-delay: 170ms;
+}
+
+@keyframes v3-emerge {
+  from {
+    opacity: 0;
+    clip-path: inset(70% 8% 0 8% round 20px);
+    transform: translate(-50%, 10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 20px);
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes v3-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+/* Janelas (tema, vídeo, layout, efeitos): entram com a mola e os blocos aparecem em sequência. */
+.sheet {
+  border-radius: 14px;
+  background: var(--v3-panel);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (min-width: 768px) {
+  .sheet-in {
+    animation: v3-sheet 460ms var(--v3-spring) both;
+  }
+}
+
+@keyframes v3-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+}
+
+.sheet-in > .space-y-5 > * {
+  animation: v3-rise 440ms var(--v3-spring) both;
+}
+
+.sheet-in > .space-y-5 > :nth-child(1) {
+  animation-delay: 80ms;
+}
+.sheet-in > .space-y-5 > :nth-child(2) {
+  animation-delay: 130ms;
+}
+.sheet-in > .space-y-5 > :nth-child(3) {
+  animation-delay: 180ms;
+}
+.sheet-in > .space-y-5 > :nth-child(n + 4) {
+  animation-delay: 230ms;
+}
+
+/* Barra da sala expandindo: os nomes e os blocos aparecem em sequência. */
+.call-rail[data-open] .rail-tools > * {
+  animation: v3-rise 420ms var(--v3-spring) both;
+}
+
+.call-rail[data-open] .rail-tools > :nth-child(2) {
+  animation-delay: 40ms;
+}
+.call-rail[data-open] .rail-tools > :nth-child(3) {
+  animation-delay: 80ms;
+}
+.call-rail[data-open] .rail-tools > :nth-child(4) {
+  animation-delay: 120ms;
+}
+.call-rail[data-open] .rail-tools > :nth-child(n + 5) {
+  animation-delay: 160ms;
+}
+
+/* O botão de Efeitos chega na pílula com um pequeno "salto". */
+.call-float [aria-label='Efeitos'] {
+  animation: v3-rise 460ms var(--v3-spring) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unfold,
+  .unfold .hub-account-menu > *,
+  .device-menu,
+  .device-menu > *,
+  .sheet-in,
+  .sheet-in > .space-y-5 > *,
+  .call-rail[data-open] .rail-tools > * {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+:root[data-motion='off'] .unfold,
+:root[data-motion='off'] .unfold .hub-account-menu > *,
+:root[data-motion='off'] .device-menu,
+:root[data-motion='off'] .device-menu > *,
+:root[data-motion='off'] .sheet-in,
+:root[data-motion='off'] .sheet-in > .space-y-5 > *,
+:root[data-motion='off'] .call-rail[data-open] .rail-tools > * {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
+  transition-delay: 0ms !important;
+  animation-delay: 0ms !important;
+}
+
+/* Conta: fixa no rodapé do menu; o menu dela flutua logo acima do cartão, sem empurrar nada. */
+.hub-footer {
+  position: relative;
+}
+
+.account-pop {
+  position: absolute;
+  right: 0;
+  bottom: 52px;
+  left: 0;
+  z-index: 5;
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px) scale(0.96);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out),
+    visibility 0s linear 200ms;
+}
+
+.account-pop[data-open] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 220ms var(--ease-out),
+    transform 460ms var(--v3-spring),
+    visibility 0s;
+}
+
+.account-pop .unfold-inner {
+  overflow: visible;
+}
+
+.account-pop .hub-account-menu {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: var(--v3-elev);
+  padding: 6px;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+}
+
+:root[data-mode='light'] .account-pop .hub-account-menu {
+  background: #fff;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.16);
+}
+
+.account-pop .hub-account-menu > * {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.account-pop[data-open] .hub-account-menu > * {
+  opacity: 1;
+  transform: none;
+}

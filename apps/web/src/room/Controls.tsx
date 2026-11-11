@@ -185,14 +185,6 @@ export function Controls({
         {layout && <LayoutPicker value={layout.value} onChange={layout.onChange} />}
         <VideoSettings />
         <ThemeToggle variant="ctl" />
-        {captions && (
-          <EffectsPanel
-            local={local}
-            captionsOn={captions.on}
-            onToggleCaptions={captions.onToggle}
-            onError={onError}
-          />
-        )}
       </div>
     );
   }
@@ -271,6 +263,15 @@ export function Controls({
               {camPermission === 'denied' && <PermissionBadge />}
             </span>
           </span>
+          {/* Efeitos (fundo da câmera, voz, legendas): logo depois da câmera. */}
+          {captions && (
+            <EffectsPanel
+              local={local}
+              captionsOn={captions.on}
+              onToggleCaptions={captions.onToggle}
+              onError={onError}
+            />
+          )}
           <RoundButton
             icon={screen ? 'stop_screen_share' : 'screen_share'}
             short={screen ? 'Parar de compartilhar' : 'Compartilhar tela'}

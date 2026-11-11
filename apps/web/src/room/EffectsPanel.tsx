@@ -103,7 +103,7 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
         className="ctl-button"
       >
         <span className="ctl" data-on={open || undefined}>
-          <Icon name="palette" size="1.35rem" />
+          <Icon name="wand_stars" size="1.35rem" />
         </span>
       </button>
 

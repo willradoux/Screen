@@ -29,6 +29,7 @@ import download from '@material-symbols/svg-400/rounded/download.svg?url';
 import edit from '@material-symbols/svg-400/rounded/edit.svg?url';
 import closedCaption from '@material-symbols/svg-400/rounded/closed_caption.svg?url';
 import paletteIcon from '@material-symbols/svg-400/rounded/palette.svg?url';
+import wandStars from '@material-symbols/svg-400/rounded/wand_stars.svg?url';
 import frontHand from '@material-symbols/svg-400/rounded/front_hand.svg?url';
 import qrCode from '@material-symbols/svg-400/rounded/qr_code_2.svg?url';
 import barChart from '@material-symbols/svg-400/rounded/bar_chart.svg?url';
@@ -87,6 +88,7 @@ const ICONS = {
   front_hand: frontHand,
   closed_caption: closedCaption,
   palette: paletteIcon,
+  wand_stars: wandStars,
   qr_code_2: qrCode,
   bar_chart: barChart,
   group,
