@@ -38,11 +38,6 @@ const FEATURES: Feature[] = [
     text: 'Nas reuniões, levante a mão. A moderação vê a fila e dá a palavra na ordem.',
   },
   {
-    icon: 'closed_caption',
-    title: 'Legendas ao vivo',
-    text: 'Veja o que cada um fala escrito na tela. Ótimo para quem está sem som ou em lugar barulhento.',
-  },
-  {
     icon: 'palette',
     title: 'Fundo, voz e enquadramento',
     text: 'Desfoque ou troque o fundo da câmera, use voz de robô, eco ou rádio e escolha como o vídeo aparece na sua tela.',
@@ -142,8 +137,7 @@ const MEMBER_STEPS: Step[] = [
     body: (
       <>
         Em <strong>Efeitos</strong>: fundo desfocado ou com imagem (ligue a câmera antes), voz de
-        robô, eco ou rádio (ligue o microfone antes) e <strong>legendas ao vivo</strong>. As
-        legendas e o fundo funcionam melhor no Chrome e no Edge.
+        robô, eco ou rádio (ligue o microfone antes). O fundo funciona melhor no Chrome e no Edge.
       </>
     ),
   },
@@ -397,7 +391,7 @@ export function FeaturesPage() {
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-zinc-400">
           O Screen liga o Discord a salas de vídeo: lives nas calls, reuniões agendadas, pedir a
-          palavra, legendas, gravação e um painel para os admins.{' '}
+          palavra, gravação e um painel para os admins.{' '}
           <strong className="text-zinc-200">Sem instalar nada.</strong>
         </p>
       </header>

@@ -5,12 +5,9 @@ import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { applyBackground, BACKGROUND_IMAGES, backgroundSupported } from '../lib/videoEffects';
 import { createVoiceProcessor, VOICE_PRESETS, type VoicePreset } from '../lib/voiceEffects';
-import { speechSupported } from './captions';
 
 interface Props {
   local: LocalParticipant;
-  captionsOn: boolean;
-  onToggleCaptions: () => void;
   onError: (m: string) => void;
 }
 
@@ -40,8 +37,8 @@ function Chip({
   );
 }
 
-/** Efeitos: fundo da câmera, voz e legendas. Tudo acontece no seu navegador. */
-export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: Props) {
+/** Efeitos: fundo da câmera e voz. Tudo acontece no seu navegador. */
+export function EffectsPanel({ local, onError }: Props) {
   const [open, setOpen] = useState(false);
   const [bg, setBg] = useState('none');
   const [voice, setVoice] = useState<VoicePreset>('none');
@@ -173,18 +170,6 @@ export function EffectsPanel({ local, captionsOn, onToggleCaptions, onError }: P
             </div>
             <p className="text-xs text-zinc-500">
               {VOICE_PRESETS.find((v) => v.value === voice)?.hint}
-            </p>
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold text-zinc-500">Legendas ao vivo</legend>
-            <Chip active={captionsOn} onClick={onToggleCaptions}>
-              {captionsOn ? 'Ligadas' : 'Desligadas'}
-            </Chip>
-            <p className="text-xs text-zinc-500">
-              {speechSupported()
-                ? 'Mostra o que os outros falam e transcreve a sua fala. No Chrome e no Edge, o áudio da sua fala é enviado ao serviço de voz do navegador (Google ou Microsoft) para virar texto.'
-                : 'Este navegador não transcreve voz, então você só vê as legendas dos outros. Use o Chrome ou o Edge para legendar a sua fala.'}
             </p>
           </fieldset>
         </Sheet>

@@ -8,9 +8,7 @@ import { useImmersive } from '../components/immersive';
 import { Alert, Avatar, Badge, Button } from '../components/ui';
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { liveSources, publishRestriction } from '../room/publish-rules';
-import { CaptionsOverlay, useSpeechCaptions } from '../room/captions';
 import { Controls } from '../room/Controls';
-import { useNow } from './MeetingsPage';
 import { ParticipantsPanel } from '../room/ParticipantsPanel';
 import {
   BlockedScreen,
@@ -115,7 +113,6 @@ function ConnectedRoom({
     return STAGE_LAYOUTS.some((l) => l.value === saved) ? (saved as StageLayout) : 'auto';
   });
   const [handBusy, setHandBusy] = useState(false);
-  const [captionsOn, setCaptionsOn] = useState(false);
   // Controles minimizados (padrão): flutuam sobre a tela e somem com o mouse parado por 30 s.
   // "Mais opções" abre a barra preta completa embaixo, que fica até a pessoa minimizar.
   // Com o ponteiro ou o foco nos controles (ou um painel aberto), eles não somem.
@@ -137,13 +134,6 @@ function ConnectedRoom({
       if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHoldBar(false);
     },
   };
-  const now = useNow(1000);
-  // Transcreve a própria fala só com legendas ligadas e microfone aberto.
-  useSpeechCaptions(
-    captionsOn && local?.isMicrophoneEnabled === true,
-    session.sendCaption,
-    toast.error,
-  );
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   // Quem a administração destacou vale para todos; fixar outra pessoa por conta própria vale só aqui.
   const effectivePin = pinnedId ?? room?.spotlightId ?? null;
@@ -201,7 +191,6 @@ function ConnectedRoom({
           ? { raised, busy: handBusy, onToggle: () => void toggleHand() }
           : undefined
       }
-      captions={{ on: captionsOn, onToggle: () => setCaptionsOn((v) => !v) }}
       local={local}
       profile={profileFor({ people: tiles.length, videos: countVideos(tiles) })}
       allowedSources={allowedSources}
@@ -368,7 +357,6 @@ function ConnectedRoom({
                 ? { onStageSelf: () => void stageSelf() }
                 : {})}
             />
-            {captionsOn && <CaptionsOverlay captions={session.captions} now={now} />}
           </div>
         </section>
 

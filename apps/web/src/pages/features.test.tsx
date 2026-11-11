@@ -16,12 +16,7 @@ describe('FeaturesPage', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Transmita tela/);
     expect(screen.getAllByTestId('feature').length).toBeGreaterThanOrEqual(10);
-    for (const t of [
-      'Gravação de reuniões',
-      'Pedir a palavra',
-      'Legendas ao vivo',
-      'Economia de recursos',
-    ]) {
+    for (const t of ['Gravação de reuniões', 'Pedir a palavra', 'Economia de recursos']) {
       expect(screen.getByRole('heading', { name: t })).toBeInTheDocument();
     }
     expect(screen.getByRole('tab', { name: 'O que tem' })).toHaveAttribute('aria-selected', 'true');

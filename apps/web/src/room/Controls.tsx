@@ -42,7 +42,6 @@ interface Props {
   onError: (message: string) => void;
   /** Pedir a palavra (só reuniões). */
   hand?: { raised: boolean; busy: boolean; onToggle: () => void };
-  captions?: { on: boolean; onToggle: () => void };
 }
 
 /** Duração da saída do menu de aparelhos (0 nos testes: some na hora). */
@@ -121,7 +120,6 @@ export function Controls({
   onLeave,
   onError,
   hand,
-  captions,
   layout,
   variant = 'media',
   room,
@@ -337,15 +335,8 @@ export function Controls({
               />
             )}
           </span>
-          {/* Efeitos (fundo da câmera, voz, legendas): logo depois da câmera. */}
-          {captions && (
-            <EffectsPanel
-              local={local}
-              captionsOn={captions.on}
-              onToggleCaptions={captions.onToggle}
-              onError={onError}
-            />
-          )}
+          {/* Efeitos (fundo da câmera e voz): logo depois da câmera. */}
+          <EffectsPanel local={local} onError={onError} />
           <RoundButton
             icon={screen ? 'stop_screen_share' : 'screen_share'}
             short={screen ? 'Parar de compartilhar' : 'Compartilhar tela'}
