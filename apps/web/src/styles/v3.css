@@ -2332,7 +2332,7 @@ html:not([data-call]) .backdrop {
 .ctl-split {
   position: relative;
   gap: 0;
-  padding-left: 4px;
+  padding-right: 4px;
   background: rgb(255 255 255 / 0.08);
   transition: background-color 180ms var(--ease-out);
 }

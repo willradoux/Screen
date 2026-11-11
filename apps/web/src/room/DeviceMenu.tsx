@@ -1,14 +1,14 @@
 import { Room, type Room as LiveKitRoom } from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../components/Icon';
+import { setOutputDevice } from '../lib/audioPrefs';
 
-type Kind = 'audio' | 'video';
+export type DeviceKind = 'audio' | 'video' | 'output';
+type Kind = DeviceKind;
 
 const SECTIONS: Record<Kind, { kind: MediaDeviceKind; label: string; icon: IconName }[]> = {
-  audio: [
-    { kind: 'audioinput', label: 'Microfone', icon: 'mic' },
-    { kind: 'audiooutput', label: 'Saída de som', icon: 'record_voice_over' },
-  ],
+  audio: [{ kind: 'audioinput', label: 'Microfone', icon: 'mic' }],
+  output: [{ kind: 'audiooutput', label: 'Saída de som', icon: 'headphones' }],
   video: [{ kind: 'videoinput', label: 'Câmera', icon: 'videocam' }],
 };
 
@@ -39,6 +39,9 @@ export function DeviceMenu({
   const [devices, setDevices] = useState<Partial<Record<MediaDeviceKind, MediaDeviceInfo[]>>>({});
   const [active, setActive] = useState<Partial<Record<MediaDeviceKind, string | undefined>>>({});
 
+  // Sem permissão o navegador esconde os aparelhos (até a saída de som): a pessoa pede uma vez.
+  const [askedAccess, setAskedAccess] = useState(false);
+
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -47,7 +50,7 @@ export function DeviceMenu({
       for (const section of SECTIONS[kind]) {
         if (section.kind === 'audiooutput' && !canPickOutput()) continue;
         try {
-          next[section.kind] = await Room.getLocalDevices(section.kind, false);
+          next[section.kind] = await Room.getLocalDevices(section.kind, askedAccess);
         } catch {
           next[section.kind] = [];
         }
@@ -65,7 +68,7 @@ export function DeviceMenu({
       alive = false;
       navigator.mediaDevices?.removeEventListener?.('devicechange', load);
     };
-  }, [kind, room]);
+  }, [kind, room, askedAccess]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -86,6 +89,8 @@ export function DeviceMenu({
   async function choose(deviceKind: MediaDeviceKind, deviceId: string) {
     try {
       await room.switchActiveDevice(deviceKind, deviceId);
+      // Quem foi aumentado acima de 100% toca pelo Web Audio: ele também troca de saída.
+      if (deviceKind === 'audiooutput') setOutputDevice(deviceId);
       setActive((a) => ({ ...a, [deviceKind]: deviceId }));
     } catch {
       onError('Não foi possível trocar de aparelho. Veja se ele está ligado e livre.');
@@ -96,10 +101,16 @@ export function DeviceMenu({
     <div
       ref={ref}
       role="dialog"
-      aria-label={kind === 'audio' ? 'Aparelhos de áudio' : 'Aparelhos de vídeo'}
+      aria-label={kind === 'audio' ? 'Microfone' : kind === 'output' ? 'Saída de som' : 'Câmera'}
       className="device-menu"
       data-closing={closing || undefined}
     >
+      {kind === 'output' && !canPickOutput() && (
+        <p className="px-2 py-1 text-xs leading-relaxed text-zinc-400">
+          Este navegador não deixa escolher a saída de som. No Chrome ou no Edge dá; aqui, o som sai
+          pelo aparelho padrão do sistema.
+        </p>
+      )}
       {SECTIONS[kind].map((section) => {
         const list = devices[section.kind];
         if (!list) return null;
@@ -111,7 +122,17 @@ export function DeviceMenu({
             </p>
             {list.length === 0 ? (
               <p className="px-2 pb-1 text-xs text-zinc-500">
-                Nenhum aparelho encontrado. Permita o acesso no navegador e tente de novo.
+                Nenhum aparelho encontrado. O navegador só mostra a lista depois de liberar o
+                acesso.{' '}
+                {!askedAccess && (
+                  <button
+                    type="button"
+                    className="font-semibold text-zinc-200 underline underline-offset-2"
+                    onClick={() => setAskedAccess(true)}
+                  >
+                    Permitir e mostrar aparelhos
+                  </button>
+                )}
               </p>
             ) : (
               <div role="radiogroup" aria-label={section.label} className="space-y-0.5">

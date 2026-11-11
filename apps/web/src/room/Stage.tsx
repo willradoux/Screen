@@ -553,7 +553,11 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
         root.appendChild(el);
         const entry = { identity: p.identity, track: track.mediaStreamTrack, el };
         playing.current.push(entry);
-        applyVolume(entry, effectiveVolume(prefsRef.current, p.identity));
+        applyVolume(
+          entry,
+          effectiveVolume(prefsRef.current, p.identity),
+          prefsRef.current.outputId,
+        );
         cleanups.push(() => {
           (entry as { boost?: Boost }).boost?.close();
           track.detach(el);
@@ -566,7 +570,9 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
 
   // Mudou o volume de alguém, silenciou ou desligou o som da sala: aplica sem recriar nada.
   useEffect(() => {
-    for (const entry of playing.current) applyVolume(entry, effectiveVolume(prefs, entry.identity));
+    for (const entry of playing.current) {
+      applyVolume(entry, effectiveVolume(prefs, entry.identity), prefs.outputId);
+    }
   }, [prefs]);
 
   return <div ref={container} hidden aria-hidden="true" data-testid="remote-audio" />;
@@ -575,12 +581,15 @@ export function RemoteAudio({ participants }: { participants: RemoteParticipant[
 /** Amplificador do navegador para tocar acima de 100% (só para quem foi aumentado). */
 interface Boost {
   gain: GainNode;
+  ctx: AudioContext & { setSinkId?: (id: string) => Promise<void> };
+  sinkId: string;
   close: () => void;
 }
 
 function applyVolume(
   entry: { track: MediaStreamTrack; el: HTMLMediaElement; boost?: Boost },
   volume: number,
+  outputId = '',
 ) {
   if (volume <= 1) {
     entry.boost?.close();
@@ -599,6 +608,8 @@ function applyVolume(
       void ctx.resume().catch(() => undefined);
       entry.boost = {
         gain,
+        ctx,
+        sinkId: '',
         close: () => {
           src.disconnect();
           gain.disconnect();
@@ -614,4 +625,9 @@ function applyVolume(
   }
   entry.el.muted = true;
   entry.boost.gain.gain.value = volume;
+  // O amplificador sai pela mesma saída de som escolhida (Chrome/Edge).
+  if (entry.boost.sinkId !== outputId && entry.boost.ctx.setSinkId) {
+    entry.boost.sinkId = outputId;
+    void entry.boost.ctx.setSinkId(outputId).catch(() => undefined);
+  }
 }

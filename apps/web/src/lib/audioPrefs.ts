@@ -9,6 +9,8 @@ import { useSyncExternalStore } from 'react';
  */
 export interface AudioPrefs {
   deafened: boolean;
+  /** Saída de som escolhida nesta visita ("" = a padrão do sistema). */
+  outputId: string;
   volumes: Record<string, number>;
   muted: Record<string, boolean>;
 }
@@ -33,7 +35,7 @@ function read(): AudioPrefs {
   }
   const muted: Record<string, boolean> = {};
   for (const [id, m] of Object.entries(saved.muted ?? {})) if (m === true) muted[id] = true;
-  cache = { deafened: false, volumes, muted };
+  cache = { deafened: false, outputId: '', volumes, muted };
   return cache;
 }
 
@@ -48,6 +50,10 @@ function write(next: AudioPrefs) {
 }
 
 export const clampVolume = (v: number) => Math.min(MAX_VOLUME, Math.max(0, v));
+
+export function setOutputDevice(outputId: string): void {
+  write({ ...read(), outputId });
+}
 
 export function setDeafened(deafened: boolean): void {
   write({ ...read(), deafened });

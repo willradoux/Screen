@@ -7,7 +7,7 @@ import { canShareScreen, mediaErrorMessage, SCREEN_REFUSED_AT_ONCE } from '../li
 import type { MediaSource } from '../lib/types';
 import { canUseSource } from './publish-rules';
 import { EffectsPanel } from './EffectsPanel';
-import { DeviceMenu, usePermission } from './DeviceMenu';
+import { DeviceMenu, usePermission, type DeviceKind } from './DeviceMenu';
 import { LayoutPicker } from './LayoutPicker';
 import type { StageLayout } from './Stage';
 import { VideoSettings } from './VideoSettings';
@@ -120,14 +120,12 @@ export function Controls({
   room,
   profile = NORMAL_PROFILE,
 }: Props) {
-  const [menu, setMenuState] = useState<'audio' | 'video' | null>(null);
+  const [menu, setMenuState] = useState<DeviceKind | null>(null);
   // O menu que está saindo fica na tela o tempo da animação de fechar (indo e voltando).
-  const [leaving, setLeaving] = useState<'audio' | 'video' | null>(null);
+  const [leaving, setLeaving] = useState<DeviceKind | null>(null);
   const leaveTimer = useRef(0);
   useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
-  const setMenu = (
-    next: 'audio' | 'video' | null | ((m: 'audio' | 'video' | null) => 'audio' | 'video' | null),
-  ) => {
+  const setMenu = (next: DeviceKind | null | ((m: DeviceKind | null) => DeviceKind | null)) => {
     const value = typeof next === 'function' ? next(menu) : next;
     window.clearTimeout(leaveTimer.current);
     if (value === null && menu && MENU_EXIT_MS > 0 && !motionOff()) {
@@ -240,13 +238,6 @@ export function Controls({
       <div className="ctl-row">
         <div className="ctl-group" role="group" aria-label="Mídia">
           <span className="ctl-split">
-            {room && (
-              <DeviceToggle
-                label="Trocar aparelho de áudio"
-                open={menu === 'audio'}
-                onClick={() => setMenu((m) => (m === 'audio' ? null : 'audio'))}
-              />
-            )}
             <span className="relative">
               <RoundButton
                 icon={mic ? 'mic' : 'mic_off'}
@@ -269,24 +260,34 @@ export function Controls({
               />
               {micPermission === 'denied' && <PermissionBadge />}
             </span>
-          </span>
-          {/* Som da sala (como o fone do Discord): para de ouvir todo mundo, só para você. */}
-          <RoundButton
-            icon={audio.deafened ? 'headset_off' : 'headphones'}
-            short={audio.deafened ? 'Ligar o som da sala' : 'Desligar o som da sala'}
-            fullLabel={`Som da sala: ${audio.deafened ? 'desligado' : 'ligado'}`}
-            active={false}
-            off={audio.deafened}
-            onClick={() => setDeafened(!audio.deafened)}
-          />
-          <span className="ctl-split">
             {room && (
               <DeviceToggle
-                label="Trocar aparelho de vídeo"
-                open={menu === 'video'}
-                onClick={() => setMenu((m) => (m === 'video' ? null : 'video'))}
+                label="Trocar aparelho de áudio"
+                open={menu === 'audio'}
+                onClick={() => setMenu((m) => (m === 'audio' ? null : 'audio'))}
               />
             )}
+          </span>
+          {/* Som da sala (como o fone do Discord): para de ouvir todo mundo, só para você; a
+              setinha escolhe por onde o som sai. */}
+          <span className="ctl-split">
+            <RoundButton
+              icon={audio.deafened ? 'headset_off' : 'headphones'}
+              short={audio.deafened ? 'Ligar o som da sala' : 'Desligar o som da sala'}
+              fullLabel={`Som da sala: ${audio.deafened ? 'desligado' : 'ligado'}`}
+              active={false}
+              off={audio.deafened}
+              onClick={() => setDeafened(!audio.deafened)}
+            />
+            {room && (
+              <DeviceToggle
+                label="Trocar saída de som"
+                open={menu === 'output'}
+                onClick={() => setMenu((m) => (m === 'output' ? null : 'output'))}
+              />
+            )}
+          </span>
+          <span className="ctl-split">
             <span className="relative">
               <RoundButton
                 icon={cam ? 'videocam' : 'videocam_off'}
@@ -309,6 +310,13 @@ export function Controls({
               />
               {camPermission === 'denied' && <PermissionBadge />}
             </span>
+            {room && (
+              <DeviceToggle
+                label="Trocar aparelho de vídeo"
+                open={menu === 'video'}
+                onClick={() => setMenu((m) => (m === 'video' ? null : 'video'))}
+              />
+            )}
           </span>
           {/* Efeitos (fundo da câmera, voz, legendas): logo depois da câmera. */}
           {captions && (
@@ -377,9 +385,9 @@ function DeviceToggle({
       className="ctl-button ctl-chevron"
       data-open={open || undefined}
     >
-      {/* Uma seta só, que gira: para cima fechado, para baixo aberto. */}
+      {/* Uma seta só, que gira: para baixo fechado (como no Discord), para cima aberto. */}
       <span className="ctl-chevron-icon">
-        <Icon name="keyboard_arrow_up" size="1.05rem" />
+        <Icon name="keyboard_arrow_down" size="1.05rem" />
       </span>
     </button>
   );

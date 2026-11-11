@@ -294,7 +294,9 @@ describe('RoomPage: entrar e usar a sala', () => {
     const fx = names.indexOf('Efeitos');
     const tela = names.findIndex((n) => /^tela:/i.test(n));
     expect(cam).toBeGreaterThan(-1);
-    expect(fx).toBe(cam + 1);
+    // Câmera, a setinha dela (à direita, como no Discord) e logo depois Efeitos.
+    expect(names[cam + 1]).toBe('Trocar aparelho de vídeo');
+    expect(fx).toBe(cam + 2);
     expect(tela).toBeGreaterThan(fx);
   });
 
