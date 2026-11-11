@@ -132,6 +132,24 @@ interface TileExtras {
   pinned?: boolean;
   onPin?: (identity: string) => void;
   quality?: VideoQuality | undefined;
+  /** Tela cheia: abre este vídeo ocupando o monitor (ou volta, se já está). */
+  onMaximize?: () => void;
+  maximized?: boolean;
+}
+
+/** Botão de tela cheia no canto do vídeo, ao lado do alfinete. */
+function MaxButton({ name, on, onClick }: { name: string; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={on ? `Sair da tela cheia de ${name}` : `Tela cheia: ${name}`}
+      title={on ? 'Sair da tela cheia (Esc)' : 'Tela cheia'}
+      className="stage-max-btn"
+    >
+      <Icon name={on ? 'fullscreen_exit' : 'fullscreen'} size="1.05rem" />
+    </button>
+  );
 }
 
 function PersonTile({
@@ -140,6 +158,8 @@ function PersonTile({
   pinned = false,
   onPin,
   quality,
+  onMaximize,
+  maximized = false,
 }: { tile: Tile; size?: 'normal' | 'small' } & TileExtras) {
   const prefs = useVideoPrefs();
   const [natural, setNatural] = useState<number | null>(null);
@@ -185,6 +205,7 @@ function PersonTile({
           onPin={onPin}
         />
       )}
+      {onMaximize && <MaxButton name={tile.name} on={maximized} onClick={onMaximize} />}
       <figcaption className="stage-caption">
         <span className="truncate font-medium text-white">
           {tile.name}
@@ -220,7 +241,14 @@ function PersonTile({
   );
 }
 
-function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & TileExtras) {
+function ScreenTile({
+  tile,
+  pinned = false,
+  onPin,
+  quality,
+  onMaximize,
+  maximized = false,
+}: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
   const reveal = useTouchReveal();
   if (!tile.screenPub) return null;
@@ -258,6 +286,9 @@ function ScreenTile({ tile, pinned = false, onPin, quality }: { tile: Tile } & T
           pinned={pinned}
           onPin={onPin}
         />
+      )}
+      {onMaximize && (
+        <MaxButton name={`tela de ${tile.name}`} on={maximized} onClick={onMaximize} />
       )}
       <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
         Tela de {tile.name}
@@ -299,7 +330,10 @@ function pieces(tiles: Tile[]): Piece[] {
 
 interface StageExtras {
   pinnedId: string | null;
-  onPin: (value: string) => void;
+  onPin?: (value: string) => void;
+  /** Peça em tela cheia (chave) e como abrir/fechar. Sem `onMaximize`: sem botão. */
+  maxKey?: string | null;
+  onMaximize?: (key: string | null) => void;
   cameraQuality: VideoQuality | undefined;
   screenQuality: VideoQuality | undefined;
 }
@@ -327,6 +361,10 @@ function PieceView({
       pinned={pinned}
       onPin={extras.onPin}
       quality={extras.screenQuality}
+      maximized={extras.maxKey === piece.key}
+      {...(extras.onMaximize && {
+        onMaximize: () => extras.onMaximize!(extras.maxKey === piece.key ? null : piece.key),
+      })}
     />
   ) : (
     <PersonTile
@@ -335,6 +373,10 @@ function PieceView({
       pinned={pinned}
       onPin={extras.onPin}
       quality={extras.cameraQuality}
+      maximized={extras.maxKey === piece.key}
+      {...(extras.onMaximize && {
+        onMaximize: () => extras.onMaximize!(extras.maxKey === piece.key ? null : piece.key),
+      })}
     />
   );
 }
@@ -398,8 +440,34 @@ export function Stage({
   const lastSpeaker = useRef<string | null>(null);
   const speakingNow = tiles.find((t) => t.isSpeaking && !t.isLocal);
   if (speakingNow) lastSpeaker.current = speakingNow.identity;
+
+  // Tela cheia: um vídeo ocupa o monitor inteiro (Fullscreen do navegador); as miniaturas
+  // embaixo trocam de vídeo sem sair. Esc (ou o botão) sai.
+  const [maxKey, setMaxKey] = useState<string | null>(null);
+  const maxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!maxKey) return;
+    const el = maxRef.current;
+    if (el && document.fullscreenElement !== el && el.requestFullscreen) {
+      el.requestFullscreen().catch(() => undefined);
+    }
+  }, [maxKey]);
+  useEffect(() => {
+    const onChange = () => {
+      if (!document.fullscreenElement) setMaxKey(null);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  const maximize = (key: string | null) => {
+    if (key === null && document.fullscreenElement) void document.exitFullscreen();
+    setMaxKey(key);
+  };
+
   const extras: StageExtras = {
     pinnedId,
+    maxKey,
+    onMaximize: maximize,
     onPin: (value) => {
       // Clicar no que já está fixado solta (vale também para o formato do destaque do admin).
       const current = pinnedPiece(pieces(tiles), pinnedId);
@@ -447,6 +515,39 @@ export function Stage({
   }
 
   const all = pieces(visible);
+
+  const maxPiece = maxKey ? all.find((p) => p.key === maxKey) : undefined;
+  if (maxPiece) {
+    const others = all.filter((p) => p !== maxPiece);
+    // Nas miniaturas não tem botões (o clique troca o vídeo).
+    const thumbExtras: StageExtras = { ...extras, onPin: undefined, onMaximize: undefined };
+    return (
+      <div ref={maxRef} className="stage-max" data-layout="max">
+        <div className="stage-max-main">
+          <PieceView piece={maxPiece} extras={extras} />
+        </div>
+        {others.length > 0 && (
+          <div className="stage-max-strip" role="group" aria-label="Trocar o vídeo da tela cheia">
+            {others.map((p) => (
+              <div key={p.key} className="stage-max-thumb">
+                <PieceView piece={p} small extras={thumbExtras} />
+                <button
+                  type="button"
+                  className="stage-max-hit"
+                  onClick={() => setMaxKey(p.key)}
+                  aria-label={`Ver em tela cheia: ${p.kind === 'screen' ? `tela de ${p.tile.name}` : p.tile.name}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        <button type="button" className="stage-max-exit" onClick={() => maximize(null)}>
+          <Icon name="fullscreen_exit" size="1.1rem" />
+          Sair da tela cheia
+        </button>
+      </div>
+    );
+  }
   const pinned = pinnedPiece(all, pinnedId);
   // Automático com uma peça só (você sozinho) é o mosaico de um.
   const mode = pinned ? 'focus' : layout === 'auto' && all.length > 1 ? 'focus' : 'mosaic';

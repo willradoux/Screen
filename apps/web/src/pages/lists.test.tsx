@@ -368,6 +368,25 @@ describe('Stage (layout dos vídeos)', () => {
     expect(screen.queryByRole('group', { name: 'Zoom na tela de Eu' })).not.toBeInTheDocument();
   });
 
+  it('tela cheia: abre um vídeo, troca pela miniatura e sai', async () => {
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub(), screenPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub() }),
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Tela cheia: tela de Ana' }));
+    const main = () => document.querySelector('.stage-max-main')!;
+    expect(main()).toHaveTextContent('Tela de Ana');
+    const strip = screen.getByRole('group', { name: 'Trocar o vídeo da tela cheia' });
+    await userEvent.click(within(strip).getByRole('button', { name: 'Ver em tela cheia: Beto' }));
+    expect(main()).toHaveTextContent('Beto');
+    await userEvent.click(screen.getByRole('button', { name: /Sair da tela cheia$/ }));
+    expect(document.querySelector('.stage-max')).not.toBeInTheDocument();
+  });
+
   it('solta o vídeo do elemento quando o componente sai da tela', () => {
     const camera = pub();
     const { unmount } = render(<Stage tiles={[tile({ cameraPub: camera })]} />);
