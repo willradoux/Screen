@@ -385,6 +385,8 @@ export function useRoomSession(
       // Navegadores só tocam áudio depois de um gesto: o clique em "Entrar" conta.
       await lk.startAudio().catch(() => undefined);
       setMedia(lk);
+      // Só em desenvolvimento: deixa os testes no navegador publicarem câmera/voz de mentira.
+      if (import.meta.env.DEV) (window as unknown as { __screenRoom?: unknown }).__screenRoom = lk;
 
       const socket = depsRef.current.createSocket();
       socketRef.current = socket;
