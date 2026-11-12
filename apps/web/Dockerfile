@@ -3,7 +3,7 @@
 #     --build-arg VITE_API_URL=https://api.exemplo.com/api/v1 \
 #     --build-arg VITE_SOCKET_URL=https://api.exemplo.com .
 # As variáveis VITE_* são embutidas no JavaScript durante o build: mudou, faça novo build.
-FROM node:22.23.4-alpine AS build
+FROM node:26.13.0-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared packages/shared
