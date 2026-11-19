@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { AccessResult } from '../lib/types';
 import { publishRestriction, canUseSource, liveSources } from './publish-rules';
 import {
@@ -10,7 +10,8 @@ import {
   type SessionState,
 } from './sessionReducer';
 import { pinKey, togglePin } from './pin';
-import { parseMetadata } from './useParticipants';
+import { parseMetadata, toTile } from './useParticipants';
+import { voiceElements } from './useVoiceLevels';
 
 const ok: AccessResult = { canJoin: true, reason: null, hint: null };
 const blocked = (over: Partial<AccessResult>): AccessResult => ({
@@ -302,5 +303,49 @@ describe('fixar vários (room/pin.ts)', () => {
   it('togglePin: o formato do destaque do admin e o da câmera apontam a mesma peça', () => {
     expect(togglePin(['ana'], 'cam:ana', sharing)).toEqual([]);
     expect(togglePin(['ana', 'cam:ana', 'tela'], 'ana', sharing)).toEqual(['tela']);
+  });
+});
+
+describe('custo por redesenho da sala', () => {
+  const person = (metadata: string) =>
+    ({
+      identity: 'a',
+      name: 'Ana',
+      metadata,
+      isLocal: false,
+      isSpeaking: false,
+      isMicrophoneEnabled: false,
+      permissions: { canPublish: true },
+      getTrackPublication: () => undefined,
+    }) as unknown as Parameters<typeof toTile>[0];
+
+  it('toTile lê o metadata uma vez por pessoa e de novo só quando ele muda', () => {
+    const parse = vi.spyOn(JSON, 'parse');
+    const p = person('{"role":"MOD","avatarUrl":"https://cdn/a.png"}');
+    const calls = () => parse.mock.calls.length;
+
+    const before = calls();
+    for (let i = 0; i < 50; i += 1) toTile(p);
+    expect(calls() - before).toBe(1);
+    expect(toTile(p)).toMatchObject({ role: 'MOD', avatarUrl: 'https://cdn/a.png' });
+
+    (p as { metadata: string }).metadata = '{"role":"ADMIN"}';
+    expect(toTile(p)).toMatchObject({ role: 'ADMIN', avatarUrl: null });
+    expect(calls() - before).toBe(2);
+    parse.mockRestore();
+  });
+
+  it('voiceElements acha todos os elementos de voz numa busca só, agrupados por pessoa', () => {
+    const root = document.createElement('div');
+    root.innerHTML =
+      '<figure data-voice-id="a"></figure><li data-voice-id="a"></li><figure data-voice-id="b"></figure><p></p>';
+    const query = vi.spyOn(root, 'querySelectorAll');
+
+    const found = voiceElements(root);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(found.get('a')).toHaveLength(2);
+    expect(found.get('b')).toHaveLength(1);
+    expect(found.size).toBe(2);
   });
 });

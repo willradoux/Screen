@@ -42,6 +42,8 @@ export interface ModerationDeps {
 
 export const DEFAULT_BAN_MINUTES = 60;
 export const MAX_BAN_MINUTES = 1440;
+/** Ações em massa vão em blocos: com centenas de pessoas, uma a uma levaria minutos. */
+const BULK_BATCH = 25;
 
 const err = {
   notOpen: () => new AppError('ROOM_NOT_OPEN', 409, 'Esta sala não está aberta.'),
@@ -417,28 +419,34 @@ export class ModerationService {
       kind === 'MUTE_ALL' ? ['microphone'] : ['camera', 'screen_share', 'screen_share_audio'];
 
     const people = await this.deps.participations.listOpen(room.id);
+    const targets = people.filter((p) => p.userId !== actor.id);
     let affected = 0;
-    for (const p of people) {
-      if (p.userId === actor.id) continue;
-      const fresh = await this.deps.roles.resolveUser(p.userId).catch(() => p.roleAtJoin);
-      const role = ROLE_RANK[fresh] > ROLE_RANK[p.roleAtJoin] ? fresh : p.roleAtJoin;
-      if (!this.outranks(actor, p.userId, role)) continue;
-      try {
-        await this.liveKit(() => this.deps.livekit.muteSources(room.id, p.userId, sources));
-        this.deps.realtime.toUser(p.userId, 'moderation:action', {
-          roomId: room.id,
-          action: kind === 'MUTE_ALL' ? 'MUTED' : 'CAMERA_OFF',
-          by: actor.id,
-          reason: null,
-          sources,
-        });
-        affected += 1;
-      } catch (e) {
-        this.deps.logger.warn(
-          { err: e, roomId: room.id, userId: p.userId },
-          'falha ao silenciar em massa',
-        );
-      }
+    for (let i = 0; i < targets.length; i += BULK_BATCH) {
+      const done = await Promise.all(
+        targets.slice(i, i + BULK_BATCH).map(async (p) => {
+          const fresh = await this.deps.roles.resolveUser(p.userId).catch(() => p.roleAtJoin);
+          const role = ROLE_RANK[fresh] > ROLE_RANK[p.roleAtJoin] ? fresh : p.roleAtJoin;
+          if (!this.outranks(actor, p.userId, role)) return false;
+          try {
+            await this.liveKit(() => this.deps.livekit.muteSources(room.id, p.userId, sources));
+            this.deps.realtime.toUser(p.userId, 'moderation:action', {
+              roomId: room.id,
+              action: kind === 'MUTE_ALL' ? 'MUTED' : 'CAMERA_OFF',
+              by: actor.id,
+              reason: null,
+              sources,
+            });
+            return true;
+          } catch (e) {
+            this.deps.logger.warn(
+              { err: e, roomId: room.id, userId: p.userId },
+              'falha ao silenciar em massa',
+            );
+            return false;
+          }
+        }),
+      );
+      affected += done.filter(Boolean).length;
     }
     await this.audit({
       actorId: actor.id,
@@ -506,16 +514,13 @@ export class ModerationService {
   /** Recalcula a permissão de todos que estão na sala (modo palestra ligado/desligado). */
   private async reapplyAll(room: RoomRecord): Promise<void> {
     const people = await this.deps.participations.listOpen(room.id);
-    // Em blocos: com centenas de pessoas, uma a uma levaria minutos.
-    const BATCH = 25;
-    for (let i = 0; i < people.length; i += BATCH) {
+    for (let i = 0; i < people.length; i += BULK_BATCH) {
       await Promise.all(
-        people.slice(i, i + BATCH).map(async (p) => {
-          const mutedSources = await this.deps.participations.getMutedSources(room.id, p.userId);
+        people.slice(i, i + BULK_BATCH).map(async (p) => {
           const perms = computePermissions({
             role: p.roleAtJoin,
             userId: p.userId,
-            mutedSources,
+            mutedSources: p.mutedSources,
             lectureMode: room.lectureMode,
             speakerIds: room.speakerIds,
             screenLock: room.screenLock,

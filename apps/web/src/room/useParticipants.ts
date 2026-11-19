@@ -49,8 +49,25 @@ export function parseMetadata(metadata: string | undefined): {
 
 const hasVideo = (pub: TrackPublication | undefined) => Boolean(pub && !pub.isMuted && pub.track);
 
+/**
+ * O metadata quase nunca muda, mas a sala é redesenhada várias vezes por segundo: guarda o
+ * resultado por pessoa e só lê de novo quando o texto muda (500 pessoas não viram 500 leituras).
+ */
+const metadataCache = new WeakMap<
+  Participant,
+  { raw: string | undefined; parsed: ReturnType<typeof parseMetadata> }
+>();
+
+function metadataOf(p: Participant): ReturnType<typeof parseMetadata> {
+  const cached = metadataCache.get(p);
+  if (cached && cached.raw === p.metadata) return cached.parsed;
+  const parsed = parseMetadata(p.metadata);
+  metadataCache.set(p, { raw: p.metadata, parsed });
+  return parsed;
+}
+
 export function toTile(p: Participant): Tile {
-  const meta = parseMetadata(p.metadata);
+  const meta = metadataOf(p);
   const camera = p.getTrackPublication(Track.Source.Camera);
   const screen = p.getTrackPublication(Track.Source.ScreenShare);
   const mic = p.getTrackPublication(Track.Source.Microphone);

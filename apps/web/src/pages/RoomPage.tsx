@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
@@ -171,14 +171,22 @@ function ConnectedRoom({
   };
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   // Quem a administração destacou vale para todos; o que cada um fixa por conta própria vale só aqui.
-  const effectivePins =
-    pinnedIds.length > 0 ? pinnedIds : room?.spotlightId ? [room.spotlightId] : [];
-  const sharingIds = new Set(tiles.filter((t) => t.screenPublished).map((t) => t.identity));
+  // As listas só mudam de identidade quando o conteúdo muda: os painéis não redesenham à toa.
+  const spotlightId = room?.spotlightId ?? null;
+  const effectivePins = useMemo(
+    () => (pinnedIds.length > 0 ? pinnedIds : spotlightId ? [spotlightId] : []),
+    [pinnedIds, spotlightId],
+  );
+  const sharingKey = JSON.stringify(tiles.filter((t) => t.screenPublished).map((t) => t.identity));
+  const sharingIds = useMemo(() => new Set(JSON.parse(sharingKey) as string[]), [sharingKey]);
   // Fixar pela lista de pessoas: clicar no que já está fixado solta; senão, entra com os outros.
-  const pinFromList = (value: string) =>
-    withPinTransition(() =>
-      setPinnedIds(togglePin(effectivePins, value, (identity) => sharingIds.has(identity))),
-    );
+  const pinFromList = useCallback(
+    (value: string) =>
+      withPinTransition(() =>
+        setPinnedIds(togglePin(effectivePins, value, (identity) => sharingIds.has(identity))),
+      ),
+    [effectivePins, sharingIds],
+  );
   // Sala grande e eu só assistindo: recebo um único vídeo (o último fixado, a tela, ou quem falou por último).
   const lastSpeaker = useRef<string | null>(null);
   const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);

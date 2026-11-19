@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ADMIN_ROLE, MOD_ROLE } from '../fixtures/fakes.js';
 import { CATEGORY, VOICE_1, VOICE_2 } from '../fixtures/bot-fakes.js';
 import { buildRoomsApp, openMeeting, type RoomsCtx } from '../fixtures/rooms-fakes.js';
@@ -343,6 +343,32 @@ describe('ações em massa na reunião', () => {
     expect(ctx.auditRepo.records).toMatchObject([
       { actorId: ADMIN, roomId: room.id, action: 'MEETING_MUTE_ALL', meta: { affected: 3 } },
     ]);
+  });
+
+  it('silenciar todos numa sala cheia vai em blocos paralelos e atinge todo mundo', async () => {
+    const crowd = Array.from({ length: 60 }, (_, i) => ({
+      id: `9000000000000000${String(i).padStart(2, '0')}`,
+      role: 'MEMBER' as const,
+    }));
+    const { ctx, room } = await meetingWith(crowd);
+    const admin = (await login(ctx, ADMIN, [ADMIN_ROLE])).agent;
+    let running = 0;
+    let peak = 0;
+    const muteSources = ctx.livekit.muteSources.bind(ctx.livekit);
+    vi.spyOn(ctx.livekit, 'muteSources').mockImplementation(async (...args) => {
+      running += 1;
+      peak = Math.max(peak, running);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      running -= 1;
+      return muteSources(...args);
+    });
+
+    const res = await send(admin, ctx, 'post', `/rooms/${room.id}/mute-all`);
+
+    expect(res.body.data).toEqual({ affected: 60 });
+    expect(new Set(ctx.livekit.muted.map((m) => m.identity)).size).toBe(60);
+    expect(peak).toBeGreaterThan(1);
+    expect(peak).toBeLessThanOrEqual(25);
   });
 
   it('desligar todas as câmeras atinge câmera e tela, e não o microfone', async () => {

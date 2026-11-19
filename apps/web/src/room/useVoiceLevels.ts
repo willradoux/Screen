@@ -123,6 +123,10 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
       }
       lastFrame = now;
       const still = motionOff();
+      // Uma busca só na página por quadro (não uma por pessoa com o microfone aberto).
+      const elements = voiceElements(document);
+      const markFrame = (id: string, fn: (el: HTMLElement) => void) =>
+        elements.get(id)?.forEach(fn);
       for (const [id, m] of meters.current) {
         // Sem som pra você: some o medidor e fica o aviso do servidor.
         if (!m.pub.isLocal && effectiveVolume(audioRef.current, id) === 0) {
@@ -130,7 +134,7 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
             m.talking = false;
             m.level = 0;
           }
-          markAll(id, (el) => {
+          markFrame(id, (el) => {
             delete el.dataset.voice;
             delete el.dataset.talking;
             el.style.removeProperty('--voice');
@@ -145,13 +149,16 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
         const talking = now - m.lastLoud < TALK_OFF_MS;
         const changed = talking !== m.talking;
         m.talking = talking;
-        markAll(id, (el) => {
+        markFrame(id, (el) => {
           el.dataset.voice = '';
           if (changed || (talking && !('talking' in el.dataset))) {
             if (talking) el.dataset.talking = '';
             else delete el.dataset.talking;
           }
-          el.style.setProperty('--voice', still ? (talking ? '0.6' : '0') : m.level.toFixed(3));
+          // Só escreve quando muda: em silêncio o navegador não recalcula o estilo a cada quadro.
+          const voice = still ? (talking ? '0.6' : '0') : m.level.toFixed(3);
+          if (el.style.getPropertyValue('--voice') !== voice)
+            el.style.setProperty('--voice', voice);
         });
       }
       raf = requestAnimationFrame(tick);
@@ -172,6 +179,18 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
       map.clear();
     };
   }, [enabled]);
+}
+
+/** Os elementos marcados com `data-voice-id`, agrupados por pessoa. */
+export function voiceElements(root: ParentNode): Map<string, HTMLElement[]> {
+  const byId = new Map<string, HTMLElement[]>();
+  root.querySelectorAll<HTMLElement>('[data-voice-id]').forEach((el) => {
+    const id = el.dataset.voiceId ?? '';
+    const list = byId.get(id);
+    if (list) list.push(el);
+    else byId.set(id, [el]);
+  });
+  return byId;
 }
 
 function markAll(id: string, fn: (el: HTMLElement) => void) {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Avatar, Badge, Button, Spinner } from '../components/ui';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
@@ -108,7 +108,7 @@ type Pending = { userId: string; action: 'kick' | 'ban' } | null;
  * Lista de quem está na sala. Para moderação, cada pessoa tem as ações permitidas pela
  * hierarquia (a interface só esconde o que o servidor recusaria; ele confere de novo).
  */
-export function ParticipantsPanel({
+function ParticipantsPanelView({
   room,
   me,
   version,
@@ -596,3 +596,6 @@ export function ParticipantsPanel({
     </section>
   );
 }
+
+/** Só redesenha quando o que ela mostra muda (a sala redesenha várias vezes por segundo). */
+export const ParticipantsPanel = memo(ParticipantsPanelView);

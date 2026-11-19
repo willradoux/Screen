@@ -283,7 +283,7 @@ function PollForm({
  * Chat da sala, ao lado da chamada (como o painel de pessoas). As mensagens ficam no seu
  * navegador e somem quando a sala fecha; o servidor só repassa. Uma mensagem a cada 3 s.
  */
-export function ChatPanel({
+function ChatPanelView({
   chat,
   me,
   pollsEnabled = false,
@@ -496,6 +496,9 @@ export function ChatPanel({
     </section>
   );
 }
+
+/** Só redesenha quando o que ela mostra muda (a sala redesenha várias vezes por segundo). */
+export const ChatPanel = memo(ChatPanelView);
 
 /** Lembra em que você votou (para mostrar o resultado ao voltar). */
 function readVote(pollId: string): number | null {

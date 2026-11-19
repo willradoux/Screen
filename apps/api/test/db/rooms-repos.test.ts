@@ -114,6 +114,30 @@ describe('ParticipationRepo (MongoDB)', () => {
     expect(third.participation.mutedSources).toEqual([]);
   });
 
+  it('a participação mais recente de alguém é achada pelo índice (sem varrer a sala)', async () => {
+    const indexes = await ParticipationModel.collection.indexes();
+    expect(
+      indexes.some((i) => JSON.stringify(i.key) === '{"roomId":1,"userId":1,"joinedAt":-1}'),
+    ).toBe(true);
+
+    await ParticipationModel.insertMany(
+      Array.from({ length: 200 }, (_, i) => ({
+        roomId: base.roomId,
+        userId: `u${i}`,
+        roleAtJoin: 'MEMBER',
+        joinedAt: NOW,
+        leftAt: NOW,
+      })),
+    );
+    const plan = await ParticipationModel.find({ roomId: base.roomId, userId: 'u7' })
+      .sort({ joinedAt: -1 })
+      .limit(1)
+      .explain('executionStats');
+    const stats = (plan as unknown as { executionStats: { totalDocsExamined: number } })
+      .executionStats;
+    expect(stats.totalDocsExamined).toBe(1);
+  });
+
   it('o silenciamento é por sala', async () => {
     await repo.open({ ...base, userId: '1' });
     await repo.setMutedSources(base.roomId, '1', ['camera']);
