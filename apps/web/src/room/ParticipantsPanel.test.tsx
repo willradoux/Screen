@@ -373,7 +373,7 @@ describe('ParticipantsPanel: fixar (só na sua tela)', () => {
         lectureMode={false}
         onInfo={vi.fn()}
         onError={vi.fn()}
-        pinnedId={`cam:${people.member.userId}`}
+        pinnedIds={[`cam:${people.member.userId}`, people.member2.userId]}
         onPin={onPin}
         sharingIds={new Set([people.member2.userId])}
       />,
@@ -383,9 +383,10 @@ describe('ParticipantsPanel: fixar (só na sua tela)', () => {
     expect(
       within(row('Membro Um')).getByRole('button', { name: 'Desafixar câmera de Membro Um' }),
     ).toHaveAttribute('aria-pressed', 'true');
+    // Dá para ter vários fixados ao mesmo tempo: a tela de outra pessoa também está ligada.
     // Quem compartilha tem os dois botões.
     await userEvent.click(
-      within(row('Membro Dois')).getByRole('button', { name: 'Fixar tela de Membro Dois' }),
+      within(row('Membro Dois')).getByRole('button', { name: 'Desafixar tela de Membro Dois' }),
     );
     expect(onPin).toHaveBeenCalledWith(people.member2.userId);
     await userEvent.click(

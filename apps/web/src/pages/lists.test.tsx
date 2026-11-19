@@ -345,6 +345,81 @@ describe('Stage (layout dos vídeos)', () => {
     expect(screen.getByRole('button', { name: 'Fixar tela de Beto' })).toBeInTheDocument();
   });
 
+  it('dá para fixar vários (telas e câmeras): ficam em destaque numa grade e o resto na faixa', async () => {
+    render(
+      <Stage
+        layout="mosaic"
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub(), screenPub: pub() }),
+          tile({ identity: 'c', name: 'Caio', cameraPub: pub(), screenPub: pub() }),
+        ]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar tela de Beto' }));
+    expect(screen.queryByTestId('pinned-grid')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar tela de Caio' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar Ana' }));
+
+    const grid = screen.getByTestId('pinned-grid');
+    expect(grid.querySelectorAll(':scope > .stage-cell')).toHaveLength(3);
+    expect(grid.style.getPropertyValue('--cols')).toBe('2');
+    expect(within(grid).getAllByTestId('screen-tile')).toHaveLength(2);
+    expect(within(grid).getByRole('button', { name: 'Desafixar Ana' })).toBeInTheDocument();
+    // As câmeras de Beto e Caio continuam na faixa (dá para fixar dali também).
+    expect(document.querySelectorAll('.stage-strip > .stage-thumb')).toHaveLength(2);
+
+    // Soltar um: os outros continuam fixados e a grade se ajusta.
+    await userEvent.click(screen.getByRole('button', { name: 'Desafixar tela de Beto' }));
+    expect(screen.getByTestId('pinned-grid').querySelectorAll(':scope > .stage-cell')).toHaveLength(
+      2,
+    );
+    expect(document.querySelectorAll('.stage-strip > .stage-thumb')).toHaveLength(3);
+
+    // Soltar todos: volta ao layout escolhido (mosaico).
+    await userEvent.click(screen.getByRole('button', { name: 'Desafixar tela de Caio' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Desafixar Ana' }));
+    expect(document.querySelector('.stage-mosaic')).toBeInTheDocument();
+  });
+
+  it('fixar tudo: sem faixa; quem saiu da sala deixa de contar', () => {
+    const tiles = [
+      tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+      tile({ identity: 'b', name: 'Beto', cameraPub: pub() }),
+    ];
+    const { rerender } = render(
+      <Stage tiles={tiles} pinnedIds={['cam:a', 'b', 'cam:b', 'x']} onPinnedChange={vi.fn()} />,
+    );
+    expect(screen.getByTestId('pinned-grid').querySelectorAll(':scope > .stage-cell')).toHaveLength(
+      2,
+    );
+    expect(document.querySelector('.stage-strip')).not.toBeInTheDocument();
+
+    rerender(
+      <Stage tiles={tiles.slice(0, 1)} pinnedIds={['cam:a', 'b']} onPinnedChange={vi.fn()} />,
+    );
+    expect(screen.queryByTestId('pinned-grid')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Desafixar Ana' })).toBeInTheDocument();
+  });
+
+  it('palco controlado: fixar acrescenta à lista; clicar no destaque do admin solta', async () => {
+    const onPinnedChange = vi.fn();
+    render(
+      <Stage
+        tiles={[
+          tile({ identity: 'a', name: 'Ana', cameraPub: pub() }),
+          tile({ identity: 'b', name: 'Beto', cameraPub: pub() }),
+        ]}
+        pinnedIds={['a']}
+        onPinnedChange={onPinnedChange}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Fixar Beto' }));
+    expect(onPinnedChange).toHaveBeenLastCalledWith(['a', 'cam:b']);
+    await userEvent.click(screen.getByRole('button', { name: 'Desafixar Ana' }));
+    expect(onPinnedChange).toHaveBeenLastCalledWith([]);
+  });
+
   it('automático: a tela tem prioridade; sem tela, quem está falando fica grande', () => {
     const { rerender } = render(
       <Stage

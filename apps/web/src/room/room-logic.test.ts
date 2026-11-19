@@ -9,6 +9,7 @@ import {
   type SessionAction,
   type SessionState,
 } from './sessionReducer';
+import { pinKey, togglePin } from './pin';
 import { parseMetadata } from './useParticipants';
 
 const ok: AccessResult = { canJoin: true, reason: null, hint: null };
@@ -278,5 +279,28 @@ describe('liveSources', () => {
   it('sem poder publicar nada, não sobra fonte; lista vazia com permissão significa tudo', () => {
     expect(liveSources({ canPublish: false, canPublishSources: [1] }, undefined)).toEqual([]);
     expect(liveSources({ canPublish: true, canPublishSources: [] }, ['camera'])).toBeUndefined();
+  });
+});
+
+describe('fixar vários (room/pin.ts)', () => {
+  const sharing = (identity: string) => identity === 'tela';
+
+  it('pinKey: a câmera (cam:) ou a tela de quem compartilha; senão a câmera', () => {
+    expect(pinKey('cam:tela', sharing)).toBe('p:tela');
+    expect(pinKey('tela', sharing)).toBe('s:tela');
+    expect(pinKey('ana', sharing)).toBe('p:ana');
+  });
+
+  it('togglePin: acrescenta sem tirar os outros e solta só o que foi clicado', () => {
+    const one = togglePin([], 'cam:ana', sharing);
+    const two = togglePin(one, 'tela', sharing);
+    const three = togglePin(two, 'cam:tela', sharing);
+    expect(three).toEqual(['cam:ana', 'tela', 'cam:tela']);
+    expect(togglePin(three, 'tela', sharing)).toEqual(['cam:ana', 'cam:tela']);
+  });
+
+  it('togglePin: o formato do destaque do admin e o da câmera apontam a mesma peça', () => {
+    expect(togglePin(['ana'], 'cam:ana', sharing)).toEqual([]);
+    expect(togglePin(['ana', 'cam:ana', 'tela'], 'ana', sharing)).toEqual(['tela']);
   });
 });

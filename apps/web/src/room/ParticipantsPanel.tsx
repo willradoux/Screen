@@ -12,7 +12,7 @@ import {
 } from '../lib/moderation-rules';
 import type { Participant, RaisedHand, Role, Room } from '../lib/types';
 import { Icon } from '../components/Icon';
-import { cameraPin, parsePin, screenPin } from './pin';
+import { cameraPin, personKey, pinKey, screenKey, screenPin } from './pin';
 import { PersonAudio } from './PersonAudio';
 
 interface Props {
@@ -26,8 +26,8 @@ interface Props {
   recording?: boolean;
   onInfo: (message: string) => void;
   onError: (message: string) => void;
-  /** Fixar no palco (só na sua tela): o que está fixado e quem está compartilhando a tela. */
-  pinnedId?: string | null;
+  /** Fixar no palco (só na sua tela): os fixados e quem está compartilhando a tela. */
+  pinnedIds?: readonly string[];
   onPin?: (value: string) => void;
   sharingIds?: ReadonlySet<string>;
 }
@@ -116,11 +116,13 @@ export function ParticipantsPanel({
   hands = [],
   onInfo,
   onError,
-  pinnedId = null,
+  pinnedIds,
   onPin,
   sharingIds,
 }: Props) {
-  const pin = parsePin(pinnedId);
+  const pinnedKeys = new Set(
+    pinnedIds?.map((pin) => pinKey(pin, (identity) => sharingIds?.has(identity) === true)),
+  );
   const [people, setPeople] = useState<Participant[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
@@ -390,14 +392,14 @@ export function ParticipantsPanel({
                       <PinToggle
                         label={`tela de ${p.displayName}`}
                         icon="screen_share"
-                        on={pin?.identity === p.userId && !pin.camera}
+                        on={pinnedKeys.has(screenKey(p.userId))}
                         onClick={() => onPin(screenPin(p.userId))}
                       />
                     )}
                     <PinToggle
                       label={`câmera de ${p.displayName}`}
                       icon="keep"
-                      on={pin?.identity === p.userId && (pin.camera || !sharingIds?.has(p.userId))}
+                      on={pinnedKeys.has(personKey(p.userId))}
                       onClick={() => onPin(cameraPin(p.userId))}
                     />
                   </span>

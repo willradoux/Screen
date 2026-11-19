@@ -23,7 +23,7 @@ import {
 import { RemoteAudio, STAGE_LAYOUTS, Stage, type StageLayout } from '../room/Stage';
 import { useIdle } from '../room/useIdle';
 import { useVoiceLevels } from '../room/useVoiceLevels';
-import { withPinTransition } from '../room/pin';
+import { togglePin, withPinTransition } from '../room/pin';
 import { PersonAudio } from '../room/PersonAudio';
 import { ChatPanel } from '../room/ChatPanel';
 import { useSheetDrag } from '../room/useSheetDrag';
@@ -169,14 +169,17 @@ function ConnectedRoom({
       if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHoldBar(false);
     },
   };
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
-  // Quem a administração destacou vale para todos; fixar outra pessoa por conta própria vale só aqui.
-  const effectivePin = pinnedId ?? room?.spotlightId ?? null;
-  // Fixar pela lista de pessoas: clicar no que já está fixado solta.
-  const togglePin = (value: string) =>
-    withPinTransition(() => setPinnedId((v) => (v === value ? null : value)));
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  // Quem a administração destacou vale para todos; o que cada um fixa por conta própria vale só aqui.
+  const effectivePins =
+    pinnedIds.length > 0 ? pinnedIds : room?.spotlightId ? [room.spotlightId] : [];
   const sharingIds = new Set(tiles.filter((t) => t.screenPublished).map((t) => t.identity));
-  // Sala grande e eu só assistindo: recebo um único vídeo (o fixado, a tela, ou quem falou por último).
+  // Fixar pela lista de pessoas: clicar no que já está fixado solta; senão, entra com os outros.
+  const pinFromList = (value: string) =>
+    withPinTransition(() =>
+      setPinnedIds(togglePin(effectivePins, value, (identity) => sharingIds.has(identity))),
+    );
+  // Sala grande e eu só assistindo: recebo um único vídeo (o último fixado, a tela, ou quem falou por último).
   const lastSpeaker = useRef<string | null>(null);
   const speaking = tiles.find((t) => t.canPublish && t.isSpeaking && !t.isLocal);
   if (speaking) lastSpeaker.current = speaking.identity;
@@ -185,7 +188,9 @@ function ConnectedRoom({
   useAudienceSubscriptions(
     media,
     audienceOfBigRoom,
-    audienceOfBigRoom ? wantedVideo(tiles, effectivePin, lastSpeaker.current) : null,
+    audienceOfBigRoom
+      ? wantedVideo(tiles, effectivePins.at(-1) ?? null, lastSpeaker.current)
+      : null,
   );
   const raised = session.hands.some((h) => h.userId === me.id);
 
@@ -407,8 +412,8 @@ function ConnectedRoom({
             <Stage
               tiles={tiles}
               layout={layout}
-              pinnedId={effectivePin}
-              onPinnedChange={setPinnedId}
+              pinnedIds={effectivePins}
+              onPinnedChange={setPinnedIds}
               lectureMode={state.lectureMode}
               {...(me.role === 'ADMIN' && room.type === 'MEETING'
                 ? { onStageSelf: () => void stageSelf() }
@@ -461,8 +466,8 @@ function ConnectedRoom({
                   recording={session.recording}
                   onInfo={toast.info}
                   onError={toast.error}
-                  pinnedId={effectivePin}
-                  onPin={togglePin}
+                  pinnedIds={effectivePins}
+                  onPin={pinFromList}
                   sharingIds={sharingIds}
                 />
               </div>
