@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ADMIN_ROLE, MOD_ROLE } from '../fixtures/fakes.js';
 import { VOICE_1 } from '../fixtures/bot-fakes.js';
 import { buildRoomsApp, openMeeting, type RoomsCtx } from '../fixtures/rooms-fakes.js';
@@ -588,6 +588,27 @@ describe('palestrantes e modo palestra', () => {
     await act(mod, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: false });
     expect(ctx.livekit.permissions.every((p) => p.canPublish)).toBe(true);
     expect(ctx.livekit.permissions.length).toBeGreaterThan(0);
+  });
+
+  it('ligar e desligar o palco não consulta o banco pessoa por pessoa e mantém quem foi silenciado', async () => {
+    const { ctx, room } = await setup([staff.admin]);
+    const mod = await loginAs(ctx, MOD, [MOD_ROLE]);
+    await act(mod, ctx, 'post', `/rooms/${room.id}/participants/${MEMBER}/mute`, {
+      sources: ['microphone'],
+    });
+    const perPerson = vi.spyOn(ctx.participations, 'getMutedSources');
+    const list = vi.spyOn(ctx.participations, 'listOpen');
+    ctx.livekit.permissions.length = 0;
+
+    await act(mod, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: true });
+    await act(mod, ctx, 'patch', `/rooms/${room.id}`, { lectureMode: false });
+
+    expect(perPerson).not.toHaveBeenCalled();
+    expect(list).toHaveBeenCalledTimes(2);
+    const last = (identity: string) =>
+      ctx.livekit.permissions.filter((p) => p.identity === identity).at(-1);
+    expect(last(MEMBER)?.sources).not.toContain('microphone');
+    expect(last(MEMBER2)?.sources).toContain('microphone');
   });
 
   it('no modo palestra, promover liga e rebaixar desliga na hora', async () => {

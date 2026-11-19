@@ -97,7 +97,9 @@ function build() {
   const env = loadEnv({ NODE_ENV: 'test' });
   const guildId = env.DISCORD_GUILD_ID;
   const logger = createLogger({ LOG_LEVEL: 'error', NODE_ENV: 'test' });
-  const clock = new FakeClock(Date.parse('2026-11-08T15:00:00Z'));
+  // Parte da hora real: o cookie de sessão renovado tem validade pelo relógio do servidor, e com
+  // uma data fixa ele passa a nascer vencido (o cliente de teste o descarta) quando ela fica no passado.
+  const clock = new FakeClock(Date.now());
   const scheduler = new FakeScheduler();
   const gateway = new FakeGateway();
   const discord = new FakeDiscord();

@@ -79,7 +79,7 @@ Uma linha por entrada de usuário em sala (histórico e relatório).
 | `mutedByModeration` | boolean | Verdadeiro se `mutedSources` não estiver vazio |
 | `mutedSources` | string[] | Fontes silenciadas pela moderação (`microphone`, `camera`, `screen_share`, `screen_share_audio`). Vale a participação mais recente e é herdada por quem volta |
 
-Índices: `{ roomId: 1, userId: 1 }`, `{ roomId: 1, leftAt: 1 }`.
+Índices: `{ roomId: 1, userId: 1 }`, `{ roomId: 1, leftAt: 1 }`, `{ roomId: 1, userId: 1, joinedAt: -1 }` (a participação mais recente de alguém na sala, consultada a cada entrada).
 
 ### `room_bans`
 | Campo | Tipo |

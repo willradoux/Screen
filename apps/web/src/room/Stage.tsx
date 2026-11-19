@@ -14,7 +14,16 @@ import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPr
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
 import { ZoomPan } from './ZoomPan';
-import { cameraPin, parsePin, screenPin, transitionName, withPinTransition } from './pin';
+import {
+  cameraPin,
+  personKey,
+  pinKey,
+  screenKey,
+  screenPin,
+  togglePin,
+  transitionName,
+  withPinTransition,
+} from './pin';
 
 function Video({
   pub,
@@ -308,7 +317,8 @@ function ScreenTile({
  *   quem está falando (fica até outra pessoa falar).
  * - `mosaic`: tudo lado a lado, preenchendo a tela.
  *
- * Fixar (câmera ou tela de alguém) vence os dois: o fixado fica grande até soltar.
+ * Fixar (câmeras e telas, quantas quiser) vence os dois: os fixados ficam em destaque, todos do
+ * mesmo tamanho, numa grade que se ajusta sozinha; o resto vai para a faixa.
  * Em todos, cada vídeo tem o quadro no formato real da transmissão (largo, quadrado ou em pé)
  * e cresce até onde couber, sem faixas pretas.
  */
@@ -326,14 +336,19 @@ function pieces(tiles: Tile[]): Piece[] {
   const screens = screenSharers(tiles).map((t) => ({
     kind: 'screen' as const,
     tile: t,
-    key: `s:${t.identity}`,
+    key: screenKey(t.identity),
   }));
-  const people = tiles.map((t) => ({ kind: 'person' as const, tile: t, key: `p:${t.identity}` }));
+  const people = tiles.map((t) => ({
+    kind: 'person' as const,
+    tile: t,
+    key: personKey(t.identity),
+  }));
   return [...screens, ...people];
 }
 
 interface StageExtras {
-  pinnedId: string | null;
+  /** Chaves das peças fixadas. */
+  pinnedKeys: ReadonlySet<string>;
   onPin?: (value: string) => void;
   /** Peça em tela cheia (chave) e como abrir/fechar. Sem `onMaximize`: sem botão. */
   maxKey?: string | null;
@@ -351,14 +366,7 @@ function PieceView({
   small?: boolean;
   extras: StageExtras;
 }) {
-  const pin = parsePin(extras.pinnedId);
-  const mine = pin?.identity === piece.tile.identity;
-  // Fixado "da pessoa" (sem dizer qual) é a tela, se ela compartilha; senão a câmera.
-  const pinned =
-    mine &&
-    (piece.kind === 'screen'
-      ? !pin.camera
-      : pin.camera || !(piece.tile.screenPub || piece.tile.screenPublished));
+  const pinned = extras.pinnedKeys.has(piece.key);
   return piece.kind === 'screen' ? (
     <ScreenTile
       tile={piece.tile}
@@ -396,14 +404,19 @@ function featuredPiece(all: Piece[], lastSpeaker: string | null): Piece | undefi
   );
 }
 
-/** O fixado: a câmera (cam:) ou a tela da pessoa, se ela compartilha; senão a câmera. */
-function pinnedPiece(all: Piece[], pinnedId: string | null): Piece | undefined {
-  const pin = parsePin(pinnedId);
-  if (!pin) return undefined;
-  const theirs = all.filter((p) => p.tile.identity === pin.identity);
-  return pin.camera
-    ? theirs.find((p) => p.kind === 'person')
-    : (theirs.find((p) => p.kind === 'screen') ?? theirs.find((p) => p.kind === 'person'));
+/**
+ * Os fixados, na ordem em que foram fixados: a câmera (cam:) ou a tela da pessoa, se ela
+ * compartilha; senão a câmera. Quem saiu da sala não conta.
+ */
+function pinnedPieces(all: Piece[], pinnedIds: readonly string[]): Piece[] {
+  const byKey = new Map(all.map((p) => [p.key, p]));
+  const isSharing = (identity: string) => byKey.has(screenKey(identity));
+  const found = new Set<Piece>();
+  for (const pin of pinnedIds) {
+    const piece = byKey.get(pinKey(pin, isSharing));
+    if (piece) found.add(piece);
+  }
+  return [...found];
 }
 
 /** Colunas do mosaico: o mais perto de um quadrado (1, 2, 2, 2, 3, 3, ...). */
@@ -419,28 +432,28 @@ const isActive = (t: Tile) =>
 /**
  * O palco. Com o palco ligado (modo palestra) só aparece quem foi colocado nele e a plateia vira
  * um número; salas grandes mostram só quem está transmitindo ou falando. Qualquer pessoa pode
- * fixar uma câmera ou tela para vê-la grande.
+ * fixar câmeras e telas (quantas quiser) para vê-las em destaque.
  */
 export function Stage({
   tiles,
   layout = 'auto',
   lectureMode = false,
   onStageSelf,
-  pinnedId: controlledPin,
+  pinnedIds: controlledPins,
   onPinnedChange,
 }: {
   tiles: Tile[];
   layout?: StageLayout;
-  /** Fixado, quando quem usa o palco controla isso (a sala precisa saber para assinar o vídeo certo). */
-  pinnedId?: string | null;
-  onPinnedChange?: (identity: string | null) => void;
+  /** Fixados, quando quem usa o palco controla isso (a sala precisa saber para assinar o vídeo certo). */
+  pinnedIds?: readonly string[];
+  onPinnedChange?: (pins: string[]) => void;
   lectureMode?: boolean;
   /** Admin: sobe a si mesmo ao palco (aparece no palco vazio). */
   onStageSelf?: () => void;
 }) {
-  const [innerPin, setInnerPin] = useState<string | null>(null);
-  const pinnedId = onPinnedChange ? (controlledPin ?? null) : innerPin;
-  const setPinned = onPinnedChange ?? setInnerPin;
+  const [innerPins, setInnerPins] = useState<readonly string[]>([]);
+  const pinnedIds = onPinnedChange ? (controlledPins ?? []) : innerPins;
+  const setPinned = onPinnedChange ?? setInnerPins;
   // Quem falou por último continua grande no automático até outra pessoa falar.
   const lastSpeaker = useRef<string | null>(null);
   const speakingNow = tiles.find((t) => t.isSpeaking && !t.isLocal);
@@ -469,28 +482,27 @@ export function Stage({
     setMaxKey(key);
   };
 
-  const extras: StageExtras = {
-    pinnedId,
-    maxKey,
-    onMaximize: maximize,
-    onPin: (value) => {
-      // Clicar no que já está fixado solta (vale também para o formato do destaque do admin).
-      const current = pinnedPiece(pieces(tiles), pinnedId);
-      const target = pinnedPiece(pieces(tiles), value);
-      withPinTransition(() =>
-        setPinned(current && target && current.key === target.key ? null : value),
-      );
-    },
-    cameraQuality: cameraQualityFor(tiles.length),
-    screenQuality: screenQualityFor(tiles.length),
-  };
-
   const visible = lectureMode
     ? tiles.filter((t) => t.canPublish)
     : tiles.length > CROWD
       ? tiles.filter(isActive)
       : tiles;
   const hidden = tiles.length - visible.length;
+  const all = pieces(visible);
+  const pinned = pinnedPieces(all, pinnedIds);
+
+  const extras: StageExtras = {
+    pinnedKeys: new Set(pinned.map((p) => p.key)),
+    maxKey,
+    onMaximize: maximize,
+    onPin: (value) => {
+      // Clicar no que já está fixado solta; senão, entra junto com os outros fixados.
+      const sharing = new Set(screenSharers(tiles).map((t) => t.identity));
+      withPinTransition(() => setPinned(togglePin(pinnedIds, value, (id) => sharing.has(id))));
+    },
+    cameraQuality: cameraQualityFor(tiles.length),
+    screenQuality: screenQualityFor(tiles.length),
+  };
 
   const audience =
     hidden > 0 ? (
@@ -518,8 +530,6 @@ export function Stage({
       </div>
     );
   }
-
-  const all = pieces(visible);
 
   const maxPiece = maxKey ? all.find((p) => p.key === maxKey) : undefined;
   if (maxPiece) {
@@ -553,25 +563,39 @@ export function Stage({
       </div>
     );
   }
-  const pinned = pinnedPiece(all, pinnedId);
   // Automático com uma peça só (você sozinho) é o mosaico de um.
-  const mode = pinned ? 'focus' : layout === 'auto' && all.length > 1 ? 'focus' : 'mosaic';
+  const mode =
+    pinned.length > 0 ? 'focus' : layout === 'auto' && all.length > 1 ? 'focus' : 'mosaic';
 
   if (mode === 'focus') {
-    // Grande: o fixado, ou a tela, ou quem está falando. Na faixa, todo o resto (dá para fixar
-    // qualquer um dali, inclusive a tela).
-    const main = pinned ?? featuredPiece(all, lastSpeaker.current);
-    const rest = all.filter((p) => p !== main);
+    // Em destaque: os fixados (todos do mesmo tamanho), ou a tela, ou quem está falando. Na
+    // faixa, todo o resto (dá para fixar qualquer um dali, inclusive a tela).
+    const featured = featuredPiece(all, lastSpeaker.current);
+    const mains = pinned.length > 0 ? pinned : featured ? [featured] : [];
+    const shown = new Set(mains);
+    const rest = all.filter((p) => !shown.has(p));
+    const cells = mains.map((p) => (
+      <div key={p.key} className="stage-cell" style={{ viewTransitionName: transitionName(p.key) }}>
+        <PieceView piece={p} extras={extras} />
+      </div>
+    ));
     return (
       <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
-        {main && (
+        {mains.length > 1 ? (
           <div
-            key={main.key}
-            className="stage-cell"
-            style={{ viewTransitionName: transitionName(main.key) }}
+            className="stage-pinned"
+            data-testid="pinned-grid"
+            style={
+              {
+                '--cols': columnsFor(mains.length),
+                '--cols-sm': mains.length <= 2 ? 1 : 2,
+              } as React.CSSProperties
+            }
           >
-            <PieceView piece={main} extras={extras} />
+            {cells}
           </div>
+        ) : (
+          cells
         )}
         {rest.length > 0 && (
           <div className="stage-strip">

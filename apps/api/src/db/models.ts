@@ -135,6 +135,8 @@ participationSchema.index(
   { unique: true, partialFilterExpression: { leftAt: null } },
 );
 participationSchema.index({ roomId: 1, leftAt: 1 });
+// A participação mais recente de alguém na sala (silenciamento herdado): consultada a cada entrada.
+participationSchema.index({ roomId: 1, userId: 1, joinedAt: -1 });
 
 const roomBanSchema = new Schema({
   roomId: { type: String, required: true },

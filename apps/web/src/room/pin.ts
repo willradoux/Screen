@@ -19,6 +19,34 @@ export function parsePin(pin: string | null | undefined): {
     : { identity: pin, camera: false };
 }
 
+/** Chave da peça do palco: a tela (`s:`) ou a câmera (`p:`) de alguém. */
+export const screenKey = (identity: string) => `s:${identity}`;
+export const personKey = (identity: string) => `p:${identity}`;
+
+/**
+ * A peça que um fixado aponta: a câmera (`cam:`) ou a tela da pessoa, se ela compartilha;
+ * senão a câmera.
+ */
+export function pinKey(pin: string, isSharing: (identity: string) => boolean): string {
+  const camera = pin.startsWith('cam:');
+  const identity = camera ? pin.slice(4) : pin;
+  return camera || !isSharing(identity) ? personKey(identity) : screenKey(identity);
+}
+
+/**
+ * Fixa mais um (dá para fixar quantos quiser) ou solta, se a peça já está fixada (vale também
+ * para o formato do destaque do admin).
+ */
+export function togglePin(
+  pins: readonly string[],
+  value: string,
+  isSharing: (identity: string) => boolean,
+): string[] {
+  const target = pinKey(value, isSharing);
+  const kept = pins.filter((pin) => pinKey(pin, isSharing) !== target);
+  return kept.length < pins.length ? kept : [...pins, value];
+}
+
 /**
  * Troca o que está fixado com animação: o vídeo escolhido sai da faixa e cresce até o lugar
  * grande (e o de antes encolhe para a faixa), em ~0,25 s, com a View Transitions do navegador.

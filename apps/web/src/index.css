@@ -1118,7 +1118,8 @@ input[type='radio'] {
 }
 
 @container (max-width: 600px) {
-  .stage-mosaic {
+  .stage-mosaic,
+  .stage-pinned {
     grid-template-columns: repeat(var(--cols-sm), minmax(0, 1fr));
   }
 }
@@ -1142,6 +1143,16 @@ input[type='radio'] {
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* Vários fixados: uma grade de células iguais no lugar do vídeo grande. */
+.stage-pinned {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 8px;
 }
 
 /* A célula é um container: o vídeo dentro dela calcula o maior tamanho que cabe. */
@@ -2707,24 +2718,29 @@ html[data-intro='play'] .page-enter {
 }
 
 /* Mosaico com 3 ou mais: cada quadro preenche a célula (o vídeo é recortado), formando uma
-   grade uniforme, sem buracos e sem faixas pretas. Com 1 ou 2, o formato real da transmissão. */
-.stage-mosaic[data-dense] .stage-cell {
+   grade uniforme, sem buracos e sem faixas pretas. Com 1 ou 2, o formato real da transmissão.
+   Os fixados (2 ou mais) seguem a mesma regra: todos do mesmo tamanho. */
+.stage-mosaic[data-dense] .stage-cell,
+.stage-pinned .stage-cell {
   container-type: normal;
   place-items: stretch;
 }
 
-.stage-mosaic[data-dense] .stage-tile {
+.stage-mosaic[data-dense] .stage-tile,
+.stage-pinned .stage-tile {
   aspect-ratio: auto;
   height: 100%;
   width: 100%;
   max-height: none;
 }
 
-.stage-mosaic[data-dense] .stage-tile video {
+.stage-mosaic[data-dense] .stage-tile video,
+.stage-pinned .stage-tile video {
   object-fit: cover;
 }
 
-.stage-mosaic[data-dense] .stage-tile-screen video {
+.stage-mosaic[data-dense] .stage-tile-screen video,
+.stage-pinned .stage-tile-screen video {
   object-fit: contain;
   background: #000;
 }
