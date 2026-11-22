@@ -1,4 +1,4 @@
-# Screem
+# Screen
 
 Plataforma open-source de transmissão de tela, câmera e microfone para o servidor Discord **Acelera DEV**. Também hospeda as reuniões mensais do servidor, no lugar do Meet.
 
