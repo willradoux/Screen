@@ -60,6 +60,10 @@ export function LoginPage() {
 
           <div className="hub-footer">
             <AceleraMark className="mx-2 mb-3 h-[14px] w-auto self-start text-zinc-300" />
+            <Link to="/sobre" className="hub-link">
+              <Icon name="play_arrow" size="1.15rem" />
+              <span className="flex-1">Conheça o Screen</span>
+            </Link>
             <Link to="/features" className="hub-link">
               <Icon name="info" size="1.15rem" />
               <span className="flex-1">Como funciona</span>

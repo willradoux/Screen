@@ -50,6 +50,10 @@ const AdminHomePage = lazy(() =>
 const PeoplePage = lazy(() =>
   import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })),
 );
+// A apresentação é pesada em CSS: carrega só quando alguém abre /sobre.
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+);
 const RecordingsPage = lazy(() =>
   import('./pages/admin/RecordingsPage').then((m) => ({ default: m.RecordingsPage })),
 );
@@ -94,6 +98,8 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           {/* Pública: apresenta o Screen e ensina a usar, sem exigir login. */}
           <Route path="/features" element={<FeaturesPage />} />
+          {/* Pública: a página de apresentação do Screen. */}
+          <Route path="/sobre" element={<LandingPage />} />
           {StageLab && <Route path="/__lab" element={<StageLab />} />}
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
