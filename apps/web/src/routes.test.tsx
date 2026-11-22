@@ -79,7 +79,7 @@ const ROUTES: { path: string; expect: RegExp | string; level?: number }[] = [
   { path: '/reunioes', expect: 'Reuniões' },
   { path: '/preferencias', expect: 'Preferências' },
   { path: '/features', expect: /Transmita tela/ },
-  { path: '/sobre', expect: /Sua call do Discord/ },
+  { path: '/sobre', expect: /Liga a call/ },
   { path: '/admin', expect: 'Painel' },
   { path: '/admin/reunioes', expect: 'Gerenciar reuniões' },
   { path: '/admin/config', expect: 'Configurações' },

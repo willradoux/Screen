@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { AceleraMark } from '../components/AceleraMark';
@@ -9,13 +9,28 @@ import { api } from '../lib/api';
 import '../styles/landing.css';
 
 /*
- * Página de apresentação do Screen (pública). Escura como o resto do site, com a cor do tema
- * escolhido. O bonequinho do topo segue o mouse; a "call" do lado é só desenho (CSS), sem vídeo
- * de verdade, para a página abrir rápido. As seções aparecem ao rolar (uma vez só) e tudo fica
- * parado com movimento reduzido ou animações desligadas.
+ * Página de apresentação do Screen (/sobre). O começo é uma TV: a própria TV é o bonequinho do
+ * Screen, e na tela passa, em "canais", como se usa (entrar na call, o bot mandar o link, abrir a
+ * sala, fixar e conversar). Tudo desenhado em CSS, sem vídeo. Os canais trocam sozinhos; dá para
+ * escolher clicando nos passos. Com movimento reduzido, não troca sozinho e não anima.
  */
 
-/** Aparece ao entrar na tela (uma vez). Um observador só para a página inteira. */
+const SCENE_MS = 4600;
+
+const STEPS: { title: string; text: string }[] = [
+  { title: 'Entra na call', text: 'do jeito de sempre, no Discord' },
+  { title: 'O bot manda o link', text: 'no chat da própria call' },
+  { title: 'Abre e transmite', text: 'tela, câmera e voz, no navegador' },
+  { title: 'Fixa e conversa', text: 'chat, enquete e quem importa em destaque' },
+];
+
+function motionOff(): boolean {
+  if (typeof window === 'undefined') return true;
+  if (document.documentElement.dataset.motion === 'off') return true;
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
+/** Aparece ao rolar (uma vez). Um observador só para a página inteira. */
 function useReveal() {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -34,7 +49,7 @@ function useReveal() {
           io.unobserve(e.target);
         }
       },
-      { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.1 },
     );
     items.forEach((i) => io.observe(i));
     return () => io.disconnect();
@@ -42,95 +57,263 @@ function useReveal() {
   return root;
 }
 
-/** Brilho que segue o mouse nos cards (só muda duas variáveis CSS, sem redesenhar o React). */
-function glow(e: React.PointerEvent<HTMLElement>) {
-  const r = e.currentTarget.getBoundingClientRect();
-  e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
-  e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+/** Os canais da TV: qual está passando, e a troca automática (pausa com a aba escondida). */
+function useChannels() {
+  const [scene, setScene] = useState(0);
+  const [auto, setAuto] = useState(() => !motionOff());
+  useEffect(() => {
+    if (!auto) return;
+    const id = window.setInterval(() => {
+      if (!document.hidden) setScene((s) => (s + 1) % STEPS.length);
+    }, SCENE_MS);
+    return () => window.clearInterval(id);
+  }, [auto, scene]);
+  return {
+    scene,
+    auto,
+    pick: (i: number) => {
+      setScene(i);
+      setAuto(false);
+    },
+    resume: () => setAuto(!motionOff()),
+  };
 }
 
-const FEATURES: { icon: IconName; title: string; text: string; wide?: boolean }[] = [
+const people = ['Ana', 'Beto', 'Você'];
+
+/** Canal 1: a call do Discord, com a galera entrando. */
+function SceneCall() {
+  return (
+    <div className="tv-scene tv-discord">
+      <aside className="tv-side">
+        <p className="tv-side-title">CANAIS DE VOZ</p>
+        <p className="tv-channel" data-on>
+          <Icon name="volume_up" size="0.9rem" />
+          call-geral
+        </p>
+        <ul className="tv-people">
+          {people.map((p, i) => (
+            <li key={p} style={{ '--d': `${0.3 + i * 0.6}s` } as CSSProperties}>
+              <span className="tv-av" data-tone={i}>
+                {p[0]}
+              </span>
+              {p}
+            </li>
+          ))}
+        </ul>
+        <p className="tv-channel">
+          <Icon name="volume_up" size="0.9rem" />
+          estudos
+        </p>
+      </aside>
+      <div className="tv-empty">
+        <Icon name="headphones" size="2rem" />
+        <span>Conectado à voz</span>
+      </div>
+    </div>
+  );
+}
+
+/** Canal 2: o bot posta o link e o cursor clica. */
+function SceneBot() {
+  return (
+    <div className="tv-scene tv-chat-scene">
+      <p className="tv-chat-head">
+        <Icon name="chat" size="0.9rem" /> chat da call-geral
+      </p>
+      <div className="tv-post">
+        <span className="tv-bot">
+          <LiveLogo className="h-full w-full" />
+        </span>
+        <div className="tv-post-body">
+          <p className="tv-post-name">
+            Screen <span>APP</span>
+          </p>
+          <div className="tv-embed">
+            <p className="tv-embed-title">Live aberta em call-geral</p>
+            <p className="tv-embed-text">3 pessoas na call · tela, câmera e voz</p>
+            <span className="tv-embed-btn">
+              Entrar na sala <Icon name="open_in_new" size="0.8rem" />
+            </span>
+          </div>
+        </div>
+      </div>
+      <span className="tv-cursor" />
+    </div>
+  );
+}
+
+/** Canal 3: a sala aberta; a tela compartilhada entra. */
+function SceneRoom() {
+  return (
+    <div className="tv-scene tv-room">
+      <div className="tv-grid">
+        <div className="tv-share">
+          <div className="tv-code">
+            <i style={{ width: '58%' }} />
+            <i style={{ width: '36%', marginLeft: '10%' }} />
+            <i style={{ width: '48%', marginLeft: '10%' }} />
+            <i style={{ width: '24%' }} />
+          </div>
+          <span className="tv-label">
+            <Icon name="screen_share" size="0.75rem" /> Tela da Ana
+          </span>
+        </div>
+        {people.map((p, i) => (
+          <div key={p} className="tv-tile" data-talk={i === 0 || undefined}>
+            <span className="tv-av tv-av-lg" data-tone={i}>
+              {p[0]}
+            </span>
+            <span className="tv-label">{p}</span>
+          </div>
+        ))}
+      </div>
+      <div className="tv-ctl">
+        {(['mic', 'videocam', 'screen_share', 'chat'] as IconName[]).map((n) => (
+          <span key={n} data-hot={n === 'screen_share' || undefined}>
+            <Icon name={n} size="0.85rem" />
+          </span>
+        ))}
+        <span className="tv-ctl-end">
+          <Icon name="call_end" size="0.85rem" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Canal 4: tela fixada em destaque, chat e enquete do lado. */
+function ScenePin() {
+  return (
+    <div className="tv-scene tv-pin">
+      <div className="tv-pin-main">
+        <div className="tv-code tv-code-big">
+          <i style={{ width: '62%' }} />
+          <i style={{ width: '40%', marginLeft: '8%' }} />
+          <i style={{ width: '52%', marginLeft: '8%' }} />
+          <i style={{ width: '30%', marginLeft: '16%' }} />
+          <i style={{ width: '44%', marginLeft: '8%' }} />
+        </div>
+        <span className="tv-label">
+          <Icon name="keep" size="0.75rem" /> Fixado: tela da Ana
+        </span>
+      </div>
+      <div className="tv-pin-chat">
+        <p className="tv-msg" style={{ '--d': '0.2s' } as CSSProperties}>
+          <b>beto</b> fixei aqui, tá nítido
+        </p>
+        <p className="tv-msg" style={{ '--d': '0.9s' } as CSSProperties}>
+          <b>você</b> dá zoom no código?
+        </p>
+        <div className="tv-poll" style={{ '--d': '1.6s' } as CSSProperties}>
+          <b>Próximo tema?</b>
+          <span>
+            React <i style={{ '--w': '70%' } as CSSProperties} />
+          </span>
+          <span>
+            Node <i style={{ '--w': '30%' } as CSSProperties} />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SCENES = [SceneCall, SceneBot, SceneRoom, ScenePin];
+
+/** A TV: corpo na cor do tema, antenas, tela com os canais e os botões embaixo. */
+function Tv() {
+  const { scene, auto, pick, resume } = useChannels();
+  const Scene = SCENES[scene]!;
+  return (
+    <div className="tv-wrap" data-reveal>
+      <div className="tv" aria-hidden="true">
+        <span className="tv-antenna tv-antenna-l" />
+        <span className="tv-antenna tv-antenna-r" />
+        <div className="tv-body">
+          <div className="tv-screen">
+            {/* key: cada canal remonta e as animações dele começam do zero. */}
+            <div key={scene} className="tv-channel-in">
+              <Scene />
+            </div>
+            <span className="tv-noise" key={`n${scene}`} />
+            <span className="tv-glass" />
+            <span className="tv-ch">CH {scene + 1}</span>
+          </div>
+          <div className="tv-panel">
+            <span className="tv-brand">screen</span>
+            <span className="tv-grille" />
+            <span className="tv-knob" style={{ '--r': `${scene * 90}deg` } as CSSProperties} />
+            <span className="tv-knob tv-knob-sm" />
+          </div>
+        </div>
+        <span className="tv-foot tv-foot-l" />
+        <span className="tv-foot tv-foot-r" />
+      </div>
+
+      <ol className="tv-steps" aria-label="Como usar o Screen">
+        {STEPS.map((s, i) => (
+          <li key={s.title}>
+            <button
+              type="button"
+              className="tv-step"
+              aria-current={i === scene ? 'step' : undefined}
+              onClick={() => pick(i)}
+            >
+              <span className="tv-step-n">{i + 1}</span>
+              <span className="tv-step-copy">
+                <span className="tv-step-title">{s.title}</span>
+                <span className="tv-step-text">{s.text}</span>
+              </span>
+              {i === scene && auto && (
+                <span className="tv-step-bar" style={{ animationDuration: `${SCENE_MS}ms` }} />
+              )}
+            </button>
+          </li>
+        ))}
+      </ol>
+      {!auto && !motionOff() && (
+        <button type="button" className="tv-resume" onClick={resume}>
+          <Icon name="play_arrow" size="1rem" /> Passar sozinho
+        </button>
+      )}
+    </div>
+  );
+}
+
+const WHY: { icon: IconName; title: string; text: string }[] = [
   {
     icon: 'videocam',
-    title: 'Live direto da call',
-    text: 'Entrou na call do Discord? O bot abre a sala e solta o link no chat. Um clique e você tá transmitindo.',
-    wide: true,
+    title: 'Do Discord pro navegador',
+    text: 'Entrou na call, o link chega. Sem instalar nada.',
   },
+  {
+    icon: 'lock',
+    title: 'Só a comunidade entra',
+    text: 'Login pelo Discord, conferido no servidor.',
+  },
+  {
+    icon: 'bedtime',
+    title: 'Leve de verdade',
+    text: 'Sala cheia fica econômica sozinha. Ninguém transmitindo? Entra em espera.',
+  },
+];
+
+const FEATURES: { icon: IconName; title: string; text: string }[] = [
   {
     icon: 'screen_share',
     title: 'Tela, câmera e voz',
-    text: 'Só a câmera, só a tela ou as duas. Em 60 quadros quando dá, leve quando a sala enche.',
+    text: 'Junto ou separado, você liga o que quiser.',
   },
-  {
-    icon: 'keep',
-    title: 'Fixa quem importa',
-    text: 'Fixa uma, duas ou três telas e câmeras lado a lado. Tela cheia e zoom na tela dos outros.',
-  },
-  {
-    icon: 'stadium',
-    title: 'Modo palco',
-    text: 'Palestrante fala, plateia assiste e manda no chat. O admin chama quem sobe.',
-  },
-  {
-    icon: 'forum',
-    title: 'Chat e enquete',
-    text: 'Chat da sala com anti-spam e enquete no topo, estilo live do YouTube.',
-    wide: true,
-  },
-  {
-    icon: 'volume_up',
-    title: 'O som do seu jeito',
-    text: 'Volume de cada pessoa e de cada tela, redução de ruído e escolha da saída de som.',
-  },
-  {
-    icon: 'palette',
-    title: 'Fundo e efeitos',
-    text: 'Desfoca ou troca o fundo da câmera e brinca com a voz.',
-  },
+  { icon: 'keep', title: 'Fixa várias telas', text: 'Uma, duas ou três lado a lado, com zoom.' },
+  { icon: 'stadium', title: 'Modo palco', text: 'Palestrante fala, plateia assiste e comenta.' },
+  { icon: 'forum', title: 'Chat e enquete', text: 'Anti-spam e enquete no topo, estilo live.' },
+  { icon: 'volume_up', title: 'Som do seu jeito', text: 'Volume de cada um e redução de ruído.' },
   {
     icon: 'shield_person',
-    title: 'Moderação de verdade',
-    text: 'Silenciar, tirar do palco, desligar câmeras, travar a tela. Tudo registrado.',
-    wide: true,
+    title: 'Moderação',
+    text: 'Silenciar, palco, câmeras. Tudo registrado.',
   },
-  {
-    icon: 'qr_code_2',
-    title: 'No celular também',
-    text: 'Lê o QR code e entra pelo celular. Dá pra instalar como app.',
-  },
-];
-
-const STEPS: { n: string; title: string; text: string; icon: IconName }[] = [
-  {
-    n: '01',
-    icon: 'headphones',
-    title: 'Entra na call',
-    text: 'Do jeito de sempre, numa call de voz do servidor.',
-  },
-  {
-    n: '02',
-    icon: 'chat',
-    title: 'O bot manda o link',
-    text: 'A sala abre sozinha e o link aparece no chat da call.',
-  },
-  {
-    n: '03',
-    icon: 'arrow_forward',
-    title: 'Abre e transmite',
-    text: 'No navegador, no PC ou no celular. Sem instalar nada.',
-  },
-];
-
-const MARQUEE = [
-  'sem instalar nada',
-  'login com Discord',
-  'tela em 1080p',
-  'chat com enquete',
-  'modo palco',
-  'redução de ruído',
-  'fixar várias telas',
-  'funciona no celular',
-  'só entra quem é da comunidade',
 ];
 
 const FAQ: { q: string; a: ReactNode }[] = [
@@ -144,90 +327,13 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'Compartilhar tela funciona no celular?',
-    a: 'O celular manda câmera e voz e assiste a tudo. Compartilhar a tela é pelo computador (limite do próprio navegador do celular).',
+    a: 'O celular manda câmera e voz e assiste a tudo. Compartilhar a tela é pelo computador (limite do navegador do celular).',
   },
   {
     q: 'E a minha privacidade?',
-    a: 'Login pelo Discord, sem senha nossa. Câmera, tela e microfone começam desligados, e você liga quando quiser.',
+    a: 'Login pelo Discord, sem senha nossa. Câmera, tela e microfone começam desligados.',
   },
 ];
-
-/** A "call" desenhada do hero: quatro pessoas, uma tela compartilhada, alguém falando e o chat. */
-function CallMock() {
-  return (
-    <div className="lp-call" aria-hidden="true">
-      <div className="lp-call-bar">
-        <span className="lp-dot" />
-        <span className="lp-live">AO VIVO</span>
-        <span className="lp-call-title">call-geral</span>
-        <span className="lp-call-count">
-          <Icon name="group" size="0.9rem" />
-          37
-        </span>
-      </div>
-      <div className="lp-call-body">
-        <div className="lp-stage">
-          <div className="lp-screen">
-            <div className="lp-code">
-              <i style={{ width: '62%' }} />
-              <i style={{ width: '38%', marginLeft: '8%' }} />
-              <i style={{ width: '54%', marginLeft: '8%' }} />
-              <i style={{ width: '30%', marginLeft: '16%' }} />
-              <i style={{ width: '46%', marginLeft: '8%' }} />
-              <i style={{ width: '20%' }} />
-            </div>
-            <span className="lp-tag">
-              <Icon name="screen_share" size="0.8rem" />
-              Tela da Ana
-            </span>
-          </div>
-          <div className="lp-tiles">
-            {['A', 'B', 'C', 'D'].map((l, i) => (
-              <div key={l} className="lp-tile" style={{ '--i': i } as React.CSSProperties}>
-                <span className="lp-avatar">{l}</span>
-                <span className="lp-bars">
-                  <b />
-                  <b />
-                  <b />
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="lp-chat">
-          <p className="lp-msg" style={{ '--d': '0s' } as React.CSSProperties}>
-            <b>caio</b> bora que bora
-          </p>
-          <p className="lp-msg" style={{ '--d': '1.2s' } as React.CSSProperties}>
-            <b>duda</b> dá zoom no código?
-          </p>
-          <p className="lp-msg" style={{ '--d': '2.4s' } as React.CSSProperties}>
-            <b>beto</b> fixei a tela aqui
-          </p>
-          <div className="lp-poll">
-            <span>Próximo tema?</span>
-            <div className="lp-poll-row">
-              React <i style={{ '--w': '68%' } as React.CSSProperties} />
-            </div>
-            <div className="lp-poll-row">
-              Node <i style={{ '--w': '32%' } as React.CSSProperties} />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="lp-call-controls">
-        {(['mic', 'videocam', 'screen_share', 'chat'] as IconName[]).map((n) => (
-          <span key={n}>
-            <Icon name={n} size="1rem" />
-          </span>
-        ))}
-        <span className="lp-end">
-          <Icon name="call_end" size="1rem" />
-        </span>
-      </div>
-    </div>
-  );
-}
 
 export function LandingPage() {
   const root = useReveal();
@@ -253,7 +359,7 @@ export function LandingPage() {
           <span>screen</span>
         </Link>
         <nav aria-label="Seções" className="lp-nav-links">
-          <a href="#como">Como funciona</a>
+          <a href="#como">Como usa</a>
           <a href="#recursos">Recursos</a>
           <a href="#duvidas">Dúvidas</a>
         </nav>
@@ -272,91 +378,77 @@ export function LandingPage() {
       </header>
 
       <main>
-        {/* Hero */}
-        <section className="lp-hero">
-          <div className="lp-aura" aria-hidden="true" />
-          <div className="lp-hero-copy">
-            <p className="lp-kicker" data-reveal>
-              <span className="lp-dot" /> feito pela e para a comunidade Acelera DEV
-            </p>
-            <h1 className="lp-title" data-reveal>
-              Sua call do Discord,
-              <br />
-              agora com <span className="lp-grad">tela, câmera</span>
-              <br />e palco.
-            </h1>
-            <p className="lp-sub" data-reveal>
-              Entrou na call, o link chega. Abre no navegador e mostra o código, a cara e a voz pra
-              galera, sem instalar nada e sem sair do Discord.
-            </p>
-            <div className="lp-ctas" data-reveal>
-              {cta}
-              <a href="#como" className="lp-btn lp-btn-ghost">
-                Ver como funciona
-              </a>
-            </div>
+        <section id="como" className="lp-hero">
+          <span className="lp-stars" aria-hidden="true" />
+          <p className="lp-kicker" data-reveal>
+            <span className="lp-dot" /> da comunidade Acelera DEV, pra comunidade
+          </p>
+          <h1 className="lp-title" data-reveal>
+            Liga a call.
+            <br />
+            <span className="lp-grad">Mostra a tela.</span>
+          </h1>
+          <p className="lp-sub" data-reveal>
+            O Screen transforma a call do Discord numa sala com tela, câmera e palco. Direto no
+            navegador.
+          </p>
+          <div className="lp-ctas" data-reveal>
+            {cta}
           </div>
-          <div className="lp-hero-art" data-reveal>
-            <div className="lp-pet">
-              <LiveLogo className="h-full w-full" />
-            </div>
-            <CallMock />
-          </div>
+          <Tv />
         </section>
 
-        {/* Faixa que corre */}
-        <div className="lp-marquee" aria-label="Destaques">
-          <div className="lp-marquee-track">
-            {[...MARQUEE, ...MARQUEE].map((t, i) => (
-              <span key={i} aria-hidden={i >= MARQUEE.length || undefined}>
-                {t}
-                <i />
-              </span>
-            ))}
+        <section className="lp-section lp-why">
+          <div data-reveal>
+            <p className="lp-eyebrow">O que é</p>
+            <h2 className="lp-h2">
+              O Discord fala.
+              <br />
+              <span className="lp-muted">O Screen mostra.</span>
+            </h2>
+            <p className="lp-sub lp-sub-left">
+              Call de voz é ótima pra trocar ideia. Pra mostrar código, dar aula ou fazer live,
+              faltava a tela. O Screen abre uma sala ligada à call, com o mesmo pessoal, sem ninguém
+              precisar instalar nada.
+            </p>
           </div>
-        </div>
-
-        {/* Como funciona */}
-        <section id="como" className="lp-section">
-          <h2 className="lp-h2" data-reveal>
-            Três passos. <span className="lp-muted">Literalmente.</span>
-          </h2>
-          <ol className="lp-steps">
-            {STEPS.map((s, i) => (
+          <ul className="lp-rows">
+            {WHY.map((w, i) => (
               <li
-                key={s.n}
-                className="lp-step"
+                key={w.title}
+                className="lp-row"
                 data-reveal
-                style={{ '--delay': `${i * 90}ms` } as React.CSSProperties}
+                style={{ '--delay': `${i * 80}ms` } as CSSProperties}
               >
-                <span className="lp-step-n">{s.n}</span>
-                <span className="lp-step-icon">
-                  <Icon name={s.icon} size="1.3rem" />
+                <span className="lp-row-icon">
+                  <Icon name={w.icon} size="1.2rem" />
                 </span>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
+                <span>
+                  <strong>{w.title}</strong>
+                  <span>{w.text}</span>
+                </span>
               </li>
             ))}
-          </ol>
+          </ul>
         </section>
 
-        {/* Recursos */}
         <section id="recursos" className="lp-section">
-          <h2 className="lp-h2" data-reveal>
-            Tudo que uma call boa tem. <span className="lp-muted">E um pouco mais.</span>
+          <p className="lp-eyebrow lp-center" data-reveal>
+            Recursos
+          </p>
+          <h2 className="lp-h2 lp-center" data-reveal>
+            Tudo que a call precisa.
           </h2>
-          <ul className="lp-bento">
+          <ul className="lp-features">
             {FEATURES.map((f, i) => (
               <li
                 key={f.title}
-                className="lp-card"
-                data-wide={f.wide || undefined}
+                className="lp-feature"
                 data-reveal
-                onPointerMove={glow}
-                style={{ '--delay': `${(i % 4) * 70}ms` } as React.CSSProperties}
+                style={{ '--delay': `${(i % 3) * 70}ms` } as CSSProperties}
               >
-                <span className="lp-card-icon">
-                  <Icon name={f.icon} size="1.25rem" />
+                <span className="lp-feature-icon">
+                  <Icon name={f.icon} size="1.3rem" />
                 </span>
                 <h3>{f.title}</h3>
                 <p>{f.text}</p>
@@ -365,50 +457,8 @@ export function LandingPage() {
           </ul>
         </section>
 
-        {/* Palco */}
-        <section className="lp-section lp-split">
-          <div data-reveal>
-            <h2 className="lp-h2">Aula, live ou papo. Você escolhe o formato.</h2>
-            <p className="lp-sub">
-              Sala comum: todo mundo fala e mostra. Liga o <strong>palco</strong> e vira palestra:
-              quem tá no palco transmite, a plateia assiste, vota e manda no chat. Admin sobe e
-              desce quem quiser.
-            </p>
-            <ul className="lp-checks">
-              <li>
-                <Icon name="check_circle" size="1.1rem" /> Pedir a palavra com fila
-              </li>
-              <li>
-                <Icon name="check_circle" size="1.1rem" /> Tela só para quem está no palco
-              </li>
-              <li>
-                <Icon name="check_circle" size="1.1rem" /> Chat mais calmo para a plateia
-              </li>
-            </ul>
-          </div>
-          <div className="lp-stage-art" aria-hidden="true" data-reveal>
-            <div className="lp-stage-top">
-              <span className="lp-speaker">
-                <Icon name="record_voice_over" size="1.4rem" />
-              </span>
-              <span className="lp-speaker" data-on>
-                <Icon name="mic" size="1.4rem" />
-              </span>
-            </div>
-            <div className="lp-crowd">
-              {Array.from({ length: 24 }, (_, i) => (
-                <i key={i} style={{ '--i': i } as React.CSSProperties} />
-              ))}
-            </div>
-            <span className="lp-hand">
-              <Icon name="front_hand" size="1.1rem" />
-            </span>
-          </div>
-        </section>
-
-        {/* Dúvidas */}
         <section id="duvidas" className="lp-section lp-faq">
-          <h2 className="lp-h2" data-reveal>
+          <h2 className="lp-h2 lp-center" data-reveal>
             Dúvidas rápidas
           </h2>
           <div className="lp-faq-list">
@@ -424,14 +474,13 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Final */}
         <section className="lp-final" data-reveal>
           <div className="lp-final-pet">
             <LiveLogo className="h-full w-full" />
           </div>
           <h2 className="lp-h2">Bora pra call?</h2>
           <p className="lp-sub">Entra com o Discord e cola na próxima live da comunidade.</p>
-          <div className="lp-ctas lp-ctas-center">{cta}</div>
+          <div className="lp-ctas">{cta}</div>
         </section>
       </main>
 
