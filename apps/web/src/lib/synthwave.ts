@@ -404,6 +404,12 @@ export class Synthwave {
     playSfx(this.ctx, this.sfx, this.voices.noise, kind, t, note, [this.voices.echo]);
   }
 
+  /** Volume geral, de 0 a 1 (sobe e desce suave, sem estalo). */
+  setVolume(v: number) {
+    const level = Math.min(1, Math.max(0, v)) * 0.85;
+    this.master.gain.setTargetAtTime(level, this.ctx.currentTime, 0.05);
+  }
+
   /** 0 a 1: quão perto do último bumbo estamos (a tela pulsa com isso). */
   beat(): number {
     if (!this.playing) return 0;

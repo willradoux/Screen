@@ -886,7 +886,7 @@
 }
 
 .tv-scroll {
-  justify-content: flex-start;
+  justify-content: safe center;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -2014,6 +2014,558 @@
   .tv-knob-tick {
     transform: rotate(var(--a)) translateY(-22px);
   }
+}
+
+/* ── Versão 4: antena de verdade, controles de som na TV e a telinha caprichada ── */
+
+/* Antena "orelha de coelho": base redonda, hastes de metal em duas partes e bolinha na ponta. */
+.tv {
+  padding-top: 70px;
+}
+
+.tv-antenna {
+  display: none;
+}
+
+.tv-ears {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 80px;
+}
+
+.tv-ears-base {
+  position: absolute;
+  bottom: -8px;
+  left: -30px;
+  width: 60px;
+  height: 28px;
+  border-radius: 30px 30px 6px 6px;
+  background: linear-gradient(180deg, #3a3346, #1c1724);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.15),
+    0 4px 10px rgb(0 0 0 / 0.4);
+}
+
+.tv-ear {
+  position: absolute;
+  bottom: 12px;
+  left: -2px;
+  width: 4px;
+  height: 52px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8d879a, #e9e6ef 45%, #7a748a);
+  transform-origin: 50% 100%;
+}
+
+/* A parte de cima, mais fina, sai de dentro da de baixo. */
+.tv-ear::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: 0.75px;
+  width: 2.5px;
+  height: 46px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8d879a, #f4f2f8 45%, #7a748a);
+}
+
+.tv-ear::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 40px);
+  left: -3.5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--logo-1) 55%);
+  box-shadow: 0 0 calc(6px + var(--beat) * 16px) var(--logo-1);
+}
+
+/* A junta entre as duas partes. */
+.tv-ear i {
+  position: absolute;
+  top: -3px;
+  left: -1.5px;
+  width: 7px;
+  height: 5px;
+  border-radius: 2px;
+  background: #5b546a;
+}
+
+.tv-ear-l {
+  transform: rotate(-32deg);
+  animation: tv-ear-l 6s ease-in-out infinite;
+}
+
+.tv-ear-r {
+  transform: rotate(26deg);
+  animation: tv-ear-r 6s ease-in-out infinite;
+}
+
+@keyframes tv-ear-l {
+  50% {
+    transform: rotate(-27deg);
+  }
+}
+
+@keyframes tv-ear-r {
+  50% {
+    transform: rotate(31deg);
+  }
+}
+
+/* ── Controles no painel da TV ── */
+.tv-grille {
+  max-height: 120px;
+}
+
+.tv-controls {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.tv-pair {
+  display: grid;
+  grid-template-columns: repeat(2, 30px);
+  gap: 5px;
+  justify-items: center;
+}
+
+.tv-pair-label {
+  grid-column: 1 / -1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgb(0 0 0 / 0.5);
+}
+
+.tv-pair button,
+.tv-sound {
+  display: grid;
+  height: 28px;
+  width: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: #2a2232;
+  color: #fff;
+  box-shadow:
+    0 3px 0 #120d18,
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+  transition:
+    transform 90ms ease,
+    box-shadow 90ms ease,
+    background-color 140ms ease;
+}
+
+.tv-pair button:hover:not(:disabled),
+.tv-sound:hover {
+  background: #382d42;
+}
+
+.tv-pair button:active:not(:disabled),
+.tv-sound:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 #120d18,
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.tv-pair button:disabled {
+  opacity: 0.45;
+}
+
+/* Botão de som: comprido, com o ledzinho que acende. */
+.tv-sound {
+  display: flex;
+  width: 65px;
+  gap: 5px;
+  padding: 0 7px;
+}
+
+.tv-led {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #4a1a1a;
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.5);
+}
+
+.tv-sound[data-on] .tv-led {
+  background: #49ff7a;
+  box-shadow: 0 0 calc(4px + var(--beat) * 8px) #49ff7a;
+}
+
+.tv-sound-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* ── A telinha: vidro de tubo, OSD e acabamento das cenas ── */
+.tv-screen {
+  border-radius: 26px / 30px;
+  box-shadow:
+    inset 0 0 0 4px rgb(0 0 0 / 0.6),
+    inset 0 0 70px rgb(0 0 0 / 0.85);
+}
+
+.tv-glass {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 3px),
+    radial-gradient(140% 100% at 50% 50%, transparent 62%, rgb(0 0 0 / 0.55) 100%),
+    radial-gradient(70% 45% at 22% 6%, rgb(255 255 255 / 0.09), transparent 60%);
+}
+
+/* OSD: texto de TV, verde fósforo, sempre por cima. */
+.tv-osd {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: max(10px, 1.25cqw);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #c9ffd6;
+  text-shadow: 0 0 4px rgb(73 255 122 / 0.7);
+}
+
+.osd-top {
+  position: absolute;
+  top: 3.6cqh;
+  left: 3.4cqw;
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  opacity: 0.85;
+}
+
+.osd-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.osd-live::before {
+  content: '';
+  width: 0.7em;
+  height: 0.7em;
+  background: #ff4d5e;
+  box-shadow: 0 0 6px #ff4d5e;
+  animation: osd-blink 1.6s steps(2) infinite;
+}
+
+@keyframes osd-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.osd-vol {
+  position: absolute;
+  left: 50%;
+  bottom: 18cqh;
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  border-radius: 0.3em;
+  background: rgb(0 0 0 / 0.55);
+  padding: 0.55em 0.9em;
+  font-size: 1.15em;
+  transform: translateX(-50%);
+}
+
+.osd-bars {
+  display: inline-flex;
+  gap: 0.22em;
+}
+
+.osd-bars i {
+  width: 0.5em;
+  height: 1em;
+  background: rgb(201 255 214 / 0.18);
+}
+
+.osd-bars i[data-on] {
+  background: #c9ffd6;
+  box-shadow: 0 0 4px rgb(73 255 122 / 0.8);
+}
+
+/* O "CH 03" grande que aparece ao trocar fica no estilo do OSD. */
+.tv-ch {
+  top: 3.2cqh;
+  right: 3.4cqw;
+  font-size: max(16px, 3.2cqw);
+  color: #c9ffd6;
+  text-shadow: 0 0 6px rgb(73 255 122 / 0.8);
+}
+
+/* Abertura: cartão de programa, com uma luz da cor do tema atrás e a grade de leve no chão. */
+.tv-page {
+  background:
+    radial-gradient(
+      70% 55% at 50% 38%,
+      color-mix(in srgb, var(--logo-2) 16%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #0d0b14, #08070c);
+}
+
+.tv-intro::after {
+  content: '';
+  position: absolute;
+  inset: 62% -30% 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--logo-2) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--logo-2) 30%, transparent) 1px, transparent 1px);
+  background-size: 6cqw 6cqw;
+  transform: perspective(40cqw) rotateX(60deg);
+  transform-origin: 50% 0;
+  mask-image: linear-gradient(180deg, transparent, #000 40%);
+  opacity: 0.5;
+}
+
+.tv-intro {
+  isolation: isolate;
+}
+
+.tv-text {
+  color: rgb(255 255 255 / 0.66);
+}
+
+/* Cenas do "como usa": moldura de janela de app, cantos e sombras iguais. */
+.tv-demo {
+  inset: 9cqh 3cqw 17cqh;
+  overflow: hidden;
+  border-radius: 1em;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 1.2em 3em -1em rgb(0 0 0 / 0.8);
+}
+
+.tv-demo .tv-scene {
+  border-radius: inherit;
+}
+
+.tv-caption {
+  height: 14cqh;
+  border-top: 0;
+  background: transparent;
+  padding: 0 3.4cqw;
+}
+
+.tv-caption strong {
+  font-size: 1.35em;
+}
+
+/* ── Responsivo dos controles ── */
+@media (max-width: 640px) {
+  .tv {
+    padding-top: 56px;
+  }
+  .tv-ear {
+    height: 40px;
+  }
+  .tv-ear::before {
+    height: 34px;
+  }
+  .tv-ear::after {
+    bottom: calc(100% + 28px);
+  }
+  .tv-grille {
+    display: none;
+  }
+  .tv-panel {
+    gap: 8px;
+    padding: 6px 8px;
+  }
+  .tv-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .tv-pair-label {
+    display: none;
+  }
+  .tv-sound {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .tv-sound-label,
+  .tv-sound .tv-led {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .tv-pair {
+    grid-template-columns: repeat(2, 26px);
+  }
+  .tv-pair button {
+    width: 26px;
+  }
+  .tv-sound {
+    width: 57px;
+  }
+  .tv-grille {
+    display: none;
+  }
+}
+
+@media (max-height: 520px) and (min-width: 641px) {
+  .tv {
+    padding-top: 0;
+  }
+  .tv-ears {
+    display: none;
+  }
+  .tv-grille {
+    display: none;
+  }
+  .tv-panel {
+    gap: 8px;
+  }
+}
+
+/* ── Versão 5: topo com GitHub e "?", tutorial ── */
+.lp-icon-btn {
+  display: inline-flex;
+  height: 38px;
+  min-width: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.1);
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 3px 0 rgb(0 0 0 / 0.35);
+  transition:
+    background-color 140ms ease,
+    transform 90ms ease,
+    box-shadow 90ms ease;
+}
+
+.lp-icon-btn:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.lp-icon-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+
+.lp-help-mark {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+@media (max-width: 520px) {
+  .lp-icon-label {
+    display: none;
+  }
+  .lp-icon-btn {
+    padding: 0;
+  }
+}
+
+/* Sem a barra de canais, a TV desce um pouco e respira. */
+.lp-stage {
+  padding-bottom: 24px;
+}
+
+/* Tutorial */
+.tut {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(5 2 14 / 0.6);
+  backdrop-filter: blur(3px);
+  animation: boot-in 250ms ease both;
+}
+
+.tut-card {
+  width: min(440px, 100%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 18px;
+  background: #120c1c;
+  padding: 22px;
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.9);
+  animation: tv-join 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tut-kicker {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--logo-1);
+}
+
+.tut-title {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.tut-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.tut-list li {
+  display: flex;
+  gap: 12px;
+  animation: tv-join 400ms ease both;
+  animation-delay: var(--d);
+}
+
+.tut-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.07);
+  color: var(--logo-1);
+}
+
+.tut-list strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tut-list li span span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.65);
+}
+
+.tut-ok {
+  width: 100%;
+  margin-top: 20px;
+  font-size: 15px;
 }
 
 /* ── Sem animação ── */

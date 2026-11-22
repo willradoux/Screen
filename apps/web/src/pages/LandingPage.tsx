@@ -17,6 +17,19 @@ import '../styles/landing.css';
 
 const AUTO_MS = 5200;
 const SOUND_KEY = 'screen-lp-sound';
+const VOLUME_KEY = 'screen-lp-volume';
+/** Volume em 10 degraus, como nas TVs antigas. */
+const VOLUME_STEPS = 10;
+
+function readVolume(): number {
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY);
+    const v = raw === null ? NaN : Number(raw);
+    return Number.isInteger(v) && v >= 0 && v <= VOLUME_STEPS ? v : 7;
+  } catch {
+    return 7;
+  }
+}
 
 function readSoundPref(): boolean {
   try {
@@ -40,13 +53,16 @@ function saveSoundPref(on: boolean) {
  */
 function useSound(root: React.RefObject<HTMLDivElement | null>) {
   const [on, setOn] = useState(false);
+  const [volume, setVolumeState] = useState(readVolume);
   const engine = useRef<Synthwave | null>(null);
   const want = useRef(readSoundPref());
+  const volRef = useRef(volume);
 
   const ensure = useCallback(async () => {
     if (!engine.current) {
       const { Synthwave } = await import('../lib/synthwave');
       engine.current = new Synthwave();
+      engine.current.setVolume(volRef.current / VOLUME_STEPS);
       // Para medir o som no navegador durante o desenvolvimento.
       if (import.meta.env.DEV)
         (window as unknown as { __lpSound?: Synthwave }).__lpSound = engine.current;
@@ -104,7 +120,32 @@ function useSound(root: React.RefObject<HTMLDivElement | null>) {
     if (want.current) engine.current?.sound(kind, note);
   }, []);
 
-  return { on, prefer: want.current, turn, toggle: () => void turn(!on), fx };
+  /** Volume − / +: um degrau por vez; com o som desligado, o + liga. */
+  const changeVolume = useCallback(
+    (delta: number) => {
+      const next = Math.min(VOLUME_STEPS, Math.max(0, volRef.current + delta));
+      volRef.current = next;
+      setVolumeState(next);
+      try {
+        localStorage.setItem(VOLUME_KEY, String(next));
+      } catch {
+        // sem armazenamento: só não lembra
+      }
+      engine.current?.setVolume(next / VOLUME_STEPS);
+      if (delta > 0 && !want.current) void turn(true);
+      else engine.current?.sound('click', next);
+    },
+    [turn],
+  );
+
+  return {
+    on,
+    volume,
+    turn,
+    toggle: () => void turn(!on),
+    changeVolume,
+    fx,
+  };
 }
 
 function motionOff(): boolean {
@@ -113,7 +154,10 @@ function motionOff(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
-const people = ['Ana', 'Beto', 'Você'];
+/** A galera da comunidade, na demonstração. */
+const crew = ['pc', 'marujo', 'scharp', 'flazo', 'will', 'luan'];
+/** Quem aparece com câmera na sala de exemplo. */
+const onCam = ['flazo', 'marujo', 'will'];
 
 /* ── Cenas do "como usa" ─────────────────────────────────────────────────────────────── */
 
@@ -127,10 +171,10 @@ function SceneCall() {
           call-geral
         </p>
         <ul className="tv-people">
-          {people.map((p, i) => (
-            <li key={p} style={{ '--d': `${0.3 + i * 0.6}s` } as CSSProperties}>
-              <span className="tv-av" data-tone={i}>
-                {p[0]}
+          {crew.map((p, i) => (
+            <li key={p} style={{ '--d': `${0.2 + i * 0.35}s` } as CSSProperties}>
+              <span className="tv-av" data-tone={i % 3}>
+                {p[0]!.toUpperCase()}
               </span>
               {p}
             </li>
@@ -165,7 +209,7 @@ function SceneBot() {
           </p>
           <div className="tv-embed">
             <p className="tv-embed-title">Live aberta em call-geral</p>
-            <p className="tv-embed-text">3 pessoas na call · tela, câmera e voz</p>
+            <p className="tv-embed-text">6 pessoas na call · tela, câmera e voz</p>
             <span className="tv-embed-btn">
               Entrar na sala <Icon name="open_in_new" size="0.9em" />
             </span>
@@ -189,13 +233,13 @@ function SceneRoom() {
             <i style={{ width: '24%' }} />
           </div>
           <span className="tv-label">
-            <Icon name="screen_share" size="0.9em" /> Tela da Ana
+            <Icon name="screen_share" size="0.9em" /> Tela do pc
           </span>
         </div>
-        {people.map((p, i) => (
+        {onCam.map((p, i) => (
           <div key={p} className="tv-tile" data-talk={i === 0 || undefined}>
             <span className="tv-av tv-av-lg" data-tone={i}>
-              {p[0]}
+              {p[0]!.toUpperCase()}
             </span>
             <span className="tv-label">{p}</span>
           </div>
@@ -227,15 +271,15 @@ function ScenePin() {
           <i style={{ width: '44%', marginLeft: '8%' }} />
         </div>
         <span className="tv-label">
-          <Icon name="keep" size="0.9em" /> Fixado: tela da Ana
+          <Icon name="keep" size="0.9em" /> Fixado: tela do pc
         </span>
       </div>
       <div className="tv-pin-chat">
         <p className="tv-msg" style={{ '--d': '0.2s' } as CSSProperties}>
-          <b>beto</b> fixei aqui, tá nítido
+          <b>marujo</b> fixei aqui, tá nítido
         </p>
         <p className="tv-msg" style={{ '--d': '0.9s' } as CSSProperties}>
-          <b>você</b> dá zoom no código?
+          <b>scharp</b> dá zoom no código?
         </p>
         <div className="tv-poll" style={{ '--d': '1.6s' } as CSSProperties}>
           <b>Próximo tema?</b>
@@ -252,10 +296,9 @@ function ScenePin() {
 }
 
 /** Tarja de baixo nos canais do "como usa", como legenda de programa. */
-function Caption({ n, title, text }: { n: number; title: string; text: string }) {
+function Caption({ title, text }: { title: string; text: string }) {
   return (
     <div className="tv-caption">
-      <span className="tv-caption-n">0{n}/04</span>
       <span>
         <strong>{title}</strong>
         <span>{text}</span>
@@ -443,6 +486,152 @@ const CHANNELS: { name: string; caption?: string; Scene?: () => React.JSX.Elemen
   { name: 'Dúvidas' },
   { name: 'Bora pra call' },
 ];
+
+/** Hora no canto da tela, como nas TVs (atualiza a cada 20 s). */
+function useClock() {
+  const fmt = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const [now, setNow] = useState(fmt);
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(fmt()), 20_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return now;
+}
+
+/**
+ * O que a TV escreve por cima da imagem (OSD): "ao vivo" e a hora em cima; embaixo, o volume
+ * em barrinhas por um instante quando a pessoa mexe no som.
+ */
+function Osd({ on, volume, flash }: { on: boolean; volume: number; flash: number }) {
+  const clock = useClock();
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!flash) return;
+    setShow(true);
+    const id = window.setTimeout(() => setShow(false), 2500);
+    return () => window.clearTimeout(id);
+  }, [flash]);
+  return (
+    <div className="tv-osd" aria-hidden="true">
+      <span className="osd-top">
+        <span className="osd-live">AO VIVO</span>
+        <span>{clock}</span>
+      </span>
+      {show && (
+        <span className="osd-vol" key={flash}>
+          {on ? (
+            <>
+              <span>VOLUME</span>
+              <span className="osd-bars">
+                {Array.from({ length: 10 }, (_, i) => (
+                  <i key={i} data-on={i < volume || undefined} />
+                ))}
+              </span>
+              <span>{String(volume).padStart(2, '0')}</span>
+            </>
+          ) : (
+            <span>SEM SOM</span>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const TUTORIAL_KEY = 'screen-lp-tutorial';
+
+function tutorialSeen(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY) === 'ok';
+  } catch {
+    return false;
+  }
+}
+
+function markTutorialSeen() {
+  try {
+    localStorage.setItem(TUTORIAL_KEY, 'ok');
+  } catch {
+    // sem armazenamento: só mostra de novo na próxima
+  }
+}
+
+/** Marca do GitHub (o desenho oficial do gato, em uma cor só). */
+function GithubMark() {
+  return (
+    <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+const TIPS: { icon: IconName; title: string; text: string }[] = [
+  {
+    icon: 'tune',
+    title: 'Gire a rodinha',
+    text: 'Arraste a rodinha da TV (ou use ▲ ▼ do lado) para trocar de canal.',
+  },
+  {
+    icon: 'keyboard_arrow_down',
+    title: 'Ou só role',
+    text: 'A rodinha do mouse, as setas do teclado e arrastar o dedo no celular também trocam.',
+  },
+  {
+    icon: 'volume_up',
+    title: 'Som na própria TV',
+    text: 'VOL − e + mudam o volume; o botão SOM liga e desliga a música.',
+  },
+  {
+    icon: 'arrow_forward',
+    title: 'Quando quiser entrar',
+    text: 'É só clicar em Entrar com o Discord, no canal 1 ou no topo.',
+  },
+];
+
+/** Tutorial curtinho: como mexer na TV. Fecha com o botão, com Esc ou clicando fora. */
+function Tutorial({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div
+      className="tut"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tut-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="tut-card">
+        <p className="tut-kicker">COMO USAR</p>
+        <h2 id="tut-title" className="tut-title">
+          É uma TV. Troca de canal.
+        </h2>
+        <ol className="tut-list">
+          {TIPS.map((t, i) => (
+            <li key={t.title} style={{ '--d': `${0.08 + i * 0.07}s` } as CSSProperties}>
+              <span className="tut-icon">
+                <Icon name={t.icon} size="1.1rem" />
+              </span>
+              <span>
+                <strong>{t.title}</strong>
+                <span>{t.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <button type="button" className="lp-btn lp-btn-main tut-ok" autoFocus onClick={onClose}>
+          Bora
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * A rodinha da TV: gira arrastando (ou com a rodinha do mouse / setas) e cada "clique" é um
@@ -654,8 +843,16 @@ export function LandingPage() {
     fx('hover', Math.max(0, all.indexOf(el)));
   };
 
+  // Indicador de volume na tela (aparece um instante quando mexe no som).
+  const [osd, setOsd] = useState(0);
+  const flashOsd = () => setOsd((n) => n + 1);
+
+  // Tutorial: aparece sozinho na primeira vez; o "?" do topo abre de novo.
+  const [help, setHelp] = useState(false);
+
   const start = (withSound: boolean) => {
     setBooted(true);
+    if (!tutorialSeen()) setHelp(true);
     if (withSound) void sound.turn(true);
   };
 
@@ -697,19 +894,24 @@ export function LandingPage() {
           <span>screen</span>
         </button>
         <div className="lp-nav-end">
+          <a
+            href="https://github.com/willradoux/Screen"
+            target="_blank"
+            rel="noreferrer"
+            className="lp-icon-btn"
+            aria-label="Código do Screen no GitHub (abre em outra aba)"
+          >
+            <GithubMark />
+            <span className="lp-icon-label">GitHub</span>
+          </a>
           <button
             type="button"
-            className="lp-sound"
-            data-on={sound.on || undefined}
-            aria-pressed={sound.on}
-            aria-label={sound.on ? 'Desligar o som' : 'Ligar o som'}
-            onClick={sound.toggle}
+            className="lp-icon-btn"
+            aria-label="Como usar esta página"
+            onClick={() => setHelp(true)}
           >
-            <span className="lp-eq" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <i />
+            <span aria-hidden="true" className="lp-help-mark">
+              ?
             </span>
           </button>
           {logged ? (
@@ -726,8 +928,15 @@ export function LandingPage() {
 
       <main className="lp-stage">
         <div className="tv">
-          <span className="tv-antenna tv-antenna-l" aria-hidden="true" />
-          <span className="tv-antenna tv-antenna-r" aria-hidden="true" />
+          <div className="tv-ears" aria-hidden="true">
+            <span className="tv-ear tv-ear-l">
+              <i />
+            </span>
+            <span className="tv-ear tv-ear-r">
+              <i />
+            </span>
+            <span className="tv-ears-base" />
+          </div>
           <div className="tv-body">
             <section className="tv-screen" aria-label={`Canal ${ch + 1}: ${current.name}`}>
               {booted && (
@@ -739,7 +948,7 @@ export function LandingPage() {
                         <div className="tv-demo">
                           <Scene />
                         </div>
-                        <Caption n={ch} title={current.name} text={current.caption ?? ''} />
+                        <Caption title={current.name} text={current.caption ?? ''} />
                       </>
                     )}
                     {ch === 5 && <ChannelFeatures />}
@@ -750,6 +959,7 @@ export function LandingPage() {
                   <span className="tv-ch" key={`c${ch}`} aria-hidden="true">
                     CH {String(ch + 1).padStart(2, '0')}
                   </span>
+                  <Osd on={sound.on} volume={sound.volume} flash={osd} />
                 </>
               )}
               <span className="tv-glass" aria-hidden="true" />
@@ -760,12 +970,61 @@ export function LandingPage() {
               </span>
               <span className="tv-grille" aria-hidden="true" />
               <Knob ch={ch} count={count} onPick={(i) => go(i)} />
-              <div className="tv-chbtns">
-                <button type="button" aria-label="Canal anterior" onClick={() => go(ch - 1)}>
-                  <Icon name="keyboard_arrow_up" size="1.2rem" />
-                </button>
-                <button type="button" aria-label="Próximo canal" onClick={() => go(ch + 1)}>
-                  <Icon name="keyboard_arrow_down" size="1.2rem" />
+              <div className="tv-controls">
+                <div className="tv-pair" role="group" aria-label="Volume">
+                  <span className="tv-pair-label" aria-hidden="true">
+                    VOL
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Diminuir o volume"
+                    disabled={sound.volume === 0}
+                    onClick={() => {
+                      sound.changeVolume(-1);
+                      flashOsd();
+                    }}
+                  >
+                    <Icon name="remove" size="1.1rem" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Aumentar o volume"
+                    disabled={sound.on && sound.volume === 10}
+                    onClick={() => {
+                      sound.changeVolume(1);
+                      flashOsd();
+                    }}
+                  >
+                    <Icon name="add" size="1.1rem" />
+                  </button>
+                </div>
+                <div className="tv-pair" role="group" aria-label="Canal">
+                  <span className="tv-pair-label" aria-hidden="true">
+                    CH
+                  </span>
+                  <button type="button" aria-label="Canal anterior" onClick={() => go(ch - 1)}>
+                    <Icon name="keyboard_arrow_up" size="1.2rem" />
+                  </button>
+                  <button type="button" aria-label="Próximo canal" onClick={() => go(ch + 1)}>
+                    <Icon name="keyboard_arrow_down" size="1.2rem" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="tv-sound"
+                  data-on={sound.on || undefined}
+                  aria-pressed={sound.on}
+                  aria-label={sound.on ? 'Desligar o som' : 'Ligar o som'}
+                  onClick={() => {
+                    sound.toggle();
+                    flashOsd();
+                  }}
+                >
+                  <span className="tv-led" aria-hidden="true" />
+                  <Icon name={sound.on ? 'volume_up' : 'volume_off'} size="1.05rem" />
+                  <span className="tv-sound-label" aria-hidden="true">
+                    SOM
+                  </span>
                 </button>
               </div>
             </div>
@@ -774,27 +1033,17 @@ export function LandingPage() {
           <span className="tv-foot tv-foot-r" aria-hidden="true" />
           <span className="tv-shadow" aria-hidden="true" />
         </div>
-
-        <nav className="tv-guide" aria-label="Canais">
-          {CHANNELS.map((c, i) => (
-            <button
-              key={c.name}
-              type="button"
-              aria-current={i === ch ? 'true' : undefined}
-              aria-label={`Canal ${i + 1}: ${c.name}`}
-              onClick={() => go(i)}
-            >
-              <span className="tv-guide-n">{String(i + 1).padStart(2, '0')}</span>
-              <span className="tv-guide-name">{c.name}</span>
-              {booted && i === ch && auto && (
-                <span className="tv-guide-bar" style={{ animationDuration: `${AUTO_MS}ms` }} />
-              )}
-            </button>
-          ))}
-        </nav>
       </main>
 
       {!booted && <Boot onStart={start} />}
+      {booted && help && (
+        <Tutorial
+          onClose={() => {
+            markTutorialSeen();
+            setHelp(false);
+          }}
+        />
+      )}
     </div>
   );
 }
