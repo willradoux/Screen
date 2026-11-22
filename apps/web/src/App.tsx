@@ -52,7 +52,7 @@ const PeoplePage = lazy(() =>
 );
 // A apresentação é pesada em CSS: carrega só quando alguém abre /sobre.
 const LandingPage = lazy(() =>
-  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })),
+  import('./pages/landing/LandingPage').then((m) => ({ default: m.LandingPage })),
 );
 const RecordingsPage = lazy(() =>
   import('./pages/admin/RecordingsPage').then((m) => ({ default: m.RecordingsPage })),

@@ -24,6 +24,13 @@ export function RequireAuth() {
     case 'loading':
       return <FullPageSpinner />;
     case 'anonymous': {
+      // Quem chega no endereço principal sem estar logado conhece o Screen primeiro. Links de
+      // sala (/r/...) e o resto continuam indo direto para o login e voltando para onde iam.
+      // Quem acabou de sair (menu "Sair") vai para o login, como sempre.
+      const loggedOut = (location.state as { loggedOut?: boolean } | null)?.loggedOut === true;
+      if (location.pathname === '/' && !location.search && !loggedOut) {
+        return <Navigate to="/sobre" replace />;
+      }
       const redirect = encodeURIComponent(location.pathname + location.search);
       return <Navigate to={`/login?redirect=${redirect}`} replace />;
     }

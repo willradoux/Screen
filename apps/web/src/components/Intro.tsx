@@ -4,6 +4,9 @@ import { AceleraMark } from './AceleraMark';
 import { LEFT_EYE, eyePath, wink } from './LiveLogo';
 import { LOGO_H, LOGO_W } from './ScreenLogo';
 
+/** Evento para encerrar a abertura na hora (a página de apresentação usa). */
+export const SKIP_INTRO_EVENT = 'screen:skip-intro';
+
 /** Toca a cada carregamento da página (inclusive reload); trocar de tela dentro do app não. */
 function shouldPlay(): boolean {
   // A página de apresentação tem o próprio carregamento (a TV ligando).
@@ -88,11 +91,14 @@ export function Intro() {
     const skip = () => finish();
     window.addEventListener('pointerdown', skip, { once: true });
     window.addEventListener('keydown', skip, { once: true });
+    // A página de apresentação tem o próprio carregamento: se ela abrir, a abertura sai.
+    window.addEventListener(SKIP_INTRO_EVENT, skip);
     return () => {
       timers.forEach(clearTimeout);
       cancels.forEach((c) => c());
       window.removeEventListener('pointerdown', skip);
       window.removeEventListener('keydown', skip);
+      window.removeEventListener(SKIP_INTRO_EVENT, skip);
     };
   }, [playing]);
 

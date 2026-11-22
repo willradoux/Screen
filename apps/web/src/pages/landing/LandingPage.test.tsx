@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../auth/AuthProvider', () => ({
+vi.mock('../../auth/AuthProvider', () => ({
   useAuth: () => ({ state: { status: 'anonymous' } }),
 }));
 

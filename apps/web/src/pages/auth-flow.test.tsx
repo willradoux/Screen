@@ -17,6 +17,7 @@ function renderRoutes(route: string) {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/sobre" element={<p>apresentação do Screen</p>} />
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
               <Route index element={<p>conteúdo da home</p>} />
@@ -48,6 +49,12 @@ describe('RequireAuth', () => {
       'href',
       'http://localhost:3000/api/v1/auth/discord?redirect=%2Fr%2FkF3x9QzP2mT7vB1nLw0aYc',
     );
+  });
+
+  it('anônimo no endereço principal conhece o Screen primeiro (a apresentação)', async () => {
+    mockMe(apiError(401, 'UNAUTHENTICATED'));
+    renderRoutes('/');
+    expect(await screen.findByText('apresentação do Screen')).toBeInTheDocument();
   });
 
   it('quem não está no servidor vê a explicação no login', async () => {

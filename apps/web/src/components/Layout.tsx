@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { ROLE_LABEL, isAdmin, isStaff } from '../lib/moderation-rules';
 import { Icon, type IconName } from './Icon';
@@ -73,6 +73,7 @@ function HubLink({ item, pathname }: { item: NavItem; pathname: string }) {
  */
 export function Layout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [immersive, setImmersive] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -210,7 +211,14 @@ export function Layout() {
                       <ThemeToggle variant="menu" />
                       <button
                         type="button"
-                        onClick={() => void logout()}
+                        onClick={() => {
+                          // Quem sai vai para o login (não para a apresentação do endereço principal).
+                          navigate(location.pathname, {
+                            replace: true,
+                            state: { loggedOut: true },
+                          });
+                          void logout();
+                        }}
                         className="hub-link hub-logout"
                       >
                         <Icon name="logout" size="1.15rem" />
