@@ -260,7 +260,9 @@ export function buildTestApp(
   const { NODE_ENV, ...rest } = envOverrides;
   const loaded: Env = loadEnv({ ...rest, NODE_ENV: 'test' });
   const env: Env = NODE_ENV ? { ...loaded, NODE_ENV: NODE_ENV as Env['NODE_ENV'] } : loaded;
-  const clock = new FakeClock();
+  // Parte da hora real (como no e2e): o cookie de sessão renovado tem validade pelo relógio do
+  // servidor, e com uma data fixa no passado ele nasce vencido e o cliente de teste o descarta.
+  const clock = new FakeClock(Date.now());
   const discord = new FakeDiscord();
   const users = new MemoryUsers();
   const sessions = new MemorySessions();

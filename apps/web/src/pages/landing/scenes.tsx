@@ -8,7 +8,7 @@ import { LiveLogo } from '../../components/LiveLogo';
  */
 
 /** A galera da comunidade, na demonstração. */
-const crew = ['pc', 'marujo', 'scharp', 'flazo', 'will', 'luan'];
+const crew = ['pc', 'marujo', 'scharp', 'flazo', 'will', 'luan', 'duds'];
 /** Quem aparece com câmera na sala de exemplo. */
 const onCam = ['flazo', 'marujo', 'will'];
 
@@ -60,7 +60,7 @@ export function SceneBot() {
           </p>
           <div className="tv-embed">
             <p className="tv-embed-title">Live aberta em call-geral</p>
-            <p className="tv-embed-text">6 pessoas na call · tela, câmera e voz</p>
+            <p className="tv-embed-text">7 pessoas na call · tela, câmera e voz</p>
             <span className="tv-embed-btn">
               Entrar na sala <Icon name="open_in_new" size="0.9em" />
             </span>
