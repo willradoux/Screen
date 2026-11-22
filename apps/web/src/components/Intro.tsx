@@ -6,6 +6,8 @@ import { LOGO_H, LOGO_W } from './ScreenLogo';
 
 /** Toca a cada carregamento da página (inclusive reload); trocar de tela dentro do app não. */
 function shouldPlay(): boolean {
+  // A página de apresentação tem o próprio carregamento (a TV ligando).
+  if (window.location.pathname === '/sobre') return false;
   return import.meta.env.MODE !== 'test' && !prefersReducedMotion();
 }
 

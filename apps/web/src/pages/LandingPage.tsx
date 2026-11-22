@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { AceleraMark } from '../components/AceleraMark';
 import { Icon, type IconName } from '../components/Icon';
 import { LiveLogo } from '../components/LiveLogo';
 import { api } from '../lib/api';
+import type { Sfx, Synthwave } from '../lib/synthwave';
 import '../styles/landing.css';
 
 /*
@@ -16,6 +16,96 @@ import '../styles/landing.css';
  */
 
 const AUTO_MS = 5200;
+const SOUND_KEY = 'screen-lp-sound';
+
+function readSoundPref(): boolean {
+  try {
+    return localStorage.getItem(SOUND_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
+function saveSoundPref(on: boolean) {
+  try {
+    localStorage.setItem(SOUND_KEY, on ? 'on' : 'off');
+  } catch {
+    // sem armazenamento: só não lembra
+  }
+}
+
+/**
+ * Som da página: a trilha e os efeitos. O motor só nasce quando a pessoa liga a TV (o navegador
+ * não deixa tocar antes de um clique) e o código dele só carrega nessa hora.
+ */
+function useSound(root: React.RefObject<HTMLDivElement | null>) {
+  const [on, setOn] = useState(false);
+  const engine = useRef<Synthwave | null>(null);
+  const want = useRef(readSoundPref());
+
+  const ensure = useCallback(async () => {
+    if (!engine.current) {
+      const { Synthwave } = await import('../lib/synthwave');
+      engine.current = new Synthwave();
+      // Para medir o som no navegador durante o desenvolvimento.
+      if (import.meta.env.DEV)
+        (window as unknown as { __lpSound?: Synthwave }).__lpSound = engine.current;
+    }
+    return engine.current;
+  }, []);
+
+  const turn = useCallback(
+    async (next: boolean) => {
+      want.current = next;
+      saveSoundPref(next);
+      setOn(next);
+      if (next) {
+        const e = await ensure();
+        await e.start();
+        e.sound('power');
+      } else {
+        engine.current?.stop();
+      }
+    },
+    [ensure],
+  );
+
+  // Aba escondida: pausa o áudio; voltou: continua.
+  useEffect(() => {
+    const onVis = () => {
+      if (!engine.current) return;
+      if (document.hidden) engine.current.suspend();
+      else if (on) engine.current.resume();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [on]);
+
+  // A cena pulsa no bumbo (uma variável CSS, atualizada só enquanto toca).
+  useEffect(() => {
+    const el = root.current;
+    if (!on || !el || motionOff()) return;
+    let raf = 0;
+    const loop = () => {
+      el.style.setProperty('--beat', (engine.current?.beat() ?? 0).toFixed(3));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.style.setProperty('--beat', '0');
+    };
+  }, [on, root]);
+
+  useEffect(() => () => engine.current?.close(), []);
+
+  // Estável: não reinicia os relógios da página a cada desenho.
+  const fx = useCallback((kind: Sfx, note = 0) => {
+    if (want.current) engine.current?.sound(kind, note);
+  }, []);
+
+  return { on, prefer: want.current, turn, toggle: () => void turn(!on), fx };
+}
 
 function motionOff(): boolean {
   if (typeof window === 'undefined') return true;
@@ -165,7 +255,7 @@ function ScenePin() {
 function Caption({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <div className="tv-caption">
-      <span className="tv-caption-n">{n}/4</span>
+      <span className="tv-caption-n">0{n}/04</span>
       <span>
         <strong>{title}</strong>
         <span>{text}</span>
@@ -194,13 +284,10 @@ function ChannelIntro({ logged, onNext }: { logged: boolean; onNext: () => void 
       <div className="tv-intro-pet">
         <LiveLogo className="h-full w-full" />
       </div>
-      <p className="tv-kicker">
-        <span className="lp-dot" /> da comunidade Acelera DEV
-      </p>
       <h1 className="tv-title">
         Liga a call.
         <br />
-        <span className="lp-grad">Mostra a tela.</span>
+        <span className="tv-accent">Mostra a tela.</span>
       </h1>
       <p className="tv-text">
         O Screen transforma a call do Discord numa sala com tela, câmera e palco. Direto no
@@ -302,25 +389,44 @@ function ChannelEnd({ logged }: { logged: boolean }) {
 
 /* ── Paisagem ────────────────────────────────────────────────────────────────────────── */
 
-/** Pôr do sol retrô na cor do tema, montanhas em camadas e nuvens. Camadas mexem com o mouse. */
+/** Palmeira em silhueta (SVG simples). */
+function Palm({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 120 220">
+      <path d="M62 220c-4-50-2-100 8-150" fill="none" stroke="currentColor" strokeWidth="7" />
+      <path d="M70 70c-20-18-48-18-66-6 22-2 40 2 66 6z" />
+      <path d="M70 70c-12-26-36-38-56-34 20 8 36 18 56 34z" />
+      <path d="M70 70c8-26 30-40 52-38-18 8-34 20-52 38z" />
+      <path d="M70 70c22-14 46-12 50 2-18-6-32-4-50-2z" />
+      <path d="M70 70c-2-24 6-44 18-56-4 18-8 34-18 56z" />
+    </svg>
+  );
+}
+
+/**
+ * Cenário synthwave: céu de fim de tarde, estrelas e estrela cadente, sol listrado na cor do
+ * tema, montanhas com contorno neon, palmeiras, chão de grade andando e um filtro de VHS por
+ * cima. As camadas mexem com o mouse; com som ligado, o sol e a grade pulsam no bumbo.
+ */
 function Landscape() {
   return (
     <div className="ls" aria-hidden="true">
       <span className="ls-stars" />
+      <span className="ls-shoot" />
       <span className="ls-sun" />
-      <span className="ls-cloud ls-cloud-1" />
-      <span className="ls-cloud ls-cloud-2" />
-      <span className="ls-cloud ls-cloud-3" />
-      <svg className="ls-layer ls-far" viewBox="0 0 1600 400" preserveAspectRatio="none">
-        <path d="M0 400V250l120-70 90 40 140-110 120 90 80-40 160 120 130-150 150 110 110-60 150 100 120-80 130 70v130z" />
+      <svg className="ls-layer ls-far" viewBox="0 0 1600 300" preserveAspectRatio="none">
+        <path d="M0 300V210l90-60 70 40 120-120 110 100 70-40 140 110 120-140 130 110 100-60 140 90 110-70 120 60 160-30v150z" />
       </svg>
-      <svg className="ls-layer ls-mid" viewBox="0 0 1600 400" preserveAspectRatio="none">
-        <path d="M0 400V300l160-80 140 60 170-120 160 110 120-50 200 100 150-90 170 80 140-60 190 90v160z" />
+      <svg className="ls-layer ls-mid" viewBox="0 0 1600 300" preserveAspectRatio="none">
+        <path d="M0 300V250l150-70 130 50 160-110 150 100 110-40 190 90 140-80 160 70 130-50 180 80v110z" />
       </svg>
-      <svg className="ls-layer ls-near" viewBox="0 0 1600 300" preserveAspectRatio="none">
-        <path d="M0 300V190c180-70 360-80 560-30s360 60 520 10 360-70 520-20v150z" />
-      </svg>
-      <span className="ls-ground" />
+      <span className="ls-haze" />
+      <div className="ls-floor">
+        <span className="ls-grid" />
+      </div>
+      <Palm className="ls-palm ls-palm-l" />
+      <Palm className="ls-palm ls-palm-r" />
+      <span className="ls-vhs" />
     </div>
   );
 }
@@ -338,40 +444,165 @@ const CHANNELS: { name: string; caption?: string; Scene?: () => React.JSX.Elemen
   { name: 'Bora pra call' },
 ];
 
+/**
+ * A rodinha da TV: gira arrastando (ou com a rodinha do mouse / setas) e cada "clique" é um
+ * canal, como o seletor das TVs antigas. 8 canais = 45° cada.
+ */
+function Knob({ ch, count, onPick }: { ch: number; count: number; onPick: (i: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const step = 360 / count;
+  const drag = useRef(false);
+
+  const pickFromPointer = (e: React.PointerEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const a = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    const i = Math.round(((a + 360) % 360) / step) % count;
+    if (i !== ch) onPick(i);
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="tv-knob"
+      role="slider"
+      tabIndex={0}
+      aria-label="Seletor de canal"
+      aria-valuemin={1}
+      aria-valuemax={count}
+      aria-valuenow={ch + 1}
+      aria-valuetext={`Canal ${ch + 1}`}
+      style={{ '--r': `${ch * step}deg` } as CSSProperties}
+      onPointerDown={(e) => {
+        drag.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        pickFromPointer(e);
+      }}
+      onPointerMove={(e) => {
+        if (drag.current) pickFromPointer(e);
+      }}
+      onPointerUp={() => {
+        drag.current = false;
+      }}
+      onPointerCancel={() => {
+        drag.current = false;
+      }}
+      onWheel={(e) => {
+        e.stopPropagation();
+        if (Math.abs(e.deltaY) > 4) onPick(ch + (e.deltaY > 0 ? 1 : -1));
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') onPick(ch + 1);
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') onPick(ch - 1);
+        else return;
+        e.preventDefault();
+      }}
+    >
+      <span className="tv-knob-cap" />
+      {Array.from({ length: count }, (_, i) => (
+        <i
+          key={i}
+          className="tv-knob-tick"
+          style={{ '--a': `${i * step}deg` } as CSSProperties}
+          data-on={i === ch || undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Tela de carregamento: o cenário aparece, a barrinha enche e a pessoa liga a TV (com ou sem
+ * som). O clique é o gesto que o navegador exige para tocar a música.
+ */
+function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const min = new Promise((r) => window.setTimeout(r, motionOff() ? 0 : 1300));
+    const fonts = document.fonts?.ready ?? Promise.resolve();
+    void Promise.all([min, fonts]).then(() => {
+      if (alive) setReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return (
+    <div className="boot" role="dialog" aria-modal="true" aria-label="Carregando o Screen">
+      <div className="boot-box">
+        <div className="boot-logo">
+          <LiveLogo className="h-full w-full" />
+        </div>
+        <p className="boot-name">screen</p>
+        {!ready ? (
+          <div className="boot-bar" role="progressbar" aria-label="Carregando">
+            <span />
+          </div>
+        ) : (
+          <div className="boot-actions">
+            <button
+              type="button"
+              className="lp-btn lp-btn-main"
+              autoFocus
+              onClick={() => onStart(true)}
+            >
+              <Icon name="play_arrow" size="1.2em" /> Ligar a TV
+            </button>
+            <button type="button" className="boot-mute" onClick={() => onStart(false)}>
+              entrar sem som
+            </button>
+          </div>
+        )}
+        <p className="boot-hint">{ready ? 'com música, de preferência' : 'carregando'}</p>
+      </div>
+    </div>
+  );
+}
+
 export function LandingPage() {
   const { state } = useAuth();
   const logged = state.status === 'authenticated';
   const [ch, setCh] = useState(0);
+  const [booted, setBooted] = useState(false);
   const [auto, setAuto] = useState(() => !motionOff());
   const root = useRef<HTMLDivElement>(null);
   const lastWheel = useRef(0);
   const touchY = useRef<number | null>(null);
+  const hovered = useRef<Element | null>(null);
   const count = CHANNELS.length;
+  const sound = useSound(root);
+  const fx = sound.fx;
 
   const go = useCallback(
     (next: number, byUser = true) => {
       setCh(((next % count) + count) % count);
       if (byUser) setAuto(false);
+      fx('channel');
     },
-    [count],
+    [count, fx],
   );
 
   // Passa sozinho no começo (sem dar a volta), até a pessoa mexer.
   useEffect(() => {
-    if (!auto) return;
+    if (!auto || !booted) return;
     const id = window.setTimeout(() => {
       if (document.hidden) return;
       if (ch >= count - 1) setAuto(false);
       else go(ch + 1, false);
     }, AUTO_MS);
     return () => window.clearTimeout(id);
-  }, [auto, ch, count, go]);
+  }, [auto, booted, ch, count, go]);
 
   // Setas do teclado trocam o canal.
   useEffect(() => {
+    if (!booted) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t?.closest('input, textarea, select')) return;
+      if (t?.closest('input, textarea, select, [role="slider"]')) return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') go(ch + 1);
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') go(ch - 1);
       else return;
@@ -379,7 +610,7 @@ export function LandingPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ch, go]);
+  }, [booted, ch, go]);
 
   // Paralaxe da paisagem com o mouse (só mexe em duas variáveis CSS).
   useEffect(() => {
@@ -401,8 +632,9 @@ export function LandingPage() {
     };
   }, []);
 
-  /** Rodinha: um canal por gesto (ignora enquanto rola uma lista de dentro da TV). */
+  /** Rodinha do mouse: um canal por gesto (ignora enquanto rola uma lista de dentro da TV). */
   const onWheel = (e: React.WheelEvent) => {
+    if (!booted) return;
     const scroller = (e.target as HTMLElement).closest('.tv-scroll');
     if (scroller && scroller.scrollHeight > scroller.clientHeight + 2) return;
     if (Math.abs(e.deltaY) < 12) return;
@@ -412,6 +644,21 @@ export function LandingPage() {
     go(ch + (e.deltaY > 0 ? 1 : -1));
   };
 
+  /** Botões tocam uma nota da escala da música ao passar o mouse (cada botão a sua). */
+  const onPointerOver = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    const el = (e.target as HTMLElement).closest('button, a, [role="slider"]');
+    if (!el || el === hovered.current) return;
+    hovered.current = el;
+    const all = Array.from(root.current?.querySelectorAll('button, a') ?? []);
+    fx('hover', Math.max(0, all.indexOf(el)));
+  };
+
+  const start = (withSound: boolean) => {
+    setBooted(true);
+    if (withSound) void sound.turn(true);
+  };
+
   const current = CHANNELS[ch]!;
   const Scene = current.Scene;
 
@@ -419,15 +666,22 @@ export function LandingPage() {
     <div
       ref={root}
       className="lp"
+      data-booted={booted || undefined}
       onWheel={onWheel}
-      onTouchStart={(e) => (touchY.current = e.touches[0]?.clientY ?? null)}
+      onPointerOver={onPointerOver}
+      onPointerLeave={() => {
+        hovered.current = null;
+      }}
+      onTouchStart={(e) => {
+        touchY.current = e.touches[0]?.clientY ?? null;
+      }}
       onTouchEnd={(e) => {
-        const start = touchY.current;
+        const begin = touchY.current;
         touchY.current = null;
         const end = e.changedTouches[0]?.clientY;
-        if (start == null || end == null) return;
-        if ((e.target as HTMLElement).closest('.tv-scroll')) return;
-        if (Math.abs(end - start) > 50) go(ch + (end < start ? 1 : -1));
+        if (!booted || begin == null || end == null) return;
+        if ((e.target as HTMLElement).closest('.tv-scroll, .tv-knob')) return;
+        if (Math.abs(end - begin) > 50) go(ch + (end < begin ? 1 : -1));
       }}
     >
       <Landscape />
@@ -443,6 +697,21 @@ export function LandingPage() {
           <span>screen</span>
         </button>
         <div className="lp-nav-end">
+          <button
+            type="button"
+            className="lp-sound"
+            data-on={sound.on || undefined}
+            aria-pressed={sound.on}
+            aria-label={sound.on ? 'Desligar o som' : 'Ligar o som'}
+            onClick={sound.toggle}
+          >
+            <span className="lp-eq" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
           {logged ? (
             <Link to="/" className="lp-btn lp-btn-small">
               Salas
@@ -461,36 +730,36 @@ export function LandingPage() {
           <span className="tv-antenna tv-antenna-r" aria-hidden="true" />
           <div className="tv-body">
             <section className="tv-screen" aria-label={`Canal ${ch + 1}: ${current.name}`}>
-              <div key={ch} className="tv-channel-in">
-                {ch === 0 && <ChannelIntro logged={logged} onNext={() => go(1)} />}
-                {Scene && (
-                  <>
-                    <div className="tv-demo">
-                      <Scene />
-                    </div>
-                    <Caption n={ch} title={current.name} text={current.caption ?? ''} />
-                  </>
-                )}
-                {ch === 5 && <ChannelFeatures />}
-                {ch === 6 && <ChannelFaq />}
-                {ch === 7 && <ChannelEnd logged={logged} />}
-              </div>
-              <span className="tv-noise" key={`n${ch}`} aria-hidden="true" />
+              {booted && (
+                <>
+                  <div key={ch} className="tv-channel-in">
+                    {ch === 0 && <ChannelIntro logged={logged} onNext={() => go(1)} />}
+                    {Scene && (
+                      <>
+                        <div className="tv-demo">
+                          <Scene />
+                        </div>
+                        <Caption n={ch} title={current.name} text={current.caption ?? ''} />
+                      </>
+                    )}
+                    {ch === 5 && <ChannelFeatures />}
+                    {ch === 6 && <ChannelFaq />}
+                    {ch === 7 && <ChannelEnd logged={logged} />}
+                  </div>
+                  <span className="tv-noise" key={`n${ch}`} aria-hidden="true" />
+                  <span className="tv-ch" key={`c${ch}`} aria-hidden="true">
+                    CH {String(ch + 1).padStart(2, '0')}
+                  </span>
+                </>
+              )}
               <span className="tv-glass" aria-hidden="true" />
-              <span className="tv-ch" key={`c${ch}`} aria-hidden="true">
-                CH {String(ch + 1).padStart(2, '0')}
-              </span>
             </section>
             <div className="tv-panel">
               <span className="tv-brand" aria-hidden="true">
                 screen
               </span>
               <span className="tv-grille" aria-hidden="true" />
-              <span
-                className="tv-knob"
-                aria-hidden="true"
-                style={{ '--r': `${ch * 45}deg` } as CSSProperties}
-              />
+              <Knob ch={ch} count={count} onPick={(i) => go(i)} />
               <div className="tv-chbtns">
                 <button type="button" aria-label="Canal anterior" onClick={() => go(ch - 1)}>
                   <Icon name="keyboard_arrow_up" size="1.2rem" />
@@ -515,9 +784,9 @@ export function LandingPage() {
               aria-label={`Canal ${i + 1}: ${c.name}`}
               onClick={() => go(i)}
             >
-              <span className="tv-guide-dot" />
+              <span className="tv-guide-n">{String(i + 1).padStart(2, '0')}</span>
               <span className="tv-guide-name">{c.name}</span>
-              {i === ch && auto && (
+              {booted && i === ch && auto && (
                 <span className="tv-guide-bar" style={{ animationDuration: `${AUTO_MS}ms` }} />
               )}
             </button>
@@ -525,14 +794,7 @@ export function LandingPage() {
         </nav>
       </main>
 
-      <footer className="lp-foot">
-        <AceleraMark className="h-[12px] w-auto" />
-        <span className="lp-foot-hint">
-          <Icon name="keyboard_arrow_up" size="0.9rem" />
-          <Icon name="keyboard_arrow_down" size="0.9rem" />
-          troca de canal
-        </span>
-      </footer>
+      {!booted && <Boot onStart={start} />}
     </div>
   );
 }

@@ -25,7 +25,11 @@
   text-decoration: none;
 }
 
-/* ── Paisagem ── */
+/* ── Cenário synthwave ── */
+.lp {
+  --beat: 0;
+}
+
 .ls {
   position: absolute;
   inset: 0;
@@ -33,121 +37,96 @@
   overflow: hidden;
   background: linear-gradient(
     180deg,
-    #07051a 0%,
-    #160d34 34%,
-    color-mix(in srgb, var(--logo-2) 38%, #2a1446) 62%,
-    color-mix(in srgb, var(--logo-1) 45%, #3a1a3c) 74%,
-    #1a0f2a 100%
+    #05031a 0%,
+    #120a3a 30%,
+    #3a1160 50%,
+    color-mix(in srgb, var(--logo-2) 55%, #3a1160) 60%,
+    color-mix(in srgb, var(--logo-1) 65%, #5a1a50) 64%,
+    #12051f 64.2%,
+    #07020f 100%
   );
 }
 
 .ls-stars {
   position: absolute;
-  inset: 0 0 45%;
+  inset: 0 0 40%;
   background:
     radial-gradient(1.5px 1.5px at 8% 14%, #fff, transparent),
-    radial-gradient(1px 1px at 18% 38%, #fffc, transparent),
-    radial-gradient(1.5px 1.5px at 27% 9%, #fff, transparent),
-    radial-gradient(1px 1px at 39% 26%, #fff9, transparent),
-    radial-gradient(1px 1px at 52% 6%, #fffc, transparent),
-    radial-gradient(1.5px 1.5px at 66% 20%, #fff, transparent),
-    radial-gradient(1px 1px at 74% 44%, #fff8, transparent),
-    radial-gradient(1.5px 1.5px at 85% 12%, #fff, transparent),
-    radial-gradient(1px 1px at 93% 33%, #fffa, transparent),
-    radial-gradient(1px 1px at 4% 52%, #fff8, transparent);
-  animation: ls-twinkle 5s ease-in-out infinite alternate;
-  transform: translate3d(calc(var(--px) * -8px), calc(var(--py) * -6px), 0);
+    radial-gradient(1px 1px at 14% 40%, #fffc, transparent),
+    radial-gradient(1.5px 1.5px at 23% 8%, #fff, transparent),
+    radial-gradient(1px 1px at 31% 28%, #fff9, transparent),
+    radial-gradient(1px 1px at 44% 5%, #fffc, transparent),
+    radial-gradient(1.5px 1.5px at 57% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 64% 36%, #fff8, transparent),
+    radial-gradient(1.5px 1.5px at 76% 9%, #fff, transparent),
+    radial-gradient(1px 1px at 86% 30%, #fffa, transparent),
+    radial-gradient(1px 1px at 94% 16%, #fff, transparent),
+    radial-gradient(1px 1px at 4% 50%, #fff8, transparent),
+    radial-gradient(1px 1px at 38% 46%, #fff6, transparent);
+  animation: ls-twinkle 4s ease-in-out infinite alternate;
+  translate: calc(var(--px) * -8px) calc(var(--py) * -6px);
 }
 
 @keyframes ls-twinkle {
   to {
-    opacity: 0.55;
+    opacity: 0.5;
   }
 }
 
-/* Sol retrô: degradê do tema com faixas cortando a parte de baixo. */
+/* Estrela cadente de vez em quando. */
+.ls-shoot {
+  position: absolute;
+  top: 12%;
+  left: 72%;
+  width: 140px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #fff, transparent);
+  opacity: 0;
+  animation: ls-shoot 9s ease-in 3s infinite;
+}
+
+@keyframes ls-shoot {
+  0%,
+  88% {
+    opacity: 0;
+    transform: rotate(-18deg) translateX(0);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-18deg) translateX(-520px);
+  }
+}
+
+/* Sol listrado, nascendo atrás das montanhas; pulsa no bumbo. */
 .ls-sun {
   position: absolute;
-  left: 79%;
-  top: 44%;
-  width: min(40vmin, 420px);
+  left: 50%;
+  bottom: 35.8%;
+  width: min(118vmin, 1180px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: linear-gradient(180deg, var(--logo-1), var(--logo-2));
-  box-shadow: 0 0 120px 20px color-mix(in srgb, var(--logo-2) 45%, transparent);
-  mask: linear-gradient(
+  background: linear-gradient(180deg, #ffe08a 0%, var(--logo-1) 22%, var(--logo-2) 48%);
+  box-shadow: 0 0 calc(80px + var(--beat) * 70px) calc(10px + var(--beat) * 16px)
+    color-mix(in srgb, var(--logo-2) 55%, transparent);
+  /* Faixas que vão engrossando perto do horizonte (a metade de baixo some atrás do chão). */
+  mask-image: linear-gradient(
     180deg,
-    #000 46%,
-    transparent 46% 49%,
-    #000 49% 55%,
-    transparent 55% 59%,
-    #000 59% 64%,
-    transparent 64% 69%,
-    #000 69% 73%,
-    transparent 73% 79%,
-    #000 79%
+    #000 0 30%,
+    transparent 30% 31%,
+    #000 31% 35%,
+    transparent 35% 36.5%,
+    #000 36.5% 40%,
+    transparent 40% 42%,
+    #000 42% 45%,
+    transparent 45% 47.5%,
+    #000 47.5%
   );
-  transform: translate3d(calc(-50% + var(--px) * -14px), calc(-50% + var(--py) * -10px), 0);
-}
-
-@media (max-width: 640px) {
-  .ls-sun {
-    left: 50%;
-    top: 22%;
-    width: 46vmin;
-  }
-}
-
-.ls-cloud {
-  position: absolute;
-  height: 26px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--logo-2) 30%, #fff 10%);
-  filter: blur(2px);
-  opacity: 0.5;
-  animation: ls-drift 70s linear infinite;
-}
-
-.ls-cloud::before {
-  content: '';
-  position: absolute;
-  left: 22%;
-  bottom: 40%;
-  width: 46%;
-  height: 160%;
-  border-radius: 999px;
-  background: inherit;
-}
-
-.ls-cloud-1 {
-  top: 18%;
-  width: 180px;
-  animation-delay: -10s;
-}
-
-.ls-cloud-2 {
-  top: 30%;
-  width: 120px;
-  opacity: 0.35;
-  animation-duration: 95s;
-  animation-delay: -60s;
-}
-
-.ls-cloud-3 {
-  top: 12%;
-  width: 90px;
-  opacity: 0.3;
-  animation-duration: 120s;
-  animation-delay: -30s;
-}
-
-@keyframes ls-drift {
-  from {
-    transform: translateX(-30vw);
-  }
-  to {
-    transform: translateX(130vw);
-  }
+  translate: calc(-50% + var(--px) * -10px) calc(50% + var(--py) * -6px);
+  scale: calc(1 + var(--beat) * 0.02);
 }
 
 .ls-layer {
@@ -156,32 +135,215 @@
   width: 108%;
 }
 
+/* Montanhas escuras com contorno neon. */
 .ls-far {
-  bottom: 18%;
-  height: 34%;
-  fill: color-mix(in srgb, var(--logo-2) 26%, #2a1a4c);
-  transform: translate3d(calc(var(--px) * -18px), 0, 0);
+  bottom: 35.8%;
+  height: 22%;
+  fill: #1d0b3a;
+  stroke: color-mix(in srgb, var(--logo-2) 85%, #fff);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px var(--logo-2));
+  translate: calc(var(--px) * -18px) 0;
+}
+
+.ls-far path,
+.ls-mid path {
+  vector-effect: non-scaling-stroke;
 }
 
 .ls-mid {
-  bottom: 12%;
-  height: 28%;
-  fill: color-mix(in srgb, var(--logo-2) 12%, #1b1033);
-  transform: translate3d(calc(var(--px) * -32px), 0, 0);
+  bottom: 35.8%;
+  height: 12%;
+  fill: #12052a;
+  stroke: color-mix(in srgb, var(--logo-1) 80%, #fff);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px var(--logo-1));
+  translate: calc(var(--px) * -30px) 0;
 }
 
-.ls-near {
-  bottom: 0;
-  height: 26%;
-  fill: #0e0819;
-  transform: translate3d(calc(var(--px) * -52px), 0, 0);
-}
-
-.ls-ground {
+/* Névoa na linha do horizonte. */
+.ls-haze {
   position: absolute;
-  inset: auto 0 0;
+  left: 0;
+  right: 0;
+  bottom: 30%;
   height: 14%;
-  background: linear-gradient(180deg, #0e0819, #07040d);
+  background: radial-gradient(
+    60% 100% at 50% 50%,
+    color-mix(in srgb, var(--logo-2) 38%, transparent),
+    transparent 70%
+  );
+  filter: blur(8px);
+}
+
+/* Chão de grade neon em perspectiva, andando para a frente. */
+.ls-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a0630, #07020f 70%);
+  perspective: 260px;
+  perspective-origin: 50% 0%;
+}
+
+.ls-grid {
+  --line: color-mix(in srgb, var(--logo-2) calc(50% + var(--beat) * 45%), transparent);
+  position: absolute;
+  left: -80%;
+  right: -80%;
+  top: 0;
+  height: 260%;
+  background-image:
+    linear-gradient(90deg, var(--line) 2px, transparent 2px),
+    linear-gradient(0deg, var(--line) 2px, transparent 2px);
+  background-size: 70px 70px;
+  transform: rotateX(64deg);
+  transform-origin: 50% 0%;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%);
+  animation: ls-run 1.2s linear infinite;
+}
+
+@keyframes ls-run {
+  to {
+    background-position: 0 70px;
+  }
+}
+
+.ls-palm {
+  position: absolute;
+  bottom: 28%;
+  width: clamp(80px, 13vw, 180px);
+  color: #08020f;
+  fill: #08020f;
+  transform-origin: 50% 100%;
+  animation: ls-sway 6s ease-in-out infinite;
+}
+
+.ls-palm-l {
+  left: 2%;
+  translate: calc(var(--px) * -40px) 0;
+}
+
+.ls-palm-r {
+  right: 3%;
+  width: clamp(60px, 9vw, 130px);
+  scale: -1 1;
+  animation-delay: -2s;
+  translate: calc(var(--px) * -40px) 0;
+}
+
+@keyframes ls-sway {
+  50% {
+    transform: rotate(-2.5deg);
+  }
+}
+
+/* Filtro de VHS por cima de tudo: linhas finas e a vinheta. */
+.ls-vhs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(0 0 0 / 0.6));
+}
+
+@media (max-width: 640px) {
+  .ls-palm-r {
+    display: none;
+  }
+  .ls-sun {
+    width: 130vmin;
+  }
+}
+
+/* Botão de som com equalizador. */
+.lp-sound {
+  display: inline-flex;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  padding: 0 14px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  transition:
+    background-color 160ms ease,
+    transform 200ms var(--lp-spring);
+}
+
+.lp-sound:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.lp-sound:active {
+  transform: scale(0.95);
+}
+
+.lp-sound:not([data-on]) {
+  animation: lp-call-me 2.4s ease-out 2s infinite;
+}
+
+@keyframes lp-call-me {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--logo-1) 65%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+.lp-eq {
+  display: inline-flex;
+  height: 14px;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.lp-eq i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+  transform: scaleY(0.25);
+}
+
+.lp-sound[data-on] .lp-eq i {
+  background: var(--logo-1);
+  animation: lp-eq 0.6s ease-in-out infinite alternate;
+}
+
+.lp-sound[data-on] .lp-eq i:nth-child(2) {
+  animation-delay: -0.2s;
+}
+.lp-sound[data-on] .lp-eq i:nth-child(3) {
+  animation-delay: -0.4s;
+}
+.lp-sound[data-on] .lp-eq i:nth-child(4) {
+  animation-delay: -0.1s;
+}
+
+@keyframes lp-eq {
+  from {
+    transform: scaleY(0.2);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .lp-sound-label {
+    display: none;
+  }
 }
 
 /* ── Topo ── */
@@ -1433,6 +1595,427 @@
   }
 }
 
+/* A TV pula de leve no bumbo; as bolinhas das antenas acendem. */
+.tv-body {
+  scale: calc(1 + var(--beat) * 0.006);
+}
+
+.tv-antenna::after {
+  box-shadow: 0 0 calc(10px + var(--beat) * 18px) var(--logo-1);
+}
+
+/* Troca de canal com "rolagem vertical" e borda colorida de VHS. */
+.tv-channel-in {
+  animation:
+    tv-on 560ms var(--lp-out) both,
+    tv-glitch 560ms steps(6) both;
+}
+
+@keyframes tv-glitch {
+  0%,
+  100% {
+    filter: none;
+  }
+  20% {
+    filter: drop-shadow(3px 0 0 rgb(255 0 80 / 0.7)) drop-shadow(-3px 0 0 rgb(0 220 255 / 0.7));
+    translate: 0 -6%;
+  }
+  40% {
+    filter: drop-shadow(-2px 0 0 rgb(255 0 80 / 0.6)) drop-shadow(2px 0 0 rgb(0 220 255 / 0.6));
+    translate: 0 3%;
+  }
+  60% {
+    translate: 0 -1%;
+  }
+}
+
+/* ── Versão 3: carregamento, TV maior, rodinha, botões de verdade ── */
+
+/* O topo flutua por cima da cena (sobra mais altura para a TV). */
+.lp {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.lp-nav {
+  position: absolute;
+  inset: 0 0 auto;
+  padding: 12px 16px;
+}
+
+.lp-stage {
+  gap: 14px;
+  padding: 58px 10px 12px;
+}
+
+.tv {
+  --tv-w: min(1320px, 96vw, calc((100dvh - 150px) * 1.5));
+  padding-top: 40px;
+}
+
+/* Botões: cor sólida do tema, com "degrau" embaixo (tátil, como botão de TV), sem brilho. */
+.lp-btn-main {
+  height: 3em;
+  padding: 0 1.4em;
+  border-radius: 0.8em;
+  background: var(--logo-1);
+  color: #1a0b05;
+  box-shadow: 0 0.28em 0 color-mix(in srgb, var(--logo-1) 55%, #000);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 160ms ease;
+}
+
+.lp-btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 calc(0.28em + 2px) 0 color-mix(in srgb, var(--logo-1) 55%, #000);
+}
+
+.lp-btn-main:active {
+  transform: translateY(0.2em);
+  box-shadow: 0 0.08em 0 color-mix(in srgb, var(--logo-1) 55%, #000);
+}
+
+.lp-btn-ghost {
+  height: 3em;
+  border-radius: 0.8em;
+  box-shadow: 0 0.28em 0 rgb(0 0 0 / 0.35);
+}
+
+.lp-btn-ghost:active {
+  transform: translateY(0.2em);
+  box-shadow: 0 0.08em 0 rgb(0 0 0 / 0.35);
+}
+
+.lp-btn-small {
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgb(0 0 0 / 0.35);
+}
+
+.lp-btn-small:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+
+/* Com música, os botões principais respiram junto com o bumbo. */
+.lp[data-booted] .lp-btn-main {
+  background: color-mix(in srgb, var(--logo-1) calc(100% - var(--beat) * 18%), #fff);
+}
+
+.tv-accent {
+  color: var(--logo-1);
+}
+
+.tv-title {
+  font-size: 4.6em;
+}
+
+/* Recursos: ícone simples, sem quadrado degradê. */
+.tv-feature-icon {
+  width: auto;
+  height: auto;
+  place-items: start;
+  border-radius: 0;
+  background: none;
+  color: var(--logo-1);
+}
+
+.tv-features li {
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+}
+
+/* Legenda: número em letra de máquina, sem quadrado degradê. */
+.tv-caption-n {
+  height: auto;
+  padding: 0;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--logo-1);
+}
+
+/* Botão de som: só o equalizador, redondo. */
+.lp-sound {
+  width: 38px;
+  justify-content: center;
+  padding: 0;
+  animation: none;
+}
+
+.lp-sound:not([data-on]) .lp-eq i {
+  opacity: 0.55;
+}
+
+/* Guia de canais: números de TV, discreto. */
+.tv-guide {
+  border-radius: 12px;
+  background: rgb(8 4 20 / 0.55);
+}
+
+.tv-guide button {
+  border-radius: 8px;
+  padding: 6px 9px;
+}
+
+.tv-guide-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: rgb(255 255 255 / 0.45);
+}
+
+.tv-guide button[aria-current] .tv-guide-n {
+  color: var(--logo-1);
+}
+
+.tv-guide-bar {
+  background: var(--logo-1);
+}
+
+/* A rodinha: gira arrastando; os risquinhos em volta marcam os canais. */
+.tv-knob {
+  width: 58px;
+  height: 58px;
+  cursor: grab;
+  touch-action: none;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.tv-knob:active {
+  cursor: grabbing;
+}
+
+.tv-knob::after {
+  display: none;
+}
+
+.tv-knob-cap {
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.55), transparent 55%), rgb(0 0 0 / 0.32);
+  box-shadow:
+    inset 0 -3px 0 rgb(0 0 0 / 0.3),
+    0 2px 0 rgb(255 255 255 / 0.15);
+  transform: rotate(var(--r, 0deg));
+  transition: transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tv-knob-cap::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 4px;
+  height: 12px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.tv-knob-tick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 5px;
+  margin: -2.5px 0 0 -1px;
+  border-radius: 1px;
+  background: rgb(0 0 0 / 0.35);
+  transform: rotate(var(--a)) translateY(-27px);
+}
+
+.tv-knob-tick[data-on] {
+  background: #fff;
+}
+
+.tv-knob:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* ── Tela de carregamento ── */
+.boot {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(5 2 14 / 0.78);
+  backdrop-filter: blur(6px);
+  animation: boot-in 400ms ease both;
+}
+
+@keyframes boot-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.boot-box {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.boot-logo {
+  width: 72px;
+  aspect-ratio: 1;
+  animation: lp-float 4.5s ease-in-out infinite;
+}
+
+.boot-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.boot-bar {
+  width: 180px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.boot-bar span {
+  display: block;
+  height: 100%;
+  background: var(--logo-1);
+  transform-origin: left;
+  animation: boot-fill 1.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes boot-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.boot-actions {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  font-size: 16px;
+  animation: tv-join 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.boot-mute {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.6);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.boot-mute:hover {
+  color: #fff;
+}
+
+.boot-hint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgb(255 255 255 / 0.45);
+}
+
+/* Antes de ligar: a TV fica desligada (tela preta), depois acende de verdade. */
+.lp:not([data-booted]) .tv-guide {
+  opacity: 0;
+}
+
+.lp[data-booted] .tv-guide {
+  animation: tv-join 500ms ease 0.5s both;
+}
+
+.lp[data-booted] .tv-screen {
+  animation: tv-power 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tv-power {
+  0% {
+    filter: brightness(0);
+  }
+  20% {
+    filter: brightness(2.2);
+  }
+  100% {
+    filter: none;
+  }
+}
+
+/* ── Responsivo ── */
+@media (max-width: 640px) {
+  .lp-stage {
+    padding-top: 56px;
+  }
+  .tv {
+    --tv-w: min(96vw, calc((100dvh - 210px) * 0.8));
+  }
+  .tv-knob {
+    width: 44px;
+    height: 44px;
+  }
+  .tv-knob-cap {
+    inset: 7px;
+  }
+  .tv-knob-tick {
+    transform: rotate(var(--a)) translateY(-20px);
+  }
+  .tv-guide-name {
+    display: none;
+  }
+  .tv-guide button[aria-current] .tv-guide-name {
+    display: none;
+  }
+  .tv-title {
+    font-size: 3.6em;
+  }
+}
+
+/* Celular deitado / telas baixas: TV ocupa a altura, guia some (os botões da TV bastam). */
+@media (max-height: 520px) and (min-width: 641px) {
+  .lp-stage {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .tv {
+    --tv-w: min(92vw, calc((100dvh - 40px) * 1.5));
+    padding-top: 0;
+  }
+  .tv-antenna {
+    display: none;
+  }
+  .tv-guide {
+    display: none;
+  }
+  .lp-nav {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .tv-body {
+    grid-template-columns: minmax(0, 1fr) 72px;
+  }
+  .tv-knob {
+    width: 48px;
+    height: 48px;
+  }
+  .tv-knob-tick {
+    transform: rotate(var(--a)) translateY(-22px);
+  }
+}
+
 /* ── Sem animação ── */
 @media (prefers-reduced-motion: reduce) {
   .lp *,
@@ -1447,4 +2030,32 @@
 :root[data-motion='off'] .lp *::before,
 :root[data-motion='off'] .lp *::after {
   animation: none !important;
+}
+
+/* Tela da TV baixa (celular deitado): o essencial cabe sem cortar. */
+@container (max-height: 320px) {
+  .tv-intro-pet,
+  .tv-text {
+    display: none;
+  }
+  .tv-title {
+    margin-top: 0;
+    font-size: 2.6em;
+  }
+  .tv-h2 {
+    font-size: 1.8em;
+  }
+  .tv-actions {
+    margin-top: 1em;
+  }
+  .tv-features {
+    gap: 0.4em;
+    margin-top: 0.8em;
+  }
+  .tv-features li {
+    padding: 0.6em;
+  }
+  .tv-features li > span:last-child {
+    display: none;
+  }
 }
