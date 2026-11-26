@@ -37,6 +37,11 @@ export interface UserRepo {
     email?: string | null;
   }): Promise<UserRecord>;
   findById(id: string): Promise<UserRecord | null>;
+  /** Atualiza foto e nomes vindos do Discord (sem mexer no login nem no bloqueio). */
+  updateProfile(
+    id: string,
+    profile: { username: string; globalName: string | null; avatarHash: string | null },
+  ): Promise<void>;
 }
 
 export interface SessionRepo {

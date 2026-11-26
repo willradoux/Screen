@@ -40,6 +40,9 @@ export function createUserRepo(): UserRepo {
       if (!doc) throw new Error('Falha ao gravar o usuário');
       return toRecord(doc);
     },
+    async updateProfile(id, profile) {
+      await UserModel.updateOne({ _id: id }, { $set: profile });
+    },
     async findById(id) {
       const doc = await UserModel.findById(id).lean();
       return doc ? toRecord(doc) : null;

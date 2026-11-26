@@ -265,6 +265,24 @@ describe('papéis pelas permissões do Discord (bot)', () => {
 });
 
 describe('sessão', () => {
+  it('trocou a foto ou o nome no Discord: o Screen acompanha sem precisar logar de novo', async () => {
+    const ctx = buildTestApp();
+    ctx.discord.addMember(USER);
+    const { agent } = await login(ctx);
+    const me = async () => (await agent.get('/api/v1/auth/me')).body.data;
+    expect((await me()).avatarUrl).toBeNull();
+
+    // A pessoa põe uma foto nova; passado o minuto do cache, o Screen busca de novo.
+    const member = ctx.discord.members.get(USER)!;
+    member.user = { ...member.user, avatar: 'novafoto123', global_name: 'Fulano Novo' };
+    ctx.clock.advance(61_000);
+    const fresh = await me();
+    expect(fresh.avatarUrl).toBe(`https://cdn.discordapp.com/avatars/${USER}/novafoto123.png`);
+    expect(fresh.displayName).toBe('Fulano Novo');
+    // E fica gravado (vale para as salas e para quem não está logado agora).
+    expect(ctx.users.users.get(USER)?.avatarHash).toBe('novafoto123');
+  });
+
   it('sem cookie -> 401 UNAUTHENTICATED', async () => {
     const ctx = buildTestApp();
     const res = await request(ctx.app).get('/api/v1/auth/me');

@@ -207,6 +207,7 @@ export class AuthService {
     }
 
     const member = await this.getMember(session);
+    const profile = await this.syncProfile(user, member);
     const config = await this.deps.settings.getRoleConfig(this.deps.env.DISCORD_GUILD_ID);
     const perms = await this.deps.guildPermissions?.getMemberPermissions(user.id).catch(() => null);
     const role = resolveRole({
@@ -223,9 +224,32 @@ export class AuthService {
       user,
       role,
       roleIds: member.roles,
-      displayName: member.nick ?? user.globalName ?? user.username,
-      avatarUrl: avatarUrl(user),
+      displayName: member.nick ?? profile.globalName ?? profile.username,
+      avatarUrl: avatarUrl(profile),
     };
+  }
+
+  /**
+   * Foto e nomes acompanham o Discord: o membro já é consultado a cada minuto (cache), então se a
+   * pessoa trocou a foto ou o nome, grava o novo. Sem isso o link antigo da foto morre e aparece
+   * imagem quebrada até o próximo login. Falhar ao gravar não impede a pessoa de usar o Screen.
+   */
+  private async syncProfile(user: UserRecord, member: DiscordMember): Promise<UserRecord> {
+    const fresh = {
+      username: member.user.username,
+      globalName: member.user.global_name,
+      avatarHash: member.user.avatar,
+    };
+    if (
+      fresh.username === user.username &&
+      fresh.globalName === user.globalName &&
+      fresh.avatarHash === user.avatarHash
+    ) {
+      return user;
+    }
+    // Sem gravar, a resposta já sai com a foto nova; tenta de novo no próximo minuto.
+    await this.deps.users.updateProfile(user.id, fresh).catch(() => undefined);
+    return { ...user, ...fresh };
   }
 
   /**

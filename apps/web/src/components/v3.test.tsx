@@ -324,3 +324,14 @@ describe('Menu da conta (rodapé do menu lateral)', () => {
     expect(account).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+describe('Avatar: foto que não carrega', () => {
+  it('vira as iniciais (nunca imagem quebrada)', async () => {
+    const { Avatar } = await import('./ui');
+    const { container } = render(<Avatar name="Will Radoux" url="https://cdn.exemplo/velha.png" />);
+    const img = container.querySelector('img')!;
+    fireEvent.error(img);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container).toHaveTextContent('WR');
+  });
+});

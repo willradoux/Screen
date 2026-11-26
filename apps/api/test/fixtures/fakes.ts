@@ -138,6 +138,13 @@ export class MemoryUsers implements UserRepo {
   async findById(id: string) {
     return this.users.get(id) ?? null;
   }
+  async updateProfile(
+    id: string,
+    profile: { username: string; globalName: string | null; avatarHash: string | null },
+  ) {
+    const u = this.users.get(id);
+    if (u) this.users.set(id, { ...u, ...profile });
+  }
 }
 
 export class MemorySessions implements SessionRepo {

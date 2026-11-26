@@ -1,4 +1,4 @@
-import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
 /*
@@ -268,12 +268,15 @@ export function Avatar({
   size?: 'sm' | 'md' | 'lg';
 }) {
   const dim = { sm: 'h-7 w-7 text-[11px]', md: 'h-9 w-9 text-sm', lg: 'h-12 w-12 text-base' }[size];
-  if (url) {
+  // Foto que não carrega (trocada no Discord, link velho) vira as iniciais, nunca imagem quebrada.
+  const [failed, setFailed] = useState<string | null>(null);
+  if (url && failed !== url) {
     return (
       <img
         src={url}
         alt=""
         loading="lazy"
+        onError={() => setFailed(url)}
         className={`${dim} shrink-0 rounded-full object-cover`}
       />
     );
