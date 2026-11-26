@@ -24,8 +24,23 @@ import type { DiscordGateway } from './gateway.js';
 import { LiveVoiceHandler } from './live-handler.js';
 import { VoiceCache } from './voice-cache.js';
 
+/** O bot visto de fora: só liga e desliga. */
+export interface BotHandle {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+}
+
+/** Peças que o bot recebe para ligar o Discord às regras (ver `assembleDiscordSystem`). */
+export interface BotParts {
+  live: LiveVoiceHandler;
+  router: CommandRouter;
+  onReady: () => void;
+}
+
 export interface DiscordSystem {
-  bot: DiscordBot;
+  bot: BotHandle;
+  /** Quem entra e sai das calls (o modo dev usa para simular a call do Discord). */
+  live: LiveVoiceHandler;
   gateway: DiscordGateway;
   roomService: RoomService;
   announcer: RoomAnnouncer;
@@ -39,22 +54,23 @@ export interface DiscordSystem {
 }
 
 /** Monta o bot e tudo que ele usa. Só é chamado quando há `DISCORD_BOT_TOKEN`. */
+export interface DiscordSystemDeps {
+  rooms: RoomRepo;
+  settings: SettingsRepo;
+  /** Compartilhado com a API: é a fonte da verdade de "quem está na call". */
+  voiceCache: VoiceCache;
+  presence: PresenceService;
+  /** Sessão de mídia das lives (ativa/em espera). */
+  mediaSessions: MediaSessionService;
+  audit: AuditLog;
+  participations: ParticipationRepo;
+}
+
 export function createDiscordSystem(
   env: Env,
   logger: Logger,
-  deps: {
-    rooms: RoomRepo;
-    settings: SettingsRepo;
-    /** Compartilhado com a API: é a fonte da verdade de "quem está na call". */
-    voiceCache: VoiceCache;
-    presence: PresenceService;
-    /** Sessão de mídia das lives (ativa/em espera). */
-    mediaSessions: MediaSessionService;
-    audit: AuditLog;
-    participations: ParticipationRepo;
-  },
+  deps: DiscordSystemDeps,
 ): DiscordSystem {
-  const repos = deps;
   const token = env.DISCORD_BOT_TOKEN;
   if (!token) throw new Error('DISCORD_BOT_TOKEN ausente');
 
@@ -65,8 +81,35 @@ export function createDiscordSystem(
       GatewayIntentBits.GuildMembers,
     ],
   });
+  const gateway = new DiscordJsGateway(client, env.DISCORD_GUILD_ID);
+  return assembleDiscordSystem(env, logger, deps, gateway, (parts) => {
+    return new DiscordBot({
+      client,
+      token,
+      guildId: env.DISCORD_GUILD_ID,
+      live: parts.live,
+      router: parts.router,
+      settings: deps.settings,
+      logger,
+      onReady: parts.onReady,
+    });
+  });
+}
+
+/**
+ * Monta as regras do Screen em volta de um gateway do Discord: anúncios, salas, reuniões,
+ * lives pela call de voz e comandos. O gateway e o bot vêm de fora: o real (discord.js) em
+ * produção, ou um de mentira no modo de desenvolvimento (`DEV_FAKE_DISCORD`).
+ */
+export function assembleDiscordSystem(
+  env: Env,
+  logger: Logger,
+  deps: DiscordSystemDeps,
+  gateway: DiscordGateway,
+  makeBot: (parts: BotParts) => BotHandle,
+): DiscordSystem {
+  const repos = deps;
   const guildId = env.DISCORD_GUILD_ID;
-  const gateway = new DiscordJsGateway(client, guildId);
   const voiceCache = deps.voiceCache;
 
   const announcer = new RoomAnnouncer({
@@ -156,14 +199,9 @@ export function createDiscordSystem(
 
   const opsLogger = new DiscordOpsLogger({ gateway, settings: repos.settings, guildId, logger });
 
-  const bot = new DiscordBot({
-    client,
-    token,
-    guildId,
+  const bot = makeBot({
     live,
     router,
-    settings: repos.settings,
-    logger,
     // Só liga o relógio das reuniões com o bot conectado (avisos e lembretes precisam dele).
     onReady: () => {
       meetingScheduler.start();
@@ -173,6 +211,7 @@ export function createDiscordSystem(
 
   return {
     bot,
+    live,
     gateway,
     roomService,
     announcer,

@@ -41,6 +41,11 @@ const schema = z.object({
   ADMIN_ROLE_IDS: z.string().optional(),
   /** Sem o token o bot não inicia (a API sobe normalmente). Obrigatório em produção. */
   DISCORD_BOT_TOKEN: optional(z.string().min(1)),
+  /**
+   * Modo de desenvolvimento: Discord de mentira (login com pessoas fixas e bot simulado, ver
+   * src/dev). Roda o Screen inteiro sem Discord. Só vale com NODE_ENV=development.
+   */
+  DEV_FAKE_DISCORD: optional(z.enum(['true', 'false'])),
   /** Cargo marcado nos avisos de reunião. Vazio = não marca ninguém. */
   MEETING_MENTION_ROLE_ID: optional(snowflake),
 
@@ -74,7 +79,17 @@ export type Env = z.infer<typeof schema> & {
   bootstrapAdminIds: string[];
   /** Admins gerais (ver OWNER_IDS). */
   ownerIds: string[];
+  /** Discord de mentira (modo dev). */
+  devFakeDiscord: boolean;
   adminRoleIds: string[];
+};
+
+/** Discord de mentira do modo dev (ver src/dev/personas.ts). */
+const DEV_DEFAULTS: Record<string, string> = {
+  DISCORD_CLIENT_ID: '900000000000000001',
+  DISCORD_CLIENT_SECRET: 'dev-client-secret',
+  DISCORD_GUILD_ID: '900000000000000000',
+  DISCORD_REDIRECT_URI: 'http://localhost:3000/api/v1/auth/discord/callback',
 };
 
 /** Valores fixos e inofensivos aplicados somente quando NODE_ENV=test. */
@@ -122,7 +137,10 @@ export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
     );
     delete source.MEETING_MENTION_ROLE_ID;
   }
-  const input = source.NODE_ENV === 'test' ? { ...TEST_DEFAULTS, ...source } : source;
+  // Modo dev: o "Discord" é de mentira, então os dados do app do Discord têm valores fixos.
+  const devFake = source.DEV_FAKE_DISCORD === 'true';
+  const base = source.NODE_ENV === 'test' ? TEST_DEFAULTS : devFake ? DEV_DEFAULTS : {};
+  const input = { ...base, ...source };
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n');
@@ -143,6 +161,11 @@ export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
       .map((s) => s.trim())
       .filter(Boolean);
 
+  if (env.DEV_FAKE_DISCORD === 'true' && env.NODE_ENV !== 'development') {
+    throw new Error(
+      `Variáveis de ambiente inválidas:${String.fromCharCode(10)}DEV_FAKE_DISCORD: só pode ser ligado com NODE_ENV=development`,
+    );
+  }
   if (env.NODE_ENV === 'production' && !env.DISCORD_BOT_TOKEN) {
     throw new Error('Variáveis de ambiente inválidas:\nDISCORD_BOT_TOKEN: obrigatório em produção');
   }
@@ -178,6 +201,7 @@ ADMIN_ROLE_IDS: ID inválido "${badRole}"`);
     // Os admins gerais são sempre ADMIN (mesmo sem cargo no Discord e com o bot fora do ar).
     bootstrapAdminIds: [...new Set([...bootstrapAdminIds, ...ownerIds])],
     ownerIds,
+    devFakeDiscord: env.DEV_FAKE_DISCORD === 'true',
     adminRoleIds,
   };
 }
