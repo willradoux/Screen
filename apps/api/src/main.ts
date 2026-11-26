@@ -8,6 +8,8 @@ import { AuditService, createAuditRepo } from './modules/audit/audit.service.js'
 import { createSessionRepo, createUserRepo } from './modules/auth/auth.repositories.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { createDiscordApi } from './modules/discord/discord-api.js';
+import { createDevDiscordApi } from './dev/dev-discord.js';
+import { createDevDiscordSystem, devRoutes, seedDevSettings } from './dev/dev-system.js';
 import { createLiveKitGateway } from './modules/livekit/livekit.gateway.js';
 import { LiveKitWebhookHandler } from './modules/livekit/livekit.webhook.js';
 import { HandQueue } from './modules/moderation/hand-queue.js';
@@ -78,18 +80,13 @@ const mediaSessions = new MediaSessionService({
   guildId: env.DISCORD_GUILD_ID,
 });
 
-// O bot é opcional em desenvolvimento: sem token, a API sobe sem ele (e sem salas).
-const discord = env.DISCORD_BOT_TOKEN
-  ? createDiscordSystem(env, logger, {
-      rooms,
-      settings,
-      voiceCache,
-      presence,
-      audit,
-      participations,
-      mediaSessions,
-    })
-  : null;
+// O bot é opcional em desenvolvimento: sem token, a API sobe sem ele (e sem salas). No modo dev
+// (DEV_FAKE_DISCORD=true) o Discord é de mentira, mas as regras são as de verdade.
+const discordDeps = { rooms, settings, voiceCache, presence, audit, participations, mediaSessions };
+const devDiscord = env.devFakeDiscord ? createDevDiscordSystem(env, logger, discordDeps) : null;
+if (devDiscord) await seedDevSettings(settings, env.DISCORD_GUILD_ID);
+const discord =
+  devDiscord ?? (env.DISCORD_BOT_TOKEN ? createDiscordSystem(env, logger, discordDeps) : null);
 if (!discord) logger.warn('DISCORD_BOT_TOKEN ausente: o bot e as salas não serão iniciados');
 if (discord) {
   // Ações dos admins/mods e erros importantes também vão para o canal de logs do painel.
@@ -99,7 +96,7 @@ if (discord) {
 
 const auth = new AuthService({
   env,
-  discord: createDiscordApi(env),
+  discord: env.devFakeDiscord ? createDevDiscordApi(env) : createDiscordApi(env),
   users: createUserRepo(),
   sessions: createSessionRepo(),
   settings,
@@ -208,6 +205,7 @@ if (discord) {
 }
 
 const app = createApp(env, logger, {
+  ...(devDiscord ? { dev: devRoutes(env, devDiscord) } : {}),
   ...(recordingService ? { recordings: { recordings: recordingService } } : {}),
   readiness: { mongo: pingDb },
   auth,

@@ -140,7 +140,9 @@ export function loadEnv(rawSource: NodeJS.ProcessEnv = process.env): Env {
   // Modo dev: o "Discord" é de mentira, então os dados do app do Discord têm valores fixos.
   const devFake = source.DEV_FAKE_DISCORD === 'true';
   const base = source.NODE_ENV === 'test' ? TEST_DEFAULTS : devFake ? DEV_DEFAULTS : {};
-  const input = { ...base, ...source };
+  // Vazio no .env (`FOO=`) vale como não preenchido: não apaga o valor padrão.
+  const filled = Object.fromEntries(Object.entries(source).filter(([, v]) => v !== ''));
+  const input = { ...base, ...filled };
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n');

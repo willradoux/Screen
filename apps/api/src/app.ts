@@ -40,6 +40,8 @@ export interface AppDeps {
   meetings?: MeetingsApi;
   /** Gravação de reuniões (ADMIN). Exige `auth`. */
   recordings?: { recordings: RecordingService; now?: () => Date };
+  /** Páginas do modo dev (Discord de mentira). Só existe com DEV_FAKE_DISCORD=true. */
+  dev?: express.Router;
 }
 
 export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
@@ -97,6 +99,9 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
       skip: (req) => req.path === `/api/v1${WEBHOOK_PATH}`,
     }),
   );
+
+  // Modo dev: páginas do Discord de mentira (fora da checagem de origem: abrem direto na API).
+  if (deps.dev) app.use('/api/v1/dev', deps.dev);
 
   const api = express.Router();
   api.use(mountPoint);
