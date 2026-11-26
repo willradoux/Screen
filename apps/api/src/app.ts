@@ -92,7 +92,8 @@ export function createApp(env: Env, logger: Logger, deps: AppDeps = {}) {
   app.use(
     rateLimit({
       windowMs: 60_000,
-      limit: 120,
+      // Modo dev (nunca em produção): os testes de ponta a ponta fazem várias pessoas e salas por minuto.
+      limit: env.devFakeDiscord ? 5000 : 120,
       standardHeaders: 'draft-7',
       legacyHeaders: false,
       // O LiveKit chama o webhook com frequência (todo evento de sala); ele se autentica por assinatura.

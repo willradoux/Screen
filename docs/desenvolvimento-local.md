@@ -54,3 +54,18 @@ Funcionam no navegador normalmente em `localhost`. Para testar no celular na mes
 ## Onde fica o código
 
 `apps/api/src/dev/`: as pessoas e canais (`personas.ts`), o login e o bot de mentira (`dev-discord.ts`) e as páginas `/api/v1/dev` (`dev-system.ts`). As regras do bot são montadas por `assembleDiscordSystem` (`src/discord/bootstrap.ts`), igual em produção.
+
+## 6. Testes de ponta a ponta (navegador de verdade)
+
+Com o ambiente da seção 2 rodando:
+
+```bash
+npm run e2e -w apps/web
+```
+
+O Playwright abre o Chrome instalado no computador (não baixa navegador), entra como as pessoas de mentira e passa pelo caminho principal no computador e no celular: login, lista de salas, entrar na live, mandar mensagem no chat, ver as pessoas, Convidar e sair. Também confere as regras do design: **nada por cima de nada** (controles, faixa de ícones, topo e painel não se cruzam) e nenhuma tela rola para o lado.
+
+- Site em outra porta: `E2E_WEB=http://localhost:5175 npm run e2e -w apps/web`.
+- Sem o Chrome instalado: `npx playwright install chromium` e `E2E_CHANNEL=chromium`.
+- Falhou? A foto e o rastro de cada falha ficam em `apps/web/e2e/.results` (`npx playwright show-trace <arquivo>`).
+- No modo dev, os limites de requisição da API ficam altos (os testes entram e saem várias vezes por minuto); em produção continuam os normais.

@@ -35,7 +35,14 @@ export function authRoutes(service: AuthService, env: Env): Router {
 
   router.use(
     '/auth',
-    rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }),
+    rateLimit({
+      windowMs: 60_000,
+      // Modo dev (Discord de mentira, nunca em produção): os testes de ponta a ponta entram e saem
+      // várias vezes por minuto.
+      limit: env.devFakeDiscord ? 1000 : 20,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+    }),
   );
 
   // 1) Inicia o login: guarda state+redirect em cookie assinado e vai para o Discord.
