@@ -6,9 +6,10 @@ import { describeError } from '../lib/errors';
 import { isAdmin } from '../lib/moderation-rules';
 import { formatDateTime } from '../lib/format';
 import type { Room } from '../lib/types';
-import { Badge } from './ui';
+import { Avatar, Badge } from './ui';
+import { usePersonTint } from '../lib/personColor';
 import { Icon } from './Icon';
-import { AvatarStack, type Person } from './Widget';
+import type { Person } from './Widget';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
@@ -58,17 +59,11 @@ export function RoomCard({
     }
   }
 
-  const when =
-    room.status === 'SCHEDULED'
-      ? `Começa em ${formatDateTime(room.startsAt)}`
-      : room.openedAt
-        ? `Aberta desde ${formatDateTime(room.openedAt)}`
-        : '';
+  // Só o essencial embaixo do nome; o estado (ao vivo, em espera) já está na capa.
+  const when = room.status === 'SCHEDULED' ? `Começa em ${formatDateTime(room.startsAt)}` : '';
   const session =
-    room.type === 'LIVE' && room.status === 'OPEN'
-      ? room.mediaState === 'ACTIVE'
-        ? 'Sessão em uso.'
-        : 'Sessão em espera: ao entrar você a ativa.'
+    room.type === 'LIVE' && room.status === 'OPEN' && room.mediaState !== 'ACTIVE'
+      ? 'Ao entrar, você ativa a sessão.'
       : null;
 
   const tone =
@@ -84,6 +79,17 @@ export function RoomCard({
   const people = `${room.participantCount}/${room.maxParticipants} ${
     room.participantCount === 1 ? 'pessoa' : 'pessoas'
   }`;
+  // Capa tingida com a cor da foto de quem está na call (ou uma cor fixa da sala).
+  const host = members?.[0];
+  const tint = usePersonTint(host ? (host.displayName ?? host.userId) : room.id, host?.avatarUrl);
+  const inCall = members?.length ?? 0;
+  const names = (members ?? []).map((m) => m.displayName ?? 'alguém');
+  const withWho =
+    names.length === 0
+      ? null
+      : names.length <= 2
+        ? `com ${names.join(' e ')}`
+        : `com ${names.slice(0, 2).join(', ')} e mais ${names.length - 2}`;
 
   return (
     <article
@@ -96,17 +102,25 @@ export function RoomCard({
         navigate(`/r/${room.id}`);
       }}
     >
-      <div className="sp-cover" data-tone={tone}>
+      <div className="sp-cover" data-tone={tone} style={tint}>
         <span className="sp-cover-badge">
-          <StatusBadge room={room} />
+          {tone === 'idle' ? <Badge>Em espera</Badge> : <StatusBadge room={room} />}
         </span>
-        {members && members.length > 0 ? (
-          <AvatarStack people={members} max={4} />
+        {host ? (
+          <span aria-hidden="true" className="sp-cover-host">
+            <Avatar name={host.displayName ?? '?'} url={host.avatarUrl} size="lg" />
+          </span>
         ) : (
           <span aria-hidden="true" className="sp-cover-icon">
             <Icon name={room.type === 'LIVE' ? 'videocam' : 'calendar_month'} size="2rem" />
           </span>
         )}
+        {inCall > 0 && (
+          <span className="sp-cover-chip">
+            {inCall} {inCall === 1 ? 'pessoa na call' : 'pessoas na call'}
+          </span>
+        )}
+
         <Link
           to={`/r/${room.id}`}
           aria-label={open ? 'Entrar' : 'Ver sala'}
@@ -124,6 +138,7 @@ export function RoomCard({
       </h3>
       <p className="sp-card-sub">
         {room.type === 'LIVE' ? 'Live' : 'Reunião'} · {people}
+        {withWho && ` · ${withWho}`}
       </p>
       {when && <p className="sp-card-sub">{when}</p>}
       {room.description && <p className="sp-card-desc">{room.description}</p>}

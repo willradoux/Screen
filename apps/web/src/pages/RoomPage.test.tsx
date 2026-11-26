@@ -140,7 +140,7 @@ describe('RoomPage: antes de entrar', () => {
   it('quem pode entrar vê a tela de entrada com os dados da sala', async () => {
     setup();
     expect(await screen.findByRole('heading', { name: 'Live - Live 1' })).toBeInTheDocument();
-    expect(screen.getByText(/câmera e microfone começam desligados/i)).toBeInTheDocument();
+    expect(screen.getByText(/câmera, microfone e tela começam desligados/i)).toBeInTheDocument();
     expect(api.rooms.get).toHaveBeenCalledWith(ROOM_ID);
     expect(api.rooms.access).toHaveBeenCalledWith(ROOM_ID);
   });
@@ -427,6 +427,37 @@ describe('RoomPage: eventos do servidor', () => {
     vi.spyOn(api.rooms, 'join').mockResolvedValue(joinResult(permissions, lecture));
     await enter();
   }
+
+  it('topo da sala: o nome, "Ao vivo" e Convidar copia o link', async () => {
+    await connectedRoom();
+    const top = screen.getByRole('banner');
+    expect(
+      within(top).getByRole('heading', { level: 1, name: 'Live - Live 1' }),
+    ).toBeInTheDocument();
+    expect(within(top).getByText('Ao vivo')).toBeInTheDocument();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await userEvent.click(within(top).getByRole('button', { name: 'Convidar' }));
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(await screen.findByText('Link da sala copiado.')).toBeInTheDocument();
+  });
+
+  it('painel: as abas Chat e Pessoas trocam o conteúdo sem fechar', async () => {
+    await connectedRoom();
+    await userEvent.click(screen.getByRole('button', { name: 'Mais opções' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    const tabs = screen.getByRole('tablist', { name: 'Painel' });
+    expect(within(tabs).getByRole('tab', { name: /Chat/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await userEvent.click(within(tabs).getByRole('tab', { name: /Pessoas/ }));
+    expect(within(tabs).getByRole('tab', { name: /Pessoas/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('complementary', { name: 'Pessoas' })).toBeInTheDocument();
+  });
 
   it('sala encerrada: mostra o motivo e desconecta', async () => {
     await connectedRoom();

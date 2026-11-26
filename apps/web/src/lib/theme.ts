@@ -3,7 +3,7 @@
  *
  * - **Modo** (`data-mode`): escuro (padrão) ou claro.
  * - **Cor** (`data-theme`): a cor dos detalhes (botão de entrar, chaves ligadas, item ativo,
- *   capas dos cards). O padrão é a do Screen: laranja indo para o rosa, como o logo.
+ *   capas dos cards). O padrão é a do Screen: lima sobre quase-preto, como o logo.
  *
  * Para criar uma cor: adicione aqui, em `public/theme-init.js` e as cores em `styles/v3.css`.
  */
@@ -26,14 +26,14 @@ export const THEMES: ThemeInfo[] = [
   {
     value: 'screem',
     label: 'Screen',
-    text: 'Laranja e rosa, como o logo. É o padrão.',
-    swatch: ['#ffb347', '#ff4f93'],
+    text: 'Lima, como o logo. É o padrão.',
+    swatch: ['#d7f56b', '#b9e04a'],
     bar: '#000000',
   },
   {
     value: 'acelera',
     label: 'Acelera',
-    text: 'Menta e turquesa, da Acelera DEV.',
+    text: 'Turquesa, da Acelera DEV.',
     swatch: ['#5ef0d0', '#00b39c'],
     bar: '#000000',
   },
@@ -102,7 +102,7 @@ export function applyMode(mode: Mode): void {
   // Cor da barra do navegador no celular: a do fundo.
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', mode === 'light' ? '#e9e9ec' : '#000000');
+    ?.setAttribute('content', mode === 'light' ? '#f2f2f4' : '#070707');
 }
 
 export function saveTheme(theme: Theme): void {

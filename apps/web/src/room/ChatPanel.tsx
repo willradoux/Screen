@@ -488,7 +488,7 @@ function ChatPanelView({
             {waiting ? (
               <span className="tabular text-[12px] font-bold">{seconds}</span>
             ) : (
-              <Icon name="arrow_forward" size="1.15rem" />
+              <Icon name="send" size="1.1rem" />
             )}
           </button>
         </form>

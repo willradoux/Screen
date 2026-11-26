@@ -67,7 +67,7 @@ describe('MeetingsPage', () => {
     ]);
     inRouter(<MeetingsPage />);
 
-    expect(await screen.findByText('Próxima reunião')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Próxima reunião' })).toBeInTheDocument();
     expect(screen.getByText(/começa em 3 h/)).toBeInTheDocument();
     expect(screen.getByText(/Lembretes no Discord: 1 d, 1 h, 5 min antes/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute(

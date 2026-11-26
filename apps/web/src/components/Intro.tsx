@@ -15,7 +15,7 @@ function shouldPlay(): boolean {
 }
 
 /**
- * Abertura: sobre o fundo do tema, o bonequinho do Screen (laranja/rosa, com os olhos "| |"
+ * Abertura: sobre o fundo do tema, o bonequinho do Screen (lima, com os olhos "| |"
  * vazados) salta, dá a piscadinha (o olho direito dobra em "<", o "|<" do logo), olha para os
  * lados e pisca de novo; então o logo sai de cena e fica só o nome da Acelera DEV,
  * sem fundo nenhum. Depois tudo some e o app entra. A cada carregamento
@@ -110,10 +110,10 @@ export function Intro() {
       <div ref={popRef} className="intro-figure" style={{ transform: 'scale(0)', opacity: 0 }}>
         <svg ref={svgRef} viewBox={`0 0 ${LOGO_W} ${LOGO_H}`} className="intro-svg">
           <defs>
-            {/* As cores do logo do Screen (laranja para rosa), visíveis no escuro e no claro. */}
+            {/* O ícone do Screen (variação B: lima), visível no escuro e no claro. */}
             <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#ffb347" />
-              <stop offset="1" stopColor="#ff4f93" />
+              <stop offset="0" stopColor="#e2f986" />
+              <stop offset="1" stopColor="#c8ec4f" />
             </linearGradient>
             <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
               <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />

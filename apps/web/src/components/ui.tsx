@@ -1,5 +1,6 @@
 import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
+import { tintFor, tintStyle } from '../lib/personColor';
 
 /*
  * Componentes base do design system (docs/design-system.md). Tudo que é botão, campo, painel,
@@ -113,8 +114,9 @@ export function Card({
 
 const BADGES = {
   neutral: 'bg-white/10 text-zinc-300',
-  live: 'bg-[#c8352a] text-[#fff]', // 5:1 com o branco
-  open: 'bg-[#2fbf71] text-[#03140a]',
+  // Ao vivo: pílula escura puxada pro coral, com a bolinha coral (o CSS desenha a bolinha).
+  live: 'badge-dot bg-[#2b1311] text-[#ff9d8f]',
+  open: 'badge-dot bg-[#10261a] text-[#8df0c2]',
   scheduled: 'bg-brand-400 text-[#1a0b0e]',
   warn: 'bg-[#f8cb74] text-[#2a1a00]',
 } as const;
@@ -128,7 +130,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium ${BADGES[tone]}`}
+      className={`badge inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium ${BADGES[tone]}`}
     >
       {children}
     </span>
@@ -277,7 +279,7 @@ export function Avatar({
         alt=""
         loading="lazy"
         onError={() => setFailed(url)}
-        className={`${dim} shrink-0 rounded-full object-cover`}
+        className={`avatar ${dim} shrink-0 rounded-full object-cover`}
       />
     );
   }
@@ -291,7 +293,9 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-700 font-semibold text-zinc-200`}
+      // Sem foto: bolinha pastel na cor da pessoa (a mesma em toda parte, pelo nome).
+      style={tintStyle(tintFor(name))}
+      className={`avatar avatar-initials ${dim} inline-flex shrink-0 items-center justify-center rounded-full font-semibold`}
     >
       {letters || '?'}
     </span>

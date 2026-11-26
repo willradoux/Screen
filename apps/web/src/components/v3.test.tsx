@@ -73,6 +73,23 @@ describe('RoomCard (card de sala)', () => {
     expect(screen.getByText(/Começa em/)).toBeInTheDocument();
   });
 
+  it('live com gente na call: quem está e quantos, na capa e embaixo do nome', () => {
+    const members = ['Vinicius', 'Bárbara', 'Jacob', 'Lucas'].map((n, i) => ({
+      userId: String(i),
+      displayName: n,
+      avatarUrl: null,
+    }));
+    inRoutes(<RoomCard room={makeRoom()} members={members} />);
+    expect(screen.getByText('4 pessoas na call')).toBeInTheDocument();
+    expect(screen.getByText(/com Vinicius, Bárbara e mais 2/)).toBeInTheDocument();
+  });
+
+  it('live em espera: o selo da capa diz "Em espera"', () => {
+    inRoutes(<RoomCard room={makeRoom({ mediaState: 'IDLE' })} />);
+    expect(screen.getByText('Em espera')).toBeInTheDocument();
+    expect(screen.queryByText('Ao vivo')).not.toBeInTheDocument();
+  });
+
   it('clicar em qualquer parte do card entra na sala', async () => {
     inRoutes(<RoomCard room={makeRoom()} />);
     await userEvent.click(screen.getByRole('heading', { name: 'Live - Live 1' }));
@@ -206,15 +223,21 @@ describe('Palco', () => {
 });
 
 describe('Login', () => {
-  it('mostra o botão de entrar e o que tem no Screen', async () => {
+  it('mostra a frase e o único botão de entrar', async () => {
     mockMe(makeUser());
     vi.spyOn(api.auth, 'me').mockRejectedValue(
       Object.assign(new Error('x'), { status: 401, code: 'UNAUTHENTICATED' }),
     );
     renderWithApp(<LoginPage />, { route: '/login', path: '/login' });
     expect(await screen.findByRole('link', { name: /Entrar com Discord/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'O que tem no Screen' })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(3);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'As calls do Acelera DEV, no navegador.' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Entrar com Discord/ })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Conhecer o screen' })).toHaveAttribute(
+      'href',
+      '/sobre',
+    );
   });
 });
 

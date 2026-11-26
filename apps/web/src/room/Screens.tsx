@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { QrCode } from '../components/QrCode';
-import { Button } from '../components/ui';
+import { Avatar, Badge, Button } from '../components/ui';
+import { StatusBadge } from '../components/RoomCard';
+import { useOptionalAuth } from '../auth/AuthProvider';
+import { usePersonTint } from '../lib/personColor';
 import { Loader } from '../components/Loader';
 import { StatusCard } from '../components/StatusCard';
-import { CoverChip, WidgetCover, WidgetStat } from '../components/Widget';
 import { api } from '../lib/api';
 import { useAsync } from '../lib/useAsync';
 import { formatDateTime, formatDuration, timeUntil } from '../lib/format';
@@ -168,91 +170,98 @@ export function ReadyScreen({ room, onJoin }: { room: Room; onJoin: () => void }
   const link = room.url || (typeof location !== 'undefined' ? location.href : '');
   const [qr, setQr] = useState(false);
   const idle = room.type === 'LIVE' && room.mediaState === 'IDLE';
-  const people = room.participantCount;
+  const me = useOptionalAuth()?.user ?? null;
+  const tint = usePersonTint(me?.displayName ?? 'você', me?.avatarUrl);
   // Quem está na call do Discord agora (só lives). Busca uma vez, sem repetir.
   const calls = useAsync(() =>
     room.type === 'LIVE' ? api.calls.list() : Promise.resolve([] as CallInfo[]),
   );
   const members =
     calls.state.status === 'ready'
-      ? calls.state.data.find((c) => c.roomId === room.id)?.members
-      : undefined;
+      ? (calls.state.data.find((c) => c.roomId === room.id)?.members ?? [])
+      : [];
+  const names = members.map((m) => m.displayName ?? 'alguém');
+  const who =
+    names.length === 0
+      ? room.participantCount > 0
+        ? `${room.participantCount} ${room.participantCount === 1 ? 'pessoa está' : 'pessoas estão'} aqui`
+        : 'Ninguém na sala ainda'
+      : names.length === 1
+        ? `${names[0]} está aqui`
+        : names.length === 2
+          ? `${names[0]} e ${names[1]} estão aqui`
+          : `${names[0]}, ${names[1]} e mais ${names.length - 2} estão aqui`;
 
   return (
-    <Center>
-      <article className="widget widget-hero">
-        <WidgetCover
-          tone={idle ? 'idle' : 'live'}
-          people={members}
-          left={
-            <CoverChip icon={room.type === 'LIVE' ? 'videocam' : 'calendar_month'}>
-              {room.type === 'LIVE' ? 'Live' : 'Reunião'}
-            </CoverChip>
-          }
-          right={<CoverChip icon="lock">Acesso verificado</CoverChip>}
-        />
-        <div
-          className="widget-body"
-          data-people={members && members.length > 0 ? 'true' : undefined}
-        >
-          <div>
-            <h2 className="text-xl font-bold leading-tight text-zinc-50 sm:text-2xl">
-              {room.title}
-            </h2>
-            {room.description && (
-              <p className="mt-1.5 text-[13px] leading-relaxed text-zinc-400">{room.description}</p>
-            )}
-          </div>
+    <div className="ready rise">
+      {/* Você, como vai aparecer pra sala: a miniatura na sua cor, com tudo desligado. */}
+      <figure className="ready-preview" style={tint} aria-hidden="true">
+        <span className="ready-preview-avatar">
+          <Avatar name={me?.displayName ?? '?'} url={me?.avatarUrl ?? null} size="lg" />
+        </span>
+        <figcaption className="ready-preview-name">{me?.displayName ?? 'Você'} (você)</figcaption>
+        <span className="ready-preview-off">
+          <Icon name="mic_off" size="1.15rem" />
+          <Icon name="videocam_off" size="1.15rem" />
+        </span>
+      </figure>
 
-          <div className="grid grid-cols-2 gap-3">
-            <WidgetStat
-              icon="group"
-              value={
-                people === 0 ? 'ninguém ainda' : `${people} ${people === 1 ? 'pessoa' : 'pessoas'}`
-              }
-              label="na sala"
-            />
-            <WidgetStat icon="videocam_off" value="Tudo desligado" label="ao entrar" />
-          </div>
-
-          <p className="text-xs leading-relaxed text-zinc-500">
-            <strong className="text-zinc-300">Câmera e microfone começam desligados.</strong> Você
-            liga o que quiser lá dentro.
-          </p>
-
-          {idle && (
-            <p className="rounded-xl bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-200">
-              <strong>Sessão em espera:</strong> ao entrar você a ativa. Comece a transmitir em
-              alguns minutos para ela não voltar para a espera.
-            </p>
+      <div className="ready-info">
+        <p className="ready-status">
+          {room.status === 'OPEN' && room.type === 'LIVE' ? (
+            <Badge tone={idle ? 'neutral' : 'live'}>{idle ? 'Em espera' : 'Ao vivo'}</Badge>
+          ) : (
+            <StatusBadge room={room} />
           )}
+          <span className="ready-kind">{room.type === 'LIVE' ? 'Live' : 'Reunião'}</span>
+        </p>
+        <h2 className="ready-title">{room.title}</h2>
+        {room.description && <p className="ready-desc">{room.description}</p>}
 
-          <Button variant="primary" size="lg" className="w-full" onClick={onJoin}>
+        <p className="ready-who">
+          {members.length > 0 && (
+            <span className="face-stack" aria-hidden="true">
+              {members.slice(0, 3).map((m) => (
+                <Avatar key={m.userId} name={m.displayName ?? '?'} url={m.avatarUrl} size="sm" />
+              ))}
+            </span>
+          )}
+          <span>{who}</span>
+        </p>
+
+        <p className="ready-note">
+          <Icon name="check_circle" size="1.2rem" />
+          <span>
+            Câmera, microfone e tela começam desligados. Você liga o que quiser lá dentro.
+            {idle && ' A sessão está em espera: ao entrar, você a ativa.'}
+          </span>
+        </p>
+
+        <div className="ready-actions">
+          <Button variant="primary" size="lg" onClick={onJoin}>
             Entrar na sala
           </Button>
-
-          <div className="flex items-center justify-between gap-2">
-            <BackHome />
-            <button
-              type="button"
-              aria-expanded={qr}
-              onClick={() => setQr((v) => !v)}
-              className="btn btn-ghost btn-sm"
-            >
-              <Icon name="qr_code_2" size="1rem" />
-              Abrir no celular
-            </button>
-          </div>
-
-          {qr && (
-            <div className="pop-in flex flex-col items-center gap-2 pt-1">
-              <QrCode value={link} size={160} />
-              <p className="text-xs text-zinc-500">Aponte a câmera do celular para o código.</p>
-            </div>
-          )}
+          <button
+            type="button"
+            aria-expanded={qr}
+            onClick={() => setQr((v) => !v)}
+            className="btn btn-secondary btn-lg"
+          >
+            <Icon name="qr_code_2" size="1.1rem" />
+            Abrir no celular
+          </button>
         </div>
-      </article>
-    </Center>
+
+        {qr && (
+          <div className="pop-in flex flex-col items-start gap-2 pt-1">
+            <QrCode value={link} size={160} />
+            <p className="text-xs text-zinc-500">Aponte a câmera do celular para o código.</p>
+          </div>
+        )}
+
+        <BackHome />
+      </div>
+    </div>
   );
 }
 

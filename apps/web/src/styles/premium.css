@@ -1,0 +1,1480 @@
+/*
+ * Screen "premium" (design em /design, arquivo sala-premium.figcraft). Vem depois do v3.css e
+ * só redefine o visual; a estrutura e a lógica são as mesmas.
+ *
+ * - Base quase preta (#070707), separação por linhas finas (branco ~8%), fonte Geist.
+ * - Destaque lima (#D7F56B) usado com pouco: item ativo, quem fala, botão de envio/entrar.
+ *   Coral = alerta e sair.
+ * - Pastéis só como cor da pessoa (miniatura sem câmera e capa da sala; lib/personColor.ts).
+ * - Nada sobreposto, nada de texto em degradê nem brilho exagerado.
+ */
+
+/* ---------------------------------------------------------------------------------------
+ * Tokens
+ * ------------------------------------------------------------------------------------- */
+
+:root {
+  --v3-bg: #070707;
+  --v3-panel: #0f0f11;
+  --v3-card: #151517;
+  --v3-card-hover: #1b1b1e;
+  --v3-elev: #1c1c1f;
+  --v3-pill: #1e1e21;
+  --v3-pill-hover: #28282c;
+  --v3-text: #f4f4f5;
+  --v3-text-2: #a6a6ae;
+  --v3-text-3: #8b8b94; /* 5,6:1 sobre #0f0f11 */
+  --v3-line: rgb(255 255 255 / 0.08);
+  --v3-r: 16px;
+  --p-coral: #ff8a7a;
+  --p-coral-strong: #ff5a4d;
+  --logo-tile-1: #1d1d20;
+  --logo-tile-2: #0f0f11;
+  --logo-edge: rgb(255 255 255 / 0.1);
+  --logo-eye: var(--brand-400);
+}
+
+:root[data-mode='light'] {
+  --v3-bg: #f2f2f4;
+  --v3-panel: #ffffff;
+  --v3-card: #f6f6f7;
+  --v3-card-hover: #eeeef0;
+  --v3-elev: #ececef;
+  --v3-pill: #e7e7ea;
+  --v3-pill-hover: #dcdce0;
+  --v3-text: #0b0b0c;
+  --v3-text-2: #52525b;
+  --v3-text-3: #5f5f68;
+  --v3-line: rgb(0 0 0 / 0.08);
+  --logo-tile-1: #1d1d20;
+  --logo-tile-2: #0f0f11;
+}
+
+/* Tema "Screen" (padrão): lima. No claro, um verde-oliva escuro para ler sobre o branco. */
+:root,
+:root[data-theme='screem'] {
+  --brand-200: #effcc6;
+  --brand-300: #e3f99b;
+  --brand-400: #d7f56b;
+  --brand-500: #c2e64b;
+  --brand-600: #4f6b00;
+  --bg-1: #e9fbb2;
+  --bg-3: #c2e64b;
+  --bg-2: #6f8f1f;
+  --logo-1: #e2f986;
+  --logo-2: #c8ec4f;
+}
+
+:root[data-theme='acelera'] {
+  --logo-eye: #5ee6c6;
+}
+
+html,
+body {
+  background: var(--v3-bg);
+}
+
+/* Pesos: o design usa médio (500) quase em tudo; negrito de verdade só em ênfase curta. Muda os
+   utilitários do Tailwind (font-bold, font-semibold...) de uma vez. */
+:root {
+  --font-weight-medium: 500;
+  --font-weight-semibold: 500;
+  --font-weight-bold: 550;
+  --font-weight-extrabold: 580;
+  --font-weight-black: 600;
+}
+
+.hub-main :is(h1, h2, h3),
+.call-frame :is(h1, h2, h3) {
+  font-weight: 500;
+}
+
+strong,
+b {
+  font-weight: 550;
+}
+
+body {
+  font-feature-settings: 'ss01', 'cv11';
+  letter-spacing: -0.005em;
+}
+
+/* Selos: "Ao vivo" com a bolinha coral, "Aberta" com a bolinha menta. */
+.badge-dot::before {
+  content: '';
+  height: 6px;
+  width: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+/* Avatar sem foto: bolinha pastel com a inicial (a cor vem do nome, lib/personColor.ts). */
+.avatar-initials {
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    color-mix(in oklab, var(--tint-ring) 80%, #fff),
+    var(--tint-ring) 70%
+  );
+  color: color-mix(in oklab, var(--tint-2) 55%, #000);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Casca: menu lateral + painel principal
+ * ------------------------------------------------------------------------------------- */
+
+.hub {
+  --hub-gap: 12px;
+  --hub-w: 280px;
+}
+
+.hub-sidebar,
+.hub-main,
+.hub-mobilebar {
+  border-radius: 20px;
+  background: var(--v3-panel);
+}
+
+.hub-main {
+  background:
+    radial-gradient(
+      90% 60% at 30% -10%,
+      color-mix(in oklab, var(--brand-400) 6%, transparent),
+      transparent 70%
+    ),
+    var(--v3-panel);
+}
+
+:root[data-mode='light'] .hub-main {
+  background: var(--v3-panel);
+}
+
+.hub-sidebar {
+  padding: 16px 12px 12px;
+}
+
+.hub-brand {
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.hub-brand-top {
+  padding: 4px 8px 20px;
+}
+
+.hub-group {
+  margin: 20px 12px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--v3-text-3);
+}
+
+.hub-group-first {
+  margin-top: 4px;
+}
+
+.hub-link {
+  min-height: 42px;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 450;
+  color: var(--v3-text-2);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+
+.hub-link:hover {
+  background: color-mix(in oklab, var(--v3-elev) 60%, transparent);
+  color: var(--v3-text);
+}
+
+.hub-link[data-active='true'] {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+  font-weight: 500;
+}
+
+/* O ponto do item ativo some: o fundo já diz onde você está. */
+.hub-dot {
+  display: none;
+}
+
+/* Cartão da conta: a pessoa, o papel e "...". */
+.hub-footer > .flex {
+  border-radius: 14px;
+  background: var(--v3-card);
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+  padding: 4px 6px 4px 4px;
+}
+
+.hub-account {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.hub-account .avatar {
+  height: 36px;
+  width: 36px;
+}
+
+.hub-account-more {
+  margin-right: 6px;
+  color: var(--v3-text-3);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Páginas
+ * ------------------------------------------------------------------------------------- */
+
+.page-title {
+  margin-bottom: 32px;
+  padding-top: 44px;
+}
+
+.page-title h1 {
+  font-size: clamp(30px, 4vw, 46px);
+  font-weight: 450 !important;
+  letter-spacing: -0.035em;
+}
+
+.section-head h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.btn {
+  font-weight: 500;
+}
+
+.btn-secondary,
+.btn-ghost {
+  font-weight: 450;
+}
+
+/* Cartões de sala: um bloco cinza com a capa tingida em cima e o nome embaixo. */
+.widget-grid,
+.board-col .widget-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 20px;
+}
+
+.section > .widget-grid {
+  margin-inline: 0;
+}
+
+@media (max-width: 640px) {
+  .widget-grid,
+  .board-col .widget-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+}
+
+.sp-card {
+  gap: 3px;
+  border-radius: 20px;
+  background: var(--v3-card);
+  padding: 12px 12px 16px;
+}
+
+.sp-card:hover,
+.sp-card:focus-within {
+  background: var(--v3-card-hover);
+}
+
+.sp-card-title,
+.sp-card-sub,
+.sp-card-desc,
+.sp-card-note,
+.sp-card-actions {
+  margin-inline: 6px;
+}
+
+.sp-card-title {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.sp-card-sub {
+  font-size: 14px;
+}
+
+.sp-cover {
+  aspect-ratio: 16 / 9;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background:
+    radial-gradient(60% 70% at 50% 40%, rgb(255 255 255 / 0.12), transparent 70%),
+    linear-gradient(180deg, var(--tint-1, #3a3a40), var(--tint-2, #222226));
+  box-shadow: none;
+}
+
+.sp-cover-host {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.sp-cover-host .avatar {
+  height: 34%;
+  width: auto;
+  aspect-ratio: 1;
+  font-size: clamp(20px, 2.6vw, 34px);
+  box-shadow:
+    0 0 0 3px rgb(255 255 255 / 0.35),
+    0 10px 30px rgb(0 0 0 / 0.25);
+}
+
+.sp-cover-badge {
+  top: 12px;
+  left: 12px;
+}
+
+.sp-cover .badge {
+  background: rgb(10 10 12 / 0.72);
+  color: #fff;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.sp-cover .badge-dot::before {
+  background: var(--p-coral);
+}
+
+.sp-cover-chip {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1;
+  max-width: calc(100% - 80px);
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(10 10 12 / 0.72);
+  padding: 4px 12px;
+  font-size: 13px;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.sp-play {
+  right: 12px;
+  bottom: 12px;
+  height: 52px;
+  width: 52px;
+}
+
+/* Sala aberta: o botão lima de entrar fica sempre à vista (é a ação principal do card). */
+.sp-play[data-open] {
+  background: var(--brand-400);
+  color: #0a0a0a;
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Chamada: topo, ícones à esquerda, palco no meio e o painel (Chat | Pessoas) à direita.
+ * ------------------------------------------------------------------------------------- */
+
+.call-frame {
+  --call-top: 72px;
+  --call-nav: 76px;
+  background: var(--v3-bg);
+}
+
+.call-top {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .call-frame {
+    inset: 0;
+    grid-template-columns: var(--call-nav) minmax(0, 1fr);
+    grid-template-rows: var(--call-top) minmax(0, 1fr);
+    padding: 0;
+    gap: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .call-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--v3-line);
+    padding: 0 24px 0 14px;
+  }
+
+  .call-rail {
+    grid-column: 1;
+    grid-row: 2;
+    width: var(--call-nav) !important;
+    border-right: 1px solid var(--v3-line);
+    background: transparent;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  .call-main {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .call-float {
+    --rail-w: var(--call-nav);
+  }
+
+  .call-frame[data-panel] .call-float {
+    --panel-w: 22.5rem;
+  }
+}
+
+.call-top-logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.call-top-title {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.call-top-title h1 {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--v3-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.call-top-title p {
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.call-top-live {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0;
+  border-radius: 999px;
+  background: #2b1311;
+}
+
+.call-top-live .badge {
+  background: transparent;
+}
+
+.call-top-clock {
+  padding-right: 12px;
+  font-size: 13px;
+  color: #ff9d8f;
+}
+
+.call-top-end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.face-stack {
+  display: flex;
+  align-items: center;
+}
+
+.face-stack > * {
+  height: 32px !important;
+  width: 32px !important;
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px var(--v3-bg);
+}
+
+.face-stack > :first-child {
+  margin-left: 0;
+}
+
+.face-stack-more {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--v3-pill);
+  font-size: 12px;
+  color: var(--v3-text-2);
+}
+
+.call-invite {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: var(--v3-text);
+  padding: 0 20px 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--v3-bg);
+  transition: transform 160ms var(--ease-out);
+}
+
+.call-invite:hover {
+  transform: translateY(-1px);
+}
+
+.call-invite:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 1100px) {
+  .face-stack {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .call-top-title p,
+  .call-invite span {
+    display: none;
+  }
+
+  .call-invite {
+    width: 42px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+/* Ícones à esquerda (no computador): só os ícones, um embaixo do outro; o tema por último. */
+@media (min-width: 641px) {
+  .call-rail-inner {
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
+    padding: 20px 0 16px;
+  }
+
+  .call-rail .rail-toggle,
+  .call-rail .rail-room,
+  .call-rail .rail-people,
+  .call-rail .rail-me {
+    display: none !important;
+  }
+
+  .call-rail .rail-tools {
+    height: 100%;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .call-rail .ctl-button {
+    width: auto;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .call-rail .ctl-button[data-tip]::after {
+    display: none !important;
+  }
+
+  .call-rail .ctl {
+    height: 52px;
+    width: 52px;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--v3-text-2);
+  }
+
+  .call-rail .ctl-button:hover {
+    background: transparent;
+  }
+
+  .call-rail .ctl-button:hover .ctl {
+    background: var(--v3-elev);
+    color: var(--v3-text);
+  }
+
+  .call-rail .ctl[data-on='true'],
+  .call-rail .ctl-button[aria-pressed='true'] .ctl {
+    background: var(--v3-text);
+    color: var(--v3-bg);
+  }
+
+  /* O tema fica sozinho embaixo. */
+  .call-rail .rail-tools > :last-child {
+    margin-top: auto;
+  }
+}
+
+/* Palco: tela no meio, com respiro. */
+@media (min-width: 641px) {
+  .call-screen {
+    border-radius: 0;
+    background: transparent;
+    padding: 24px 28px 104px;
+  }
+
+  .call-frame[data-idle] .call-screen {
+    padding-bottom: 24px;
+  }
+
+  .call-main[data-panel='open'] {
+    grid-template-columns: minmax(0, 1fr) 22.5rem;
+  }
+
+  .call-panel {
+    border-left: 1px solid var(--v3-line);
+    border-radius: 0;
+    background: transparent;
+    padding: 18px 20px 20px;
+  }
+}
+
+/* Painel: abas Chat | Pessoas em pílula. */
+.call-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.panel-tabs {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--v3-card);
+  padding: 4px;
+}
+
+.panel-tab {
+  height: 38px;
+  border-radius: 999px;
+  font-size: 15px;
+  color: var(--v3-text-2);
+  transition:
+    background-color 200ms var(--ease-out),
+    color 200ms var(--ease-out);
+}
+
+.panel-tab:hover {
+  color: var(--v3-text);
+}
+
+.panel-tab[aria-selected='true'] {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+.panel-tab-count {
+  color: var(--v3-text-3);
+}
+
+/* Miniaturas: sem câmera, tingidas com a cor da pessoa; avatar grande e vidrado no meio. */
+.stage-tile,
+.stage-tile-empty {
+  border-radius: 18px;
+  background: #141416;
+}
+
+.stage-tile-empty {
+  background:
+    radial-gradient(55% 75% at 50% 35%, rgb(255 255 255 / 0.14), transparent 70%),
+    linear-gradient(180deg, var(--tint-1, #3a3a40), var(--tint-2, #222226));
+}
+
+.stage-tile-empty {
+  container-type: inline-size;
+}
+
+.stage-tile-empty .avatar {
+  height: clamp(40px, 13cqi, 112px) !important;
+  width: clamp(40px, 13cqi, 112px) !important;
+  font-size: clamp(15px, 5cqi, 40px) !important;
+  box-shadow:
+    0 0 0 3px rgb(255 255 255 / 0.4),
+    0 10px 30px rgb(0 0 0 / 0.2);
+}
+
+/* Quem fala: contorno lima (nada de brilho). */
+.stage-tile[data-talking],
+.stage-tile:not([data-voice])[data-speaking] {
+  box-shadow: inset 0 0 0 3px var(--brand-400);
+}
+
+/* Nome na miniatura: pílula escura embaixo à esquerda. */
+.stage-caption > :first-child {
+  border-radius: 999px;
+  background: rgb(10 10 12 / 0.7);
+  padding: 3px 10px;
+  font-size: 14px;
+  font-weight: 450 !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Pílula de controles: grafite, botões redondos; microfone ligado em branco, sair em coral. */
+.call-float {
+  border-radius: 999px;
+  background: #121214;
+  box-shadow:
+    inset 0 0 0 1px var(--v3-line),
+    0 18px 40px -16px rgb(0 0 0 / 0.65);
+  padding: 8px;
+}
+
+.call-float .ctl {
+  background: var(--v3-pill);
+}
+
+.call-float .ctl[data-on='true'] {
+  background: var(--v3-text);
+  color: var(--v3-bg);
+}
+
+.call-float .ctl[data-off='true'] {
+  background: #2b1311;
+  color: var(--p-coral);
+}
+
+.call-float .ctl[data-danger='true'] {
+  background: var(--p-coral-strong);
+  color: #fff;
+}
+
+/* Tela compartilhada ligada: o lima marca "você está transmitindo". */
+.call-float [aria-label^='Tela: compartilhando'] .ctl {
+  background: var(--brand-400);
+  color: #0a0a0a;
+}
+
+/* A pílula fica no meio do palco (a faixa de ícones está à esquerda; o painel, à direita). */
+@media (min-width: 641px) {
+  .call-float {
+    left: calc(50% + (var(--rail-w) - var(--panel-w)) / 2);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Chat: nome e hora em cima, texto num balão; as suas mensagens à direita, sem avatar.
+ * ------------------------------------------------------------------------------------- */
+
+.chat-msg {
+  align-items: flex-start;
+  gap: 12px;
+  padding-block: 8px;
+}
+
+.chat-msg > .avatar {
+  height: 36px;
+  width: 36px;
+  font-size: 13px;
+}
+
+.chat-msg-head {
+  gap: 8px;
+  font-size: 15px;
+}
+
+.chat-msg-head > :first-child {
+  font-weight: 500 !important;
+}
+
+.chat-msg-head time {
+  font-size: 13px;
+  color: var(--v3-text-3);
+}
+
+.chat-msg-text {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 6px;
+  border-radius: 4px 16px 16px 16px;
+  background: var(--v3-card);
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--v3-text);
+  overflow-wrap: anywhere;
+}
+
+.chat-msg[data-mine] {
+  flex-direction: row-reverse;
+}
+
+.chat-msg[data-mine] > .avatar {
+  display: none;
+}
+
+.chat-msg[data-mine] > div {
+  text-align: right;
+}
+
+.chat-msg[data-mine] .chat-msg-head {
+  justify-content: flex-end;
+}
+
+.chat-msg[data-mine] .chat-msg-text {
+  border-radius: 16px 4px 16px 16px;
+  background: var(--v3-elev);
+  text-align: left;
+}
+
+/* Campo de mensagem: pílula grande; enviar é a bolinha lima. */
+.chat-compose {
+  border-radius: 20px;
+  background: var(--v3-card);
+  padding: 6px 6px 6px 18px;
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+}
+
+.chat-compose:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand-400) 60%, transparent);
+}
+
+.chat-compose-input {
+  min-height: 44px;
+  background: transparent !important;
+  font-size: 15px;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.chat-send {
+  height: 44px;
+  width: 44px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--brand-400);
+  color: #0a0a0a;
+}
+
+.chat-send:disabled {
+  background: color-mix(in oklab, var(--brand-400) 35%, var(--v3-card));
+  color: rgb(10 10 10 / 0.7);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Entrada da sala: você à esquerda (como vai aparecer), a sala e o botão de entrar à direita.
+ * ------------------------------------------------------------------------------------- */
+
+.ready {
+  display: grid;
+  min-height: calc(100dvh - 9rem);
+  max-width: 1120px;
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  margin: 0 auto;
+  padding: 32px 0;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  .ready {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ready-preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(45% 55% at 50% 38%, rgb(255 255 255 / 0.18), transparent 70%),
+    linear-gradient(180deg, var(--tint-1), var(--tint-2));
+  container-type: inline-size;
+}
+
+.ready-preview-avatar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-bottom: 8%;
+}
+
+.ready-preview-avatar .avatar {
+  height: clamp(64px, 16cqi, 136px) !important;
+  width: clamp(64px, 16cqi, 136px) !important;
+  font-size: clamp(24px, 6cqi, 52px) !important;
+  box-shadow:
+    0 0 0 4px rgb(255 255 255 / 0.45),
+    0 14px 40px rgb(0 0 0 / 0.2);
+}
+
+.ready-preview-name,
+.ready-preview-off {
+  position: absolute;
+  bottom: 18px;
+  border-radius: 999px;
+  background: rgb(10 10 12 / 0.6);
+  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.ready-preview-name {
+  left: 18px;
+  padding: 6px 14px;
+  font-size: 15px;
+}
+
+.ready-preview-off {
+  right: 18px;
+  display: flex;
+  gap: 14px;
+  padding: 10px 16px;
+  color: var(--p-coral);
+}
+
+.ready-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.ready-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ready-kind {
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.ready-title {
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 450;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  color: var(--v3-text);
+}
+
+.ready-desc {
+  margin-top: -8px;
+  font-size: 15px;
+  color: var(--v3-text-2);
+}
+
+.ready-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: var(--v3-text-2);
+}
+
+.ready-note {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 18px;
+  background: var(--v3-card);
+  padding: 16px 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--v3-text-2);
+}
+
+.ready-note > :first-child {
+  margin-top: 1px;
+  flex: none;
+  color: var(--v3-text-2);
+}
+
+.ready-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ready-actions .btn {
+  height: 56px;
+  padding-inline: 30px;
+  font-size: 17px;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Login: mosaico de pessoas à esquerda, frase e botão à direita (linha fina entre os dois).
+ * ------------------------------------------------------------------------------------- */
+
+.login2 {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr);
+  background: var(--v3-bg);
+  color: var(--v3-text);
+}
+
+.login2-art {
+  display: grid;
+  place-items: center;
+  padding: 48px clamp(24px, 6vw, 110px);
+}
+
+.login2-grid {
+  display: grid;
+  width: min(100%, 760px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.login2-grid li {
+  position: relative;
+  display: grid;
+  aspect-ratio: 8 / 7;
+  place-items: center;
+  border-radius: 22px;
+  background:
+    radial-gradient(45% 50% at 50% 42%, rgb(255 255 255 / 0.14), transparent 70%),
+    linear-gradient(180deg, var(--tint-1), var(--tint-2));
+}
+
+.login2-grid li[data-speaking] {
+  box-shadow: inset 0 0 0 3px var(--brand-400);
+}
+
+.login2-grid li > span {
+  height: 25%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    color-mix(in oklab, var(--tint-ring) 75%, #fff),
+    var(--tint-ring) 70%
+  );
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.35);
+}
+
+.login2-side {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--v3-line);
+  padding: 40px clamp(24px, 5vw, 72px) 32px;
+}
+
+.login2-body {
+  display: flex;
+  flex: 1;
+  max-width: 560px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+
+.login2-logo {
+  height: 64px !important;
+}
+
+.login2-title {
+  font-size: clamp(32px, 3.4vw, 48px);
+  font-weight: 450;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.login2-sub {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--v3-text-2);
+}
+
+.login2-cta {
+  display: inline-flex;
+  width: fit-content;
+  height: 60px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--v3-text);
+  padding: 0 30px 0 34px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--v3-bg);
+  transition: transform 180ms var(--ease-out);
+}
+
+.login2-cta:hover {
+  transform: translateY(-1px);
+}
+
+.login2-cta:active {
+  transform: scale(0.98);
+}
+
+.login2-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--v3-text-3);
+}
+
+.login2-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.login2-foot a {
+  color: var(--v3-text-2);
+}
+
+.login2-foot a:hover {
+  color: var(--v3-text);
+}
+
+@media (max-width: 860px) {
+  .login2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login2-art {
+    padding: 28px 20px 0;
+  }
+
+  .login2-grid {
+    gap: 10px;
+  }
+
+  .login2-grid li {
+    border-radius: 16px;
+  }
+
+  .login2-side {
+    border-left: 0;
+    padding: 28px 20px 24px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Painel (admin): números grandes e finos, atalhos discretos.
+ * ------------------------------------------------------------------------------------- */
+
+.stat-tile {
+  border-radius: 20px !important;
+  padding: 22px 24px;
+}
+
+.stat-tile-label {
+  font-size: 15px;
+  color: var(--v3-text-2);
+}
+
+.stat-tile-value {
+  margin-top: 14px;
+  font-size: clamp(34px, 3.4vw, 52px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--v3-text);
+}
+
+.stat-tile-hint {
+  margin-top: 14px;
+  overflow: hidden;
+  font-size: 14px;
+  color: var(--v3-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcut {
+  border-radius: 16px;
+  background: var(--v3-card);
+}
+
+.shortcut:hover {
+  background: var(--v3-card-hover);
+}
+
+.shortcut-icon {
+  border-radius: 12px;
+  background: var(--v3-elev) !important;
+  color: var(--brand-400) !important;
+}
+
+.shortcut-label {
+  font-weight: 500;
+}
+
+/* Rótulos das preferências e dos formulários: médio, não negrito. */
+.pref-label {
+  font-weight: 500;
+}
+
+.page-title h1,
+.ready-title,
+.login2-title {
+  font-weight: 400 !important;
+}
+
+/* Celular: no topo, o nome da sala e "Ao vivo" (o botão de opções fica no canto direito). */
+@media (max-width: 640px) {
+  .call-frame {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .call-top {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 6px;
+    padding: 6px 64px 10px 6px;
+  }
+
+  .call-main {
+    grid-row: 2;
+  }
+
+  .call-top-logo,
+  .call-top-end,
+  .call-top-title p {
+    display: none;
+  }
+
+  .call-top-title {
+    flex-basis: 100%;
+  }
+
+  .call-top-title h1 {
+    font-size: 19px;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Reuniões: a próxima em destaque (contagem grande à direita) e a lista com a data num
+ * quadrinho, como uma tabela leve.
+ * ------------------------------------------------------------------------------------- */
+
+.meet-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px 48px;
+  border-radius: 24px;
+  background: var(--v3-card);
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+  padding: clamp(22px, 3vw, 40px) clamp(22px, 3vw, 44px);
+}
+
+.meet-hero-main {
+  display: flex;
+  min-width: 0;
+  max-width: 640px;
+  flex: 1 1 320px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.meet-chip {
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 5px 14px;
+  font-size: 14px;
+  color: var(--v3-text);
+}
+
+.meet-hero-title {
+  margin-top: 6px;
+  font-size: clamp(24px, 2.6vw, 36px);
+  font-weight: 450 !important;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--v3-text);
+}
+
+.meet-hero-desc {
+  font-size: 16px;
+  color: var(--v3-text-2);
+}
+
+.meet-hero-meta {
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.meet-hero-clock {
+  text-align: right;
+}
+
+.meet-hero-clock-label {
+  font-size: 15px;
+  color: var(--v3-text-3);
+}
+
+.meet-hero-clock-value {
+  font-size: clamp(44px, 6vw, 92px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--v3-text);
+}
+
+@media (max-width: 640px) {
+  .meet-hero-clock {
+    text-align: left;
+  }
+}
+
+.meet-table-head,
+.meet-row {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(140px, 0.6fr) minmax(120px, 0.4fr) auto;
+}
+
+.meet-table-head {
+  border-bottom: 1px solid var(--v3-line);
+  padding: 0 16px 12px 96px;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.6fr) minmax(120px, 0.4fr) 84px;
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.meet-row {
+  margin-top: 8px;
+  border-radius: 18px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.meet-row:hover,
+.meet-row:focus-within {
+  background: var(--v3-card);
+}
+
+.meet-date {
+  display: flex;
+  height: 64px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--v3-card);
+  line-height: 1.1;
+}
+
+.meet-row:hover .meet-date {
+  background: var(--v3-elev);
+}
+
+.meet-date > :first-child {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--p-coral);
+}
+
+.meet-date > :last-child {
+  font-size: 24px;
+  color: var(--v3-text);
+}
+
+.meet-row-name,
+.meet-row-when {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.meet-row-title {
+  overflow: hidden;
+  font-size: 17px;
+  color: var(--v3-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meet-row-desc,
+.meet-row-when > :last-child {
+  overflow: hidden;
+  font-size: 14px;
+  color: var(--v3-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meet-row-when > :first-child {
+  font-size: 15px;
+  color: var(--v3-text);
+}
+
+.meet-row-when > [data-soon] {
+  color: var(--brand-400);
+}
+
+:root[data-mode='light'] .meet-row-when > [data-soon] {
+  color: var(--brand-600);
+}
+
+.meet-row-who {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--v3-text);
+}
+
+@media (max-width: 900px) {
+  .meet-table-head {
+    display: none;
+  }
+
+  .meet-row {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    row-gap: 8px;
+  }
+
+  .meet-row-when {
+    grid-column: 2 / 4;
+  }
+
+  .meet-row-who {
+    grid-column: 2;
+  }
+}

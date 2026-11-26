@@ -90,6 +90,8 @@ const DEV_DEFAULTS: Record<string, string> = {
   DISCORD_CLIENT_SECRET: 'dev-client-secret',
   DISCORD_GUILD_ID: '900000000000000000',
   DISCORD_REDIRECT_URI: 'http://localhost:3000/api/v1/auth/discord/callback',
+  // O Will de mentira é admin geral (dono), para testar as telas e regras de dono.
+  OWNER_IDS: '910000000000000001',
 };
 
 /** Valores fixos e inofensivos aplicados somente quando NODE_ENV=test. */

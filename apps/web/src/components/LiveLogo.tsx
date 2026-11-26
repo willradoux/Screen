@@ -161,6 +161,45 @@ export function LiveLogo({
 
   const mask = `live-logo-mask-${id}`;
   const fill = `live-logo-fill-${id}`;
+  // Marca (variação A do design): ladrilho grafite com os olhos na cor de destaque do tema.
+  if (color === 'brand') {
+    return (
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${LOGO_W} ${LOGO_H}`}
+        aria-hidden="true"
+        className={`screen-logo live-logo ${className}`}
+      >
+        <defs>
+          <linearGradient id={fill} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style={{ stopColor: 'var(--logo-tile-1, #1d1d20)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--logo-tile-2, #0f0f11)' }} />
+          </linearGradient>
+        </defs>
+        <rect
+          x="2"
+          y="2"
+          width={LOGO_W - 4}
+          height={LOGO_H - 4}
+          rx="62"
+          fill={`url(#${fill})`}
+          style={{ stroke: 'var(--logo-edge, rgb(255 255 255 / 0.1))' }}
+          strokeWidth="4"
+        />
+        <g
+          ref={eyesRef}
+          fill="none"
+          style={{ stroke: 'var(--logo-eye, #d7f56b)' }}
+          strokeWidth="30"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d={LEFT_EYE} />
+          <path ref={rightRef} d={eyePath(0)} />
+        </g>
+      </svg>
+    );
+  }
   return (
     <svg
       ref={svgRef}
@@ -169,12 +208,6 @@ export function LiveLogo({
       className={`screen-logo live-logo ${className}`}
     >
       <defs>
-        {color === 'brand' && (
-          <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" style={{ stopColor: 'var(--logo-1, #ffb347)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--logo-2, #ff4f93)' }} />
-          </linearGradient>
-        )}
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
           <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
           <g
@@ -190,13 +223,7 @@ export function LiveLogo({
           </g>
         </mask>
       </defs>
-      <rect
-        width={LOGO_W}
-        height={LOGO_H}
-        rx="62"
-        fill={color === 'brand' ? `url(#${fill})` : 'currentColor'}
-        mask={`url(#${mask})`}
-      />
+      <rect width={LOGO_W} height={LOGO_H} rx="62" fill="currentColor" mask={`url(#${mask})`} />
     </svg>
   );
 }

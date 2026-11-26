@@ -8,6 +8,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/ui';
+import { usePersonTint } from '../lib/personColor';
 import { effectiveVolume, useAudioPrefs, type AudioSource } from '../lib/audioPrefs';
 import { cameraQualityFor, screenQualityFor } from '../lib/bigRoom';
 import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPrefs';
@@ -226,6 +227,8 @@ function PersonTile({
   const [natural, setNatural] = useState<number | null>(null);
   const ratio = aspectRatioNumber(prefs.shape, tile.cameraPub ? natural : null);
   const reveal = useTouchReveal();
+  // Sem câmera, a miniatura fica tingida com a cor da foto da pessoa (estilo Discord).
+  const tint = usePersonTint(tile.name, tile.avatarUrl);
   return (
     <figure
       {...(onPin ? reveal : {})}
@@ -233,7 +236,7 @@ function PersonTile({
       data-speaking={tile.isSpeaking || undefined}
       data-voice-id={tile.identity}
       data-size={size}
-      style={fitStyle(ratio)}
+      style={{ ...fitStyle(ratio), ...tint }}
       className={`stage-tile ${tile.cameraPub ? '' : 'stage-tile-empty'} ${
         tile.isSpeaking ? 'speaking-glow' : ''
       }`}

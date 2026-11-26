@@ -110,9 +110,9 @@ export function Layout() {
   }, [immersive]);
 
   const items: NavItem[] = [
-    { to: '/', label: 'Salas', icon: 'videocam', end: true },
+    { to: '/', label: 'Salas', icon: 'smart_display', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
-    { to: '/preferencias', label: 'Preferências', icon: 'tune' },
+    { to: '/features', label: 'Guia', icon: 'help' },
   ];
 
   const admin: NavItem[] = [];
@@ -121,10 +121,10 @@ export function Layout() {
   }
   if (user && isAdmin(user.role)) {
     admin.push(
-      { to: '/admin/reunioes', label: 'Gerenciar reuniões', icon: 'campaign' },
-      { to: '/admin/config', label: 'Configurações', icon: 'settings' },
-      { to: '/admin/pessoas', label: 'Pessoas', icon: 'group' },
+      { to: '/admin/reunioes', label: 'Gerenciar reuniões', icon: 'edit_calendar' },
+      { to: '/admin/pessoas', label: 'Pessoas com acesso', icon: 'group' },
       { to: '/admin/estatisticas', label: 'Estatísticas', icon: 'bar_chart' },
+      { to: '/admin/config', label: 'Configurações', icon: 'settings' },
       { to: '/admin/auditoria', label: 'Auditoria', icon: 'history' },
     );
   }
@@ -166,6 +166,7 @@ export function Layout() {
               </NavLink>
 
               <nav aria-label="Navegação principal" className="hub-nav">
+                <p className="hub-group hub-group-first">Navegar</p>
                 {items.map((item) => (
                   <HubLink key={item.to} item={item} pathname={location.pathname} />
                 ))}
@@ -181,11 +182,6 @@ export function Layout() {
               </nav>
 
               <div className="hub-footer" ref={footerRef}>
-                {/* O Guia fica à parte, embaixo: ele abre a página de ajuda (fora das telas de uso). */}
-                <HubLink
-                  item={{ to: '/features', label: 'Guia', icon: 'info' }}
-                  pathname={location.pathname}
-                />
                 {/* O menu da conta flutua logo acima do cartão (não empurra o menu): sai de dentro
                     dele com mola e os itens sobem um a um; fechado, fica fora do teclado e do
                     leitor de tela. */}
@@ -248,16 +244,12 @@ export function Layout() {
                           {user.displayName}
                         </span>
                         <span className="block text-[11px] text-zinc-500">
-                          {ROLE_LABEL[user.role]}
+                          {user.owner ? 'Admin geral' : ROLE_LABEL[user.role]}
                         </span>
                       </span>
                     )}
                   </button>
-                  <Icon
-                    name={accountOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
-                    size="1.1rem"
-                    className="mr-2 text-zinc-500"
-                  />
+                  <Icon name="more_horiz" size="1.2rem" className="hub-account-more" />
                 </div>
               </div>
             </aside>

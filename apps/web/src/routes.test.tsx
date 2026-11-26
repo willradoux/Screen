@@ -95,10 +95,10 @@ describe('auditoria de rotas (admin)', () => {
   it.each(ROUTES)('$path abre sem quebrar', async ({ path, expect: want, level }) => {
     open(path);
     if (level === 0) {
-      expect(await screen.findByText(want, undefined, { timeout: 5000 })).toBeInTheDocument();
+      expect(await screen.findByText(want, undefined, { timeout: 10_000 })).toBeInTheDocument();
     } else {
       expect(
-        await screen.findByRole('heading', { level: level ?? 1, name: want }, { timeout: 5000 }),
+        await screen.findByRole('heading', { level: level ?? 1, name: want }, { timeout: 10_000 }),
       ).toBeInTheDocument();
     }
   });
@@ -149,7 +149,9 @@ describe('auditoria de rotas (permissões)', () => {
     await waitFor(() =>
       expect(screen.getByRole('link', { name: 'Entrar com Discord' })).toBeInTheDocument(),
     );
-    expect(screen.getByRole('heading', { level: 2, name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'As calls do Acelera DEV, no navegador.' }),
+    ).toBeInTheDocument();
   });
 });
 

@@ -88,27 +88,22 @@ export function WidgetStat({
 
 /** Número grande com rótulo e ícone (resumos de painel e estatísticas). */
 export function StatTile({
-  icon,
   label,
   value,
   hint,
 }: {
-  icon: IconName;
+  /** Ícone antigo (o design novo mostra só o nome, o número e a linha de contexto). */
+  icon?: IconName;
   label: string;
   value: string;
   /** Uma linha de contexto embaixo do número. */
   hint?: string;
 }) {
   return (
-    <div className="surface p-4">
-      <p className="flex items-center gap-2 text-[13px] text-zinc-400">
-        <Icon name={icon} size="1.05rem" className="text-brand-300" />
-        {label}
-      </p>
-      <p className="tabular mt-1.5 text-2xl font-semibold tracking-[-0.02em] text-zinc-50 sm:text-3xl">
-        {value}
-      </p>
-      {hint && <p className="mt-0.5 truncate text-xs text-zinc-500">{hint}</p>}
+    <div className="surface stat-tile">
+      <p className="stat-tile-label">{label}</p>
+      <p className="stat-tile-value tabular">{value}</p>
+      {hint && <p className="stat-tile-hint">{hint}</p>}
     </div>
   );
 }

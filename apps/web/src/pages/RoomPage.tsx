@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
@@ -31,6 +31,7 @@ import { useAudioPrefs } from '../lib/audioPrefs';
 import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { StatusBadge } from '../components/RoomCard';
+import { LogoMark } from '../components/Wordmark';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
@@ -49,6 +50,38 @@ function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt:
     <Alert tone="warning" title="Você saiu do canal de voz">
       Volte para a call em {left}s ou você será removido(a) da live.
     </Alert>
+  );
+}
+
+/** Há quanto tempo a sala está aberta (01:24:37), ao lado do "Ao vivo". */
+function OpenClock({ since }: { since: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!since) return null;
+  const total = Math.max(0, Math.floor((now - new Date(since).getTime()) / 1000));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const text = `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+  return (
+    <time className="call-top-clock tabular" aria-label={`Aberta há ${text}`}>
+      {text}
+    </time>
+  );
+}
+
+/** Os rostos de quem está na sala (até 3) e quantos mais. */
+function FaceStack({ tiles }: { tiles: Tile[] }) {
+  const shown = tiles.slice(0, 3);
+  const rest = tiles.length - shown.length;
+  return (
+    <span className="face-stack" aria-hidden="true">
+      {shown.map((t) => (
+        <Avatar key={t.identity} name={t.name} url={t.avatarUrl} size="sm" />
+      ))}
+      {rest > 0 && <span className="face-stack-more tabular">+{rest}</span>}
+    </span>
   );
 }
 
@@ -120,7 +153,7 @@ function ConnectedRoom({
   // "Mais opções" abre a barra preta completa embaixo, que fica até a pessoa minimizar.
   // Com o ponteiro ou o foco nos controles (ou um painel aberto), eles não somem.
   const [holdBar, setHoldBar] = useState(false);
-  const idle = useIdle(IDLE_MS, { hold: holdBar || side !== null });
+  const idle = useIdle(IDLE_MS, { hold: holdBar });
   const hideFloating = idle;
   // A barra da direita aberta (expandida) não some sozinha: só a recolhida some com o mouse parado.
   const hideRail = idle && !expanded;
@@ -202,6 +235,16 @@ function ConnectedRoom({
   );
   const raised = session.hands.some((h) => h.userId === me.id);
 
+  /** Convidar: copia o link da sala (quem recebe ainda passa pelas regras de acesso). */
+  async function invite() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.info('Link da sala copiado.');
+    } catch {
+      toast.info(`Link da sala: ${window.location.href}`);
+    }
+  }
+
   async function toggleHand() {
     if (!room) return;
     setHandBusy(true);
@@ -271,6 +314,31 @@ function ConnectedRoom({
       data-idle={hideFloating || undefined}
       data-panel={side ? 'open' : undefined}
     >
+      {/* Topo: a marca, a sala (nome, ao vivo e há quanto tempo), quem está e Convidar. */}
+      <header className="call-top">
+        <Link to="/" className="call-top-logo" aria-label="Voltar pras salas">
+          <LogoMark className="h-9" />
+        </Link>
+        <div className="call-top-title">
+          <h1>{room.title}</h1>
+          <p>
+            Acelera DEV · {tiles.length} {tiles.length === 1 ? 'pessoa' : 'pessoas'}
+          </p>
+        </div>
+        <span className="call-top-live">
+          <StatusBadge room={room} />
+          {room.status === 'OPEN' && <OpenClock since={room.openedAt} />}
+        </span>
+        {state.lectureMode && <Badge>Palco ligado</Badge>}
+        <div className="call-top-end">
+          <FaceStack tiles={tiles} />
+          <button type="button" className="call-invite" onClick={() => void invite()}>
+            <Icon name="link" size="1.1rem" />
+            <span>Convidar</span>
+          </button>
+        </div>
+      </header>
+
       {/*
        * Barra de opções na borda direita: sempre à mão (recolhida, só os ícones; expandida,
        * com os nomes, a sala e quem está na chamada). Some com o mouse parado e volta ao mexer.
@@ -389,13 +457,6 @@ function ConnectedRoom({
 
       <div className="call-main" data-panel={side ? 'open' : undefined}>
         <section aria-label="Chamada" className="call-screen">
-          <h1 className="sr-only">{room.title}</h1>
-          {state.lectureMode && (
-            <div className="mb-2 flex justify-end">
-              <Badge tone="warn">Palco ligado</Badge>
-            </div>
-          )}
-
           <div className="space-y-2 empty:hidden">
             {session.recording && (
               <Alert tone="error" title="Esta reunião está sendo gravada">
@@ -445,7 +506,29 @@ function ConnectedRoom({
               <span />
             </div>
             <div className="call-panel-head">
-              {side === 'chat' && <h2 className="call-panel-title">Chat</h2>}
+              <div role="tablist" aria-label="Painel" className="panel-tabs">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={side === 'chat'}
+                  onClick={() => setSide('chat')}
+                  className="panel-tab"
+                >
+                  Chat
+                  {side !== 'chat' && unread > 0 && (
+                    <span className="panel-tab-count tabular"> · {unread}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={side === 'people'}
+                  onClick={() => setSide('people')}
+                  className="panel-tab"
+                >
+                  Pessoas <span className="panel-tab-count tabular">{tiles.length}</span>
+                </button>
+              </div>
               <button
                 type="button"
                 aria-label="Fechar painel"
