@@ -497,7 +497,8 @@ describe('Stage (layout dos vídeos)', () => {
     expect(document.querySelector('.stage-max')).not.toBeInTheDocument();
   });
 
-  it('a sua própria tela: aviso no lugar do vídeo (sem espelho infinito) e sem tela cheia', async () => {
+  it('a sua própria tela: prévia congelada enquanto você está no Screen, e anda quando você sai', async () => {
+    const focus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     render(
       <Stage
         layout="mosaic"
@@ -507,13 +508,19 @@ describe('Stage (layout dos vídeos)', () => {
         ]}
       />,
     );
-    expect(screen.getByText('Você está compartilhando a sua tela')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Tela de Eu')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Tela cheia: tela de Eu' }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText('A sua tela (prévia)')).toBeInTheDocument();
+    expect(screen.getByText('Prévia pausada enquanto você está no Screen')).toBeInTheDocument();
+    // Sem maximizar/tela cheia na própria tela (seria o espelho infinito); na dos outros, tem.
+    expect(screen.queryByRole('button', { name: 'Tela cheia: tela de Eu' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Tela cheia: tela de Beto' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ver prévia' })).not.toBeInTheDocument();
+
+    // Foi para outra janela: a prévia volta a andar.
+    focus.mockReturnValue(false);
+    act(() => {
+      window.dispatchEvent(new Event('blur'));
+    });
+    expect(screen.queryByText('Prévia pausada enquanto você está no Screen')).toBeNull();
+    focus.mockRestore();
   });
 
   it('solta o vídeo do elemento quando o componente sai da tela', () => {

@@ -14,6 +14,7 @@ import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from '../lib/videoPr
 import { ROLE_LABEL } from '../lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
 import { ZoomPan } from './ZoomPan';
+import { useAppFocused } from './useAppFocused';
 import {
   cameraPin,
   personKey,
@@ -32,6 +33,7 @@ function Video({
   label,
   onNaturalAspect,
   quality,
+  frozen = false,
 }: {
   pub: TrackPublication;
   /** Salas grandes: pede uma camada de qualidade menor (menos banda no servidor). */
@@ -41,6 +43,8 @@ function Video({
   label: string;
   /** Formato real da transmissão (largura/altura); muda se a pessoa deitar o celular. */
   onNaturalAspect?: (ratio: number) => void;
+  /** Congela no último quadro (a prévia da própria tela enquanto a pessoa está no Screen). */
+  frozen?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const track = pub.track;
@@ -70,6 +74,22 @@ function Video({
       track.detach(el);
     };
   }, [track, onNaturalAspect]);
+
+  // Congelar: pausa no quadro atual (se ainda não chegou nenhum, espera o primeiro e pausa).
+  useEffect(() => {
+    const el = ref.current;
+    if (!track || !el) return;
+    if (!frozen) {
+      // Alguns navegadores (e o ambiente de teste) não devolvem promessa aqui.
+      const playing = el.paused ? (el.play() as Promise<void> | undefined) : undefined;
+      playing?.catch?.(() => undefined);
+      return;
+    }
+    const hold = () => el.pause();
+    if (el.readyState >= 2) hold();
+    else el.addEventListener('loadeddata', hold, { once: true });
+    return () => el.removeEventListener('loadeddata', hold);
+  }, [track, frozen]);
 
   return (
     <video
@@ -288,8 +308,10 @@ function ScreenTile({
   onFullscreen,
 }: { tile: Tile } & TileExtras) {
   const [natural, setNatural] = useState<number | null>(null);
-  // A sua própria tela nunca aparece: mostrar o que você compartilha dentro do que você
-  // compartilha cria o "espelho infinito" (e trava). No lugar, só o aviso.
+  // A sua própria tela aparece como no Discord/Teams: enquanto você está no Screen ela fica
+  // congelada (mostrar o que você compartilha dentro do que você compartilha vira o "espelho
+  // infinito" e trava); quando você vai para outra janela, ela volta a andar.
+  const focused = useAppFocused();
   const reveal = useTouchReveal();
   if (!tile.screenPub) return null;
   return (
@@ -301,13 +323,21 @@ function ScreenTile({
       data-own={tile.isLocal || undefined}
     >
       {tile.isLocal ? (
-        <div className="own-screen">
-          <Icon name="screen_share" size="1.8rem" />
-          <p className="text-sm font-bold text-zinc-50">Você está compartilhando a sua tela</p>
-          <p className="max-w-[18rem] text-xs text-zinc-400">
-            Todo mundo está vendo. Ela não aparece aqui para não virar um espelho infinito.
-          </p>
-        </div>
+        <>
+          <Video
+            pub={tile.screenPub}
+            fit="contain"
+            label="A sua tela (prévia)"
+            onNaturalAspect={setNatural}
+            frozen={focused}
+          />
+          {focused && (
+            <p className="own-screen-paused" role="status">
+              <Icon name="screen_share" size="0.95rem" />
+              Prévia pausada enquanto você está no Screen
+            </p>
+          )}
+        </>
       ) : (
         // Quem assiste pode dar zoom na tela dos outros (só na própria tela).
         <ZoomPan name={`tela de ${tile.name}`}>
