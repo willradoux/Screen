@@ -4330,3 +4330,50 @@ html[data-call] .zoom-controls {
 :root[data-motion='off'] .chat-mode-note {
   animation: none;
 }
+
+/* ---- Celular: o botão do painel (canto de cima) não encavala nos botões do vídeo ----
+   A área da chamada reserva a faixa do topo onde ele flutua; nas miniaturas os botões do vídeo
+   ficam menores, e a tela cheia (que no celular não faz sentido) some. */
+@media (max-width: 640px) {
+  .call-screen {
+    padding-top: 60px;
+  }
+}
+
+@media (hover: none), (max-width: 640px) {
+  .stage-max-btn {
+    display: none;
+  }
+}
+
+.stage-strip .stage-pin {
+  top: 6px;
+  right: 6px;
+  height: 26px;
+  width: 26px;
+}
+
+@media (max-width: 640px) {
+  .stage-strip .stage-pin {
+    height: 24px;
+    width: 24px;
+  }
+  .stage-strip .stage-pin svg,
+  .stage-strip .stage-pin [class*='icon'] {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Miniaturas: a etiqueta "Tela de fulano" vai para baixo (o alfinete fica em cima), numa linha só. */
+.stage-thumb .stage-screen-label {
+  top: auto;
+  bottom: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  padding: 2px 8px;
+  overflow: hidden;
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

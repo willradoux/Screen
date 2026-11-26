@@ -303,7 +303,7 @@ function ScreenTile({
       {onMaximize && !tile.isLocal && (
         <MaxButton name={`tela de ${tile.name}`} on={maximized} onClick={onMaximize} />
       )}
-      <figcaption className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
+      <figcaption className="stage-screen-label absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium text-white">
         Tela de {tile.name}
         {tile.isLocal && ' (você)'}
       </figcaption>
