@@ -4472,3 +4472,31 @@ html[data-call] .zoom-controls {
   width: auto;
   border-radius: 0;
 }
+
+/* ---- Nada por cima de nada ----
+   A faixa da barra de controles fica sempre reservada embaixo: quando a barra some (mouse parado)
+   os vídeos não crescem para baixo dela, então ela nunca volta por cima de um nome ou ícone. */
+.call-frame[data-idle] .call-screen {
+  padding-bottom: 84px;
+}
+
+/* Maximizado: o vídeo também para acima da barra. */
+.stage-max:not([data-full]) {
+  bottom: 76px;
+}
+
+.stage-max:not([data-full]) .stage-max-strip {
+  bottom: 14px;
+}
+
+/* Sem permissão de câmera/mic: em vez do "!" saltando para fora do botão, um contorno âmbar no
+   próprio botão (o texto do botão já explica). */
+.perm-badge {
+  inset: 0;
+  height: auto;
+  width: auto;
+  border-radius: 999px;
+  background: none;
+  box-shadow: inset 0 0 0 2px #f8cb74;
+  font-size: 0;
+}
