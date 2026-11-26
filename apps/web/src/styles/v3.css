@@ -4377,3 +4377,98 @@ html[data-call] .zoom-controls {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ---- Botões do vídeo numa fileira só (nunca um por cima do outro) ---- */
+.tile-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.tile-tools .stage-pin,
+.tile-tools .stage-max-btn {
+  position: static;
+  inset: auto;
+}
+
+.stage-strip .tile-tools,
+.stage-thumb .tile-tools {
+  top: 6px;
+  right: 6px;
+  gap: 4px;
+}
+
+/* ---- Maximizar: o vídeo ocupa a área da chamada inteira (o quadro escuro todo) ----
+   Tela cheia: o mesmo, mas no monitor. A barra do canto troca entre os dois e restaura. */
+.call-screen {
+  position: relative;
+}
+
+.stage-max:not([data-full]) {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  height: auto;
+  width: auto;
+}
+
+.stage-max-bar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+}
+
+.stage-max:hover .stage-max-bar,
+.stage-max-bar:focus-within {
+  opacity: 1;
+}
+
+.stage-max-bar .stage-max-exit {
+  position: static;
+  opacity: 1;
+}
+
+.stage-max-bar .stage-max-exit:hover {
+  background: rgb(0 0 0 / 0.85);
+}
+
+/* As miniaturas não passam por baixo do zoom (canto de baixo, à direita). */
+.stage-max-strip {
+  max-width: calc(100% - 320px);
+}
+
+@media (max-width: 900px) {
+  .stage-max-strip {
+    max-width: calc(100% - 28px);
+    bottom: 64px;
+  }
+}
+
+@media (hover: none) {
+  .stage-max-bar {
+    opacity: 1;
+  }
+}
+
+/* Maximizado (não tela cheia): as miniaturas ficam acima da barra de controles. */
+.stage-max:not([data-full]) .stage-max-strip {
+  bottom: 92px;
+}
+
+/* Tela cheia: a página está em tela cheia e o vídeo cobre tudo por cima. */
+.stage-max[data-full] {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  height: auto;
+  width: auto;
+  border-radius: 0;
+}

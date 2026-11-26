@@ -15,6 +15,7 @@ import featuredVideo from '@material-symbols/svg-400/rounded/featured_video.svg?
 import autoMosaic from '@material-symbols/svg-400/rounded/auto_awesome_mosaic.svg?url';
 import moreHoriz from '@material-symbols/svg-400/rounded/more_horiz.svg?url';
 import closeFullscreen from '@material-symbols/svg-400/rounded/close_fullscreen.svg?url';
+import openInFull from '@material-symbols/svg-400/rounded/open_in_full.svg?url';
 import panelOpen from '@material-symbols/svg-400/rounded/right_panel_open.svg?url';
 import panelClose from '@material-symbols/svg-400/rounded/right_panel_close.svg?url';
 import tune from '@material-symbols/svg-400/rounded/tune.svg?url';
@@ -158,6 +159,7 @@ const ICONS = {
   auto_awesome_mosaic: autoMosaic,
   more_horiz: moreHoriz,
   close_fullscreen: closeFullscreen,
+  open_in_full: openInFull,
   contrast: contrastIcon,
   person,
   refresh,

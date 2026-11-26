@@ -456,7 +456,7 @@ describe('Stage (layout dos vídeos)', () => {
     expect(screen.queryByRole('group', { name: 'Zoom na tela de Eu' })).not.toBeInTheDocument();
   });
 
-  it('tela cheia: abre um vídeo, troca pela miniatura e sai', async () => {
+  it('maximizar e tela cheia: botões lado a lado, troca pela miniatura e restaura', async () => {
     render(
       <Stage
         tiles={[
@@ -465,13 +465,35 @@ describe('Stage (layout dos vídeos)', () => {
         ]}
       />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Tela cheia: tela de Ana' }));
+    // Os botões do vídeo ficam numa fileira só (nenhum por cima do outro).
+    const max = screen.getByRole('button', { name: 'Maximizar tela de Ana' });
+    const full = screen.getByRole('button', { name: 'Tela cheia: tela de Ana' });
+    const pin = screen.getByRole('button', { name: 'Fixar tela de Ana' });
+    expect(max.parentElement).toBe(full.parentElement);
+    expect(pin.parentElement).toBe(max.parentElement);
+
+    await userEvent.click(max);
     const main = () => document.querySelector('.stage-max-main')!;
     expect(main()).toHaveTextContent('Tela de Ana');
-    const strip = screen.getByRole('group', { name: 'Trocar o vídeo da tela cheia' });
-    await userEvent.click(within(strip).getByRole('button', { name: 'Ver em tela cheia: Beto' }));
+    // Maximizado, o vídeo não repete os próprios botões: a barra do canto cuida.
+    expect(
+      within(main() as HTMLElement).queryByRole('button', { name: /Maximizar|Fixar/ }),
+    ).toBeNull();
+    expect(screen.getByRole('button', { name: 'Tela cheia' })).toBeInTheDocument();
+
+    const strip = screen.getByRole('group', { name: 'Trocar o vídeo em destaque' });
+    await userEvent.click(within(strip).getByRole('button', { name: 'Ver em destaque: Beto' }));
     expect(main()).toHaveTextContent('Beto');
-    await userEvent.click(screen.getByRole('button', { name: /Sair da tela cheia$/ }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+    expect(document.querySelector('.stage-max')).not.toBeInTheDocument();
+  });
+
+  it('Esc sai do maximizado', async () => {
+    render(<Stage tiles={[tile({ identity: 'b', name: 'Beto', cameraPub: pub() })]} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Maximizar Beto' }));
+    expect(document.querySelector('.stage-max')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
     expect(document.querySelector('.stage-max')).not.toBeInTheDocument();
   });
 
