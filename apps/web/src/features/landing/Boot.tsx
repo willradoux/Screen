@@ -6,10 +6,10 @@ import { motionOff } from './motion';
 const PRESS_MS = 720;
 
 /**
- * Tela de carregamento: o cenário aparece, a barrinha enche e sobe uma mão com o controle
- * remoto. Apertar o botão de ligar (o botão de verdade é a tecla do controle) faz o polegar
- * descer, o controle mandar o infravermelho para a TV e a TV ligar; a tecla de mudo liga sem
- * música. O clique é o gesto que o navegador exige para tocar a música.
+ * Tela de carregamento: o cenário aparece, a barrinha enche e o controle remoto aparece deitado
+ * embaixo, no meio, apontando para a TV. Apertar o botão de ligar (o botão de verdade é a tecla
+ * do controle) afunda a tecla, o controle manda o infravermelho para a TV e ela liga; a tecla de
+ * mudo liga sem música. O clique é o gesto que o navegador exige para tocar a música.
  */
 export function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
   const [ready, setReady] = useState(false);
@@ -68,7 +68,7 @@ export function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
         )}
       </div>
 
-      {/* A mão com o controle: sobe quando carregou; as duas teclas são botões de verdade. */}
+      {/* O controle deitado, apontando para o centro da TV; as duas teclas são botões de verdade. */}
       {ready && (
         <div className="remote-wrap">
           <span className="remote-ir" aria-hidden="true">
@@ -77,9 +77,6 @@ export function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
             <i />
           </span>
           <div className="remote">
-            {/* A mão: o braço vindo do canto e quatro dedos segurando a lateral do controle. */}
-            <span className="remote-arm" aria-hidden="true" />
-            <span className="remote-palm" aria-hidden="true" />
             <div className="remote-body">
               <span className="remote-led" aria-hidden="true" />
               <button
@@ -114,16 +111,6 @@ export function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
                 screen
               </span>
             </div>
-            <span className="remote-grip" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
-            {/* O polegar, por cima do controle: desce até a tecla apertada. */}
-            <svg className="remote-thumb" viewBox="0 0 60 90" aria-hidden="true">
-              <path d="M10 88c-4-30 0-58 14-74 8-8 20-6 24 4 4 12-2 40-8 70z" />
-            </svg>
           </div>
         </div>
       )}
