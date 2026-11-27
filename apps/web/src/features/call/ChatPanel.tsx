@@ -482,6 +482,8 @@ function ChatPanelView({
           <button
             type="submit"
             disabled={!text.trim() || waiting}
+            // Campo vazio: o botão some (sai de dentro do campo quando você começa a digitar).
+            data-empty={(!text.trim() && !waiting) || undefined}
             className="chat-send"
             aria-label={waiting ? `Espere ${seconds} s` : 'Enviar'}
           >

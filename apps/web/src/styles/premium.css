@@ -3573,3 +3573,75 @@ html[data-vt]::view-transition-group(popover) {
 :root[data-mode='light'] .popover {
   background: #ffffff;
 }
+
+/* Linhas de escolha dos mini painéis (Vídeo): nome em cima, pílula com as opções em largura
+   igual embaixo. */
+.pop-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pop-row-label {
+  padding-left: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-text);
+}
+
+.pop-row-hint {
+  font-weight: 450;
+  color: var(--v3-text-3);
+}
+
+.pop-segment {
+  display: flex;
+  width: 100%;
+}
+
+.pop-segment > button {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12.5px;
+}
+
+/* Títulos das seções dentro dos mini painéis: o mesmo estilo em todos (Vídeo, Efeitos, Layout). */
+.popover legend {
+  margin-bottom: 8px;
+  padding-left: 2px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--v3-text) !important;
+}
+
+/* Chat: sem contorno colorido no campo; o botão de enviar só aparece quando há texto, saindo
+   de dentro do campo (cresce de largura e de tamanho com mola). */
+.chat-compose,
+.chat-compose:focus-within {
+  box-shadow: none;
+}
+
+.chat-compose:focus-within {
+  background: var(--v3-card-hover);
+}
+
+.chat-send {
+  transition:
+    width 420ms cubic-bezier(0.34, 1.28, 0.5, 1),
+    opacity 200ms var(--ease-out),
+    transform 420ms cubic-bezier(0.34, 1.28, 0.5, 1),
+    background-color 160ms var(--ease-out);
+}
+
+.chat-send[data-empty] {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+}
+
+.chat-send:disabled:not([data-empty]) {
+  opacity: 0.7;
+}

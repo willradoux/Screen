@@ -2,7 +2,7 @@ import type { LocalParticipant, LocalVideoTrack, LocalAudioTrack } from 'livekit
 import { Track } from 'livekit-client';
 import { useRef, useState } from 'react';
 import { Icon } from '../../shared/ui/Icon';
-import { Sheet } from '../../shared/ui/Sheet';
+import { Popover } from '../../shared/ui/Popover';
 import { applyBackground, BACKGROUND_IMAGES, backgroundSupported } from './lib/videoEffects';
 import { VOICE_PRESETS, type VoicePreset } from './lib/voiceEffects';
 import { applyMicEffects, micPrefs, saveMicPrefs } from './lib/micEffects';
@@ -41,6 +41,7 @@ function Chip({
 /** Efeitos: fundo da câmera e voz. Tudo acontece no seu navegador. */
 export function EffectsPanel({ local, onError }: Props) {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const [bg, setBg] = useState('none');
   const [voice, setVoice] = useState<VoicePreset>(() => micPrefs().voice);
   const [busy, setBusy] = useState<string | null>(null);
@@ -102,7 +103,9 @@ export function EffectsPanel({ local, onError }: Props) {
     <div>
       <button
         type="button"
+        ref={button}
         onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Efeitos"
         data-tip="Efeitos"
@@ -114,7 +117,7 @@ export function EffectsPanel({ local, onError }: Props) {
       </button>
 
       {open && (
-        <Sheet title="Efeitos" onClose={() => setOpen(false)}>
+        <Popover anchor={button} title="Efeitos" onClose={() => setOpen(false)}>
           <fieldset className="space-y-2">
             <legend className="text-xs font-semibold text-zinc-500">Fundo da câmera</legend>
             <div className="flex flex-wrap gap-2">
@@ -181,7 +184,7 @@ export function EffectsPanel({ local, onError }: Props) {
               {VOICE_PRESETS.find((v) => v.value === voice)?.hint}
             </p>
           </fieldset>
-        </Sheet>
+        </Popover>
       )}
     </div>
   );
