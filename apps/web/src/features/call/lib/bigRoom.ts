@@ -28,12 +28,24 @@ export interface PublishProfile {
   screen: { capture: ScreenShareCaptureOptions; publish: TrackPublishOptions };
 }
 
+/**
+ * Janela de escolher o que compartilhar (é do navegador, só dá para sugerir): abre na aba "Tela
+ * inteira", a própria aba do Screen não aparece na lista (evita o espelho infinito da chamada) e
+ * o som do computador já vem oferecido.
+ */
+const SCREEN_PICKER = {
+  video: { displaySurface: 'monitor' },
+  selfBrowserSurface: 'exclude',
+  systemAudio: 'include',
+} as const;
+
 /** Perfil normal: qualidade de reunião pequena. */
 export const NORMAL_PROFILE: PublishProfile = {
   camera: { capture: {}, publish: {} },
   microphone: { capture: {}, publish: {} },
   screen: {
     capture: {
+      ...SCREEN_PICKER,
       audio: true,
       contentHint: 'detail', // legibilidade do código acima de fluidez
       resolution: { width: 1920, height: 1080, frameRate: 30 },
@@ -61,6 +73,7 @@ export const BIG_ROOM_PROFILE: PublishProfile = {
   },
   screen: {
     capture: {
+      ...SCREEN_PICKER,
       audio: true,
       contentHint: 'detail',
       resolution: { width: 1280, height: 720, frameRate: 10 },
@@ -81,6 +94,7 @@ export const HD_PROFILE: PublishProfile = {
   microphone: { capture: {}, publish: {} },
   screen: {
     capture: {
+      ...SCREEN_PICKER,
       audio: true,
       contentHint: 'detail',
       resolution: { width: 1920, height: 1080, frameRate: 60 },

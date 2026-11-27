@@ -106,3 +106,16 @@ describe('wantedVideo: o único vídeo de quem assiste', () => {
     expect(wantedVideo([plateia, a], null, 'p')).toEqual({ identity: 'a', source: 'camera' });
   });
 });
+
+describe('janela de compartilhar a tela', () => {
+  it('abre em "Tela inteira", esconde a aba do Screen e oferece o som, em todos os perfis', async () => {
+    const { NORMAL_PROFILE, BIG_ROOM_PROFILE, HD_PROFILE } = await import('./bigRoom');
+    for (const p of [NORMAL_PROFILE, BIG_ROOM_PROFILE, HD_PROFILE]) {
+      expect(p.screen.capture).toMatchObject({
+        video: { displaySurface: 'monitor' },
+        selfBrowserSurface: 'exclude',
+        systemAudio: 'include',
+      });
+    }
+  });
+});
