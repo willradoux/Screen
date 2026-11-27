@@ -3159,22 +3159,8 @@ select {
   color: var(--on-accent);
 }
 
-/* Grade fina de enfeite no topo das páginas (some para baixo); o conteúdo fica por cima. */
-.hub-main {
-  isolation: isolate;
-}
-
-.hub-main::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: 340px;
-  border-radius: inherit;
-  background-image:
-    linear-gradient(to right, var(--v3-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--v3-line) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(180deg, #000, transparent);
-  pointer-events: none;
+/* Painel principal liso (sem grade nem brilho no topo): só a cor do tema nos componentes. */
+.hub-main,
+:root[data-mode='light'] .hub-main {
+  background: var(--v3-panel);
 }
