@@ -3423,3 +3423,16 @@ select {
     animation: none;
   }
 }
+
+/* Por cima do vídeo o fundo é sempre escuro: legenda e botões do quadro ficam claros também no
+   modo claro (lá o "branco" do tema vira preto). */
+:root[data-mode='light'] :is(.stage-caption, .tile-tools, .stage-max-bar) {
+  --c-white: #ffffff;
+  --color-white: #ffffff;
+  color: #ffffff;
+}
+
+.stage-caption ::selection {
+  background: rgb(255 255 255 / 0.3);
+  color: #ffffff;
+}
