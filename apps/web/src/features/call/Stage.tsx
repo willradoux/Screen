@@ -5,7 +5,7 @@ import {
   type TrackPublication,
   type VideoQuality,
 } from 'livekit-client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../../shared/ui/Icon';
 import { Avatar } from '../../shared/ui/ui';
 import { usePersonTint } from '../../shared/lib/personColor';
@@ -15,6 +15,7 @@ import { POSITION_CLASS, aspectRatioNumber, useVideoPrefs } from './lib/videoPre
 import { ROLE_LABEL } from '../../shared/lib/moderation-rules';
 import { screenSharers, type Tile } from './useParticipants';
 import { ZoomPan } from './ZoomPan';
+import { PersonMenu, type PersonMenuAction } from './PersonMenu';
 import { useAppFocused } from './useAppFocused';
 import {
   cameraPin,
@@ -178,15 +179,30 @@ function TileTools({
   onMaximize,
   onFullscreen,
   pin,
+  onMenu,
 }: {
   name: string;
   onMaximize?: (() => void) | undefined;
   onFullscreen?: (() => void) | undefined;
   pin?: { value: string; pinned: boolean; onPin: (value: string) => void } | undefined;
+  /** Abre o menu da pessoa (volume, mudo só para você...). */
+  onMenu?: ((e: React.MouseEvent<HTMLButtonElement>) => void) | undefined;
 }) {
-  if (!onMaximize && !onFullscreen && !pin) return null;
+  if (!onMaximize && !onFullscreen && !pin && !onMenu) return null;
   return (
     <div className="tile-tools">
+      {onMenu && (
+        <button
+          type="button"
+          onClick={onMenu}
+          aria-label={`Opções de ${name}`}
+          aria-haspopup="dialog"
+          title="Opções"
+          className="stage-max-btn"
+        >
+          <Icon name="more_horiz" size="1.05rem" />
+        </button>
+      )}
       {onMaximize && (
         <button
           type="button"
@@ -229,9 +245,32 @@ function PersonTile({
   const reveal = useTouchReveal();
   // Sem câmera, a miniatura fica tingida com a cor da foto da pessoa (estilo Discord).
   const tint = usePersonTint(tile.name, tile.avatarUrl);
+  // Menu da pessoa (como no Discord): clicar no quadro de alguém (ou o botão direito) abre ali.
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const closeMenu = useCallback(() => setMenuAt(null), []);
+  const hasMenu = !tile.isLocal;
+  const openMenu = (e: React.MouseEvent) => {
+    if (!hasMenu) return;
+    if ((e.target as HTMLElement).closest('button, a, input')) return;
+    e.preventDefault();
+    setMenuAt({ x: e.clientX, y: e.clientY });
+  };
+  const actions: PersonMenuAction[] = [];
+  if (onPin)
+    actions.push({
+      icon: pinned ? 'keep_off' : 'keep',
+      label: pinned ? 'Desafixar' : 'Fixar em destaque',
+      onSelect: () => onPin(cameraPin(tile.identity)),
+    });
+  if (onMaximize) actions.push({ icon: 'open_in_full', label: 'Maximizar', onSelect: onMaximize });
+  if (onFullscreen)
+    actions.push({ icon: 'fullscreen', label: 'Tela cheia', onSelect: onFullscreen });
   return (
     <figure
       {...(onPin ? reveal : {})}
+      onClick={openMenu}
+      onContextMenu={openMenu}
+      data-menu={hasMenu || undefined}
       data-testid="tile"
       data-speaking={tile.isSpeaking || undefined}
       data-voice-id={tile.identity}
@@ -266,7 +305,26 @@ function PersonTile({
         onMaximize={onMaximize}
         onFullscreen={onFullscreen}
         pin={onPin && { value: cameraPin(tile.identity), pinned, onPin }}
+        onMenu={
+          hasMenu
+            ? (e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setMenuAt({ x: r.left, y: r.bottom + 6 });
+              }
+            : undefined
+        }
       />
+      {menuAt && (
+        <PersonMenu
+          at={menuAt}
+          name={tile.name}
+          avatarUrl={tile.avatarUrl}
+          role={tile.role !== 'MEMBER' ? ROLE_LABEL[tile.role] : undefined}
+          identity={tile.identity}
+          actions={actions}
+          onClose={closeMenu}
+        />
+      )}
       <figcaption className="stage-caption">
         <span className="truncate font-medium text-white">
           {tile.name}
