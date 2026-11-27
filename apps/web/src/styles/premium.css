@@ -1,4 +1,5 @@
 @import '@fontsource-variable/inter-tight';
+@import '@fontsource-variable/fustat';
 
 /*
  * Screen "premium" (design em /design, arquivo sala-premium.figcraft). Vem depois do v3.css e
@@ -3085,4 +3086,95 @@ select {
 /* Movimento curto e macio (curvas do portfólio). */
 :root {
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Pegada AbacatePay: títulos em Fustat, lima com texto verde-escuro nas ações, botões em
+ * cápsula na cor do tema, grade fina de enfeite no topo e, no claro, fundo F6F7F4 com títulos
+ * verde-escuros. Fundo do escuro continua preto puro.
+ * ------------------------------------------------------------------------------------- */
+
+:root {
+  --font-display: 'Fustat Variable', 'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif;
+  /* Texto em cima da cor de destaque (botões, chaves, envio). */
+  --on-accent: #0b0b0b;
+  --heading: var(--v3-text);
+}
+
+/* Screen: o lima do AbacatePay, com texto verde-escuro por cima. */
+:root,
+:root[data-theme='screem'] {
+  --brand-200: #d9f8c4;
+  --brand-300: #b8f290;
+  --brand-400: #9eea6c;
+  --brand-500: #7fd34c;
+  --brand-600: #28624e;
+  --logo-1: #b8f290;
+  --logo-2: #6fcf4a;
+  --on-accent: #244c4e;
+}
+
+:root[data-mode='light'] {
+  --v3-bg: #f6f7f4;
+  --v3-text: #20272a;
+  --v3-text-2: #4c5267;
+  --v3-text-3: #5f6577;
+  --heading: #244c4e;
+}
+
+.page-title h1,
+.ready-title,
+.login2-title,
+.meet-hero-title,
+.section-head h2,
+.set-card-title,
+.guide-title,
+.guide-faq-title,
+.am-cal-head h2 {
+  font-family: var(--font-display);
+}
+
+:root[data-mode='light']
+  :is(.page-title h1, .section-head h2, .ready-title, .login2-title, .meet-hero-title) {
+  color: var(--heading);
+}
+
+/* Botão principal: cápsula na cor do tema (o tema pinta as ações), texto escuro por cima. */
+.btn-primary,
+:root[data-mode='light'] .btn-primary,
+.login2-cta {
+  border-radius: 999px;
+  background: var(--brand-400);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover:not(:disabled),
+.login2-cta:hover {
+  background: var(--brand-300);
+}
+
+.sp-play[data-open],
+.chat-send,
+.call-float [aria-label^='Tela: compartilhando'] .ctl {
+  color: var(--on-accent);
+}
+
+/* Grade fina de enfeite no topo das páginas (some para baixo); o conteúdo fica por cima. */
+.hub-main {
+  isolation: isolate;
+}
+
+.hub-main::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 340px;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(to right, var(--v3-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--v3-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, #000, transparent);
+  pointer-events: none;
 }
