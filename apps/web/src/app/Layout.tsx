@@ -182,74 +182,78 @@ export function Layout() {
               </nav>
 
               <div className="hub-footer" ref={footerRef}>
-                {/* O menu da conta flutua logo acima do cartão (não empurra o menu): sai de dentro
-                    dele com mola e os itens sobem um a um; fechado, fica fora do teclado e do
-                    leitor de tela. */}
-                <div
-                  id="hub-account-menu"
-                  className="unfold account-pop"
-                  data-open={accountOpen || undefined}
-                  inert={!accountOpen}
-                  aria-hidden={!accountOpen || undefined}
-                >
-                  <div className="unfold-inner">
-                    <div className="hub-account-menu" role="group" aria-label="Sua conta">
-                      <NavLink to="/preferencias" className="hub-link">
-                        <Icon name="tune" size="1.15rem" />
-                        <span>Preferências</span>
-                      </NavLink>
-                      {canInstall && (
-                        <button type="button" onClick={install} className="hub-link">
-                          <Icon name="download" size="1.15rem" />
-                          <span>Instalar app</span>
+                {/* Cartão da conta (como a navbar do portfólio): o próprio cartão cresce para cima
+                    com mola e o menu sai de dentro dele, os itens subindo um a um. Quem abre é o
+                    "..."; fechado, o menu fica fora do teclado e do leitor de tela. */}
+                <div className="hub-account-card" data-open={accountOpen || undefined}>
+                  <div
+                    id="hub-account-menu"
+                    className="unfold"
+                    data-open={accountOpen || undefined}
+                    inert={!accountOpen}
+                    aria-hidden={!accountOpen || undefined}
+                  >
+                    <div className="unfold-inner">
+                      <div className="hub-account-menu" role="group" aria-label="Sua conta">
+                        <NavLink to="/preferencias" className="hub-link">
+                          <Icon name="tune" size="1.15rem" />
+                          <span>Preferências</span>
+                        </NavLink>
+                        {canInstall && (
+                          <button type="button" onClick={install} className="hub-link">
+                            <Icon name="download" size="1.15rem" />
+                            <span>Instalar app</span>
+                          </button>
+                        )}
+                        <ThemeToggle variant="menu" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Quem sai vai para o login (não para a apresentação do endereço principal).
+                            navigate(location.pathname, {
+                              replace: true,
+                              state: { loggedOut: true },
+                            });
+                            void logout();
+                          }}
+                          className="hub-link hub-logout"
+                        >
+                          <Icon name="logout" size="1.15rem" />
+                          <span>Sair</span>
                         </button>
-                      )}
-                      <ThemeToggle variant="menu" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Quem sai vai para o login (não para a apresentação do endereço principal).
-                          navigate(location.pathname, {
-                            replace: true,
-                            state: { loggedOut: true },
-                          });
-                          void logout();
-                        }}
-                        className="hub-link hub-logout"
-                      >
-                        <Icon name="logout" size="1.15rem" />
-                        <span>Sair</span>
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    aria-label="Sua conta"
-                    ref={accountButtonRef}
-                    aria-expanded={accountOpen}
-                    aria-controls="hub-account-menu"
-                    onClick={() => setAccountOpen((v) => !v)}
-                    className="hub-account"
-                  >
-                    {user ? (
-                      <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />
-                    ) : (
-                      <Icon name="person" size="1.2rem" />
-                    )}
-                    {user && (
-                      <span className="min-w-0 text-left leading-tight">
-                        <span className="block truncate text-[13px] font-medium text-white">
-                          {user.displayName}
+                  <div className="hub-account-row">
+                    <span className="hub-account">
+                      {user ? (
+                        <Avatar name={user.displayName} url={user.avatarUrl} size="sm" />
+                      ) : (
+                        <Icon name="person" size="1.2rem" />
+                      )}
+                      {user && (
+                        <span className="min-w-0 text-left leading-tight">
+                          <span className="block truncate text-[13px] font-medium text-white">
+                            {user.displayName}
+                          </span>
+                          <span className="block text-[11px] text-zinc-500">
+                            {user.owner ? 'Admin geral' : ROLE_LABEL[user.role]}
+                          </span>
                         </span>
-                        <span className="block text-[11px] text-zinc-500">
-                          {user.owner ? 'Admin geral' : ROLE_LABEL[user.role]}
-                        </span>
-                      </span>
-                    )}
-                  </button>
-                  <Icon name="more_horiz" size="1.2rem" className="hub-account-more" />
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Sua conta"
+                      ref={accountButtonRef}
+                      aria-expanded={accountOpen}
+                      aria-controls="hub-account-menu"
+                      onClick={() => setAccountOpen((v) => !v)}
+                      className="hub-account-more"
+                    >
+                      <Icon name="more_horiz" size="1.25rem" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </aside>

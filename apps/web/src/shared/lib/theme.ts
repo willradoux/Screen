@@ -40,8 +40,8 @@ export const THEMES: ThemeInfo[] = [
   {
     value: 'sunset',
     label: 'Pôr do sol',
-    text: 'Coral e rosa, quente, como o fim da tarde.',
-    swatch: ['#ffb35c', '#ff4f93'],
+    text: 'Dourado e âmbar, a luz do fim da tarde.',
+    swatch: ['#ffe27a', '#ff9f1c'],
     bar: '#000000',
   },
   {

@@ -2762,16 +2762,16 @@ details[open] > .person-head .person-more {
 }
 
 :root[data-theme='sunset'] {
-  --brand-200: #ffe0cc;
-  --brand-300: #ffb894;
-  --brand-400: #ff8a5c;
-  --brand-500: #ff5f6d;
-  --brand-600: #b3401a;
-  --logo-1: #ffbf5c;
-  --logo-2: #ff4f93;
-  --bg-1: #ffd59a;
-  --bg-3: #ff8a5c;
-  --bg-2: #ff4f93;
+  --brand-200: #fff1c2;
+  --brand-300: #ffe08a;
+  --brand-400: #ffc940;
+  --brand-500: #f5a623;
+  --brand-600: #8a5a00;
+  --logo-1: #ffe27a;
+  --logo-2: #ff9f1c;
+  --bg-1: #ffe9a8;
+  --bg-3: #ffc940;
+  --bg-2: #ff9f1c;
 }
 
 :root[data-theme='acelera'] {
@@ -2799,62 +2799,6 @@ details[open] > .person-head .person-more {
 }
 
 /* Superfícies de cada tema no escuro: o mesmo layout, com o preto puxado para a cor do tema. */
-:root[data-theme='synthwave']:not([data-mode='light']) {
-  --v3-panel: #120c22;
-  --v3-card: #191130;
-  --v3-card-hover: #20163c;
-  --v3-elev: #241943;
-  --v3-pill: #261b45;
-  --v3-pill-hover: #312357;
-  --v3-line: rgb(190 150 255 / 0.12);
-  --v3-text-2: #b4a9cc;
-  --v3-text-3: #9488b0;
-}
-
-:root[data-theme='sunset']:not([data-mode='light']) {
-  --v3-panel: #150d0f;
-  --v3-card: #1d1215;
-  --v3-card-hover: #25171b;
-  --v3-elev: #2a1a1e;
-  --v3-pill: #2c1b20;
-  --v3-pill-hover: #382228;
-  --v3-line: rgb(255 170 150 / 0.1);
-  --v3-text-2: #c2a9a6;
-  --v3-text-3: #a38c89;
-}
-
-:root[data-theme='acelera']:not([data-mode='light']) {
-  --v3-panel: #0a1716;
-  --v3-card: #0f201e;
-  --v3-card-hover: #142825;
-  --v3-elev: #172d2a;
-  --v3-pill: #18302d;
-  --v3-pill-hover: #1f3b37;
-  --v3-line: rgb(120 240 210 / 0.1);
-  --v3-text-2: #a2bdb8;
-  --v3-text-3: #84a19c;
-}
-
-:root[data-theme='gelo']:not([data-mode='light']) {
-  --v3-panel: #0b1120;
-  --v3-card: #11192c;
-  --v3-card-hover: #162035;
-  --v3-elev: #19243b;
-  --v3-pill: #1b273f;
-  --v3-pill-hover: #23314d;
-  --v3-line: rgb(160 200 255 / 0.11);
-  --v3-text-2: #a7b4cc;
-  --v3-text-3: #8794ad;
-}
-
-/* Synthwave: um brilho neon discreto no que está ativo (Spotify + synthwave, sem exagero). */
-:root[data-theme='synthwave']:not([data-mode='light'])
-  :is(.hub-link[data-active='true'], .panel-tab[aria-selected='true']) {
-  box-shadow:
-    inset 0 0 0 1px rgb(255 95 162 / 0.25),
-    0 0 18px -6px rgb(255 95 162 / 0.45);
-}
-
 /* Clássico: o tema de antes (laranja indo para o rosa), sobre o preto neutro. */
 :root[data-theme='classico'] {
   --brand-200: #ffd8bf;
@@ -2877,12 +2821,6 @@ details[open] > .person-head .person-more {
 
 :root[data-mode='light'] {
   --v3-bg: #f2f2f4;
-  --v3-panel: color-mix(in oklab, var(--brand-400) 3%, #ffffff);
-  --v3-card: color-mix(in oklab, var(--brand-400) 7%, #f6f6f7);
-  --v3-card-hover: color-mix(in oklab, var(--brand-400) 10%, #eeeef0);
-  --v3-elev: color-mix(in oklab, var(--brand-400) 12%, #ececef);
-  --v3-pill: color-mix(in oklab, var(--brand-400) 12%, #e7e7ea);
-  --v3-pill-hover: color-mix(in oklab, var(--brand-400) 18%, #dcdce0);
 }
 
 /* ---------------------------------------------------------------------------------------
@@ -3163,4 +3101,226 @@ select {
 .hub-main,
 :root[data-mode='light'] .hub-main {
   background: var(--v3-panel);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Temas = só os componentes. O fundo e os painéis são neutros em todos os temas (preto e
+ * grafite no escuro, branco e cinza-claro no claro); a cor do tema fica nas ações, chaves, item
+ * ativo e destaques. Cada tema tem a sua dupla, como o lima e o verde-escuro do AbacatePay:
+ * --brand-400 (a cor) e --ink (o tom escuro: texto sobre a cor e, no claro, títulos e textos de
+ * destaque, sempre com contraste de leitura).
+ * ------------------------------------------------------------------------------------- */
+
+:root:not([data-mode='light']) {
+  --v3-bg: #000000;
+  --v3-panel: #111113;
+  --v3-card: #161618;
+  --v3-card-hover: #1c1c1f;
+  --v3-elev: #1c1c1f;
+  --v3-pill: #232325;
+  --v3-pill-hover: #2c2c2e;
+  --v3-line: rgb(255 255 255 / 0.09);
+  --v3-text: #f5f5f7;
+  --v3-text-2: #a1a1a6; /* 7,6:1 sobre #111113 */
+  --v3-text-3: #8e8e93; /* 5,9:1 sobre #111113 */
+}
+
+:root[data-mode='light'] {
+  --v3-bg: #f6f7f4;
+  --v3-panel: #ffffff;
+  --v3-card: #f2f3f1;
+  --v3-card-hover: #eaece8;
+  --v3-elev: #e8eae6;
+  --v3-pill: #e4e6e2;
+  --v3-pill-hover: #d8dbd6;
+  --v3-line: rgb(0 0 0 / 0.1);
+  --v3-text: #111214; /* 18:1 sobre branco */
+  --v3-text-2: #4c5267; /* 7,6:1 */
+  --v3-text-3: #5a6072; /* 6,4:1 */
+  /* No claro, o destaque usado como texto é o tom escuro do tema (contraste de leitura). */
+  --v3-accent: var(--ink);
+  --heading: var(--ink);
+}
+
+:root,
+:root[data-theme='screem'] {
+  --ink: #244c4e;
+  --on-accent: #244c4e;
+}
+
+:root[data-theme='synthwave'] {
+  --ink: #7a1250;
+  --on-accent: #3a0b2a;
+}
+
+:root[data-theme='sunset'] {
+  --ink: #6b4400;
+  --on-accent: #3d2600;
+}
+
+:root[data-theme='acelera'] {
+  --ink: #035e53;
+  --on-accent: #063d36;
+}
+
+:root[data-theme='gelo'] {
+  --ink: #1d3f99;
+  --on-accent: #0f2a5c;
+}
+
+:root[data-theme='classico'] {
+  --ink: #9a330c;
+  --on-accent: #3d1208;
+}
+
+/* Tudo que é texto na cor do destaque passa a usar o tom escuro no claro. */
+:root[data-mode='light'] {
+  --brand-600: var(--ink);
+  --color-brand-200: var(--ink);
+  --color-brand-300: var(--ink);
+}
+
+:root[data-mode='light']
+  :is(.guide-num, .meet-row-when > [data-soon], .chat-poll-kind, .text-brand-300) {
+  color: var(--ink) !important;
+}
+
+/* Texto sobre a cor do tema: sempre o tom escuro da dupla (nunca branco em cima de cor clara). */
+:is(
+  .btn-primary,
+  .login2-cta,
+  .sp-play[data-open],
+  .chat-send,
+  .switch[data-on],
+  .mic-chip[aria-checked='true'],
+  .person-pin[data-on],
+  .dt-col button[aria-pressed='true'],
+  .mod-toggle[data-on] .mod-toggle-state
+) {
+  color: var(--on-accent) !important;
+}
+
+/* Claro: o dia de hoje no calendário usa o tom escuro do tema (o lima some no branco). */
+:root[data-mode='light'] .am-cal-day[data-today] {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
+:root[data-mode='light'] .am-cal-day[data-today] .am-cal-num {
+  color: var(--ink);
+}
+
+.bars-peak {
+  border-radius: 6px;
+  background: var(--v3-card);
+  padding: 1px 6px;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Cartão da conta (menu lateral): o menu sai de dentro do próprio cartão, que cresce para cima
+ * com mola (como a navbar do portfólio). O "..." abre e gira; a foto e o nome são só informação.
+ * ------------------------------------------------------------------------------------- */
+
+.hub-footer > .flex {
+  all: unset;
+}
+
+.hub-account-card {
+  --spring: cubic-bezier(0.34, 1.28, 0.5, 1);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--v3-card);
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+  padding: 4px;
+  transition:
+    border-radius 520ms var(--spring),
+    background-color 200ms var(--ease-out);
+}
+
+.hub-account-card[data-open] {
+  border-radius: 18px;
+  background: var(--v3-elev);
+}
+
+.hub-account-card .hub-account-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 4px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--v3-line);
+  background: transparent;
+  padding: 4px 2px 8px;
+  box-shadow: none;
+}
+
+.hub-account-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hub-account-row .hub-account {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  cursor: default;
+}
+
+.hub-account-row .hub-account:hover {
+  background: transparent;
+}
+
+.hub-account-more {
+  display: grid;
+  height: 40px;
+  width: 40px;
+  flex: none;
+  place-items: center;
+  margin: 0;
+  border-radius: 12px;
+  color: var(--v3-text-2);
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+
+.hub-account-more:hover,
+.hub-account-more[aria-expanded='true'] {
+  background: var(--v3-pill);
+  color: var(--v3-text);
+}
+
+.hub-account-more svg,
+.hub-account-more img {
+  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hub-account-more[aria-expanded='true'] :is(svg, img) {
+  transform: rotate(90deg);
+}
+
+/* Menu de dispositivos: nunca alarga a barra (nome comprido corta com reticências). */
+.dock-unfold {
+  contain: inline-size;
+}
+
+/* Sem contorno na cor do tema: o foco do teclado é um anel neutro e discreto. */
+:root {
+  --focus-ring: rgb(255 255 255 / 0.55);
+}
+
+:root[data-mode='light'] {
+  --focus-ring: rgb(0 0 0 / 0.5);
+}
+
+.ctl-split:has(:focus-visible) {
+  outline-color: var(--focus-ring);
+}
+
+:is(a, button, [role='button'], summary):focus:not(:focus-visible) {
+  outline: none;
 }

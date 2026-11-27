@@ -13,8 +13,13 @@ export interface VoiceSource {
   micPub?: TrackPublication | undefined;
 }
 
-/** Acima disso é voz (o volume vai de 0 a 1). */
-const TALK_ON = 0.045;
+/**
+ * Acima disso é voz (o volume vai de 0 a 1). Mais alto que o ruído de fundo, teclado e respiração:
+ * só fala de verdade acende o verde.
+ */
+const TALK_ON = 0.11;
+/** Quadros seguidos acima do limite para contar como fala (~90 ms): um estalo não acende. */
+const TALK_FRAMES = 3;
 /** Quanto tempo de silêncio até apagar (evita piscar entre as palavras). */
 const TALK_OFF_MS = 320;
 /** No máximo tantos medidores ao mesmo tempo (salas grandes: só o palco fala). */
@@ -52,6 +57,8 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
         level: number;
         talking: boolean;
         lastLoud: number;
+        /** Quadros seguidos com som acima do limite. */
+        loud: number;
       }
     >(),
   );
@@ -97,6 +104,7 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
           level: 0,
           talking: false,
           lastLoud: 0,
+          loud: 0,
         });
       } catch {
         // Sem Web Audio: fica o aviso do servidor.
@@ -145,7 +153,8 @@ export function useVoiceLevels(sources: VoiceSource[], enabled = true): void {
         const v = m.pub.isMuted ? 0 : Math.min(1, m.volume() * 2.2);
         // Sobe rápido e desce devagar: segue a voz sem tremer.
         m.level += (v - m.level) * (v > m.level ? 0.55 : 0.12);
-        if (v > TALK_ON) m.lastLoud = now;
+        m.loud = v > TALK_ON ? m.loud + 1 : 0;
+        if (m.loud >= TALK_FRAMES) m.lastLoud = now;
         const talking = now - m.lastLoud < TALK_OFF_MS;
         const changed = talking !== m.talking;
         m.talking = talking;

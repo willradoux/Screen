@@ -50,6 +50,7 @@ export function DayBars({ days }: { days: ServerStats['perDay'] }) {
               style={{ height: `${Math.max(1.5, (d.minutes / max) * 100)}%` }}
             >
               {d === peak && d.minutes > 0 && (
+                // O rótulo do pico fica em cima da barra, sobre o painel (fundo próprio).
                 <span className="bars-peak">{formatMinutes(d.minutes)}</span>
               )}
             </div>
