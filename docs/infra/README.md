@@ -1,6 +1,10 @@
 # Infraestrutura e deploy
 
-Tudo do backend roda em Docker numa VPS. O frontend também roda na VPS (nginx). Os arquivos reais estão em [`infra/`](../../infra):
+Tudo roda em Docker numa VPS, num compose só, com o Caddy na frente. A LP fica num container próprio,
+no subdomínio dela. As imagens são montadas pelo GitHub Actions (`.github/workflows/deploy.yml`) e a VPS
+só baixa e reinicia o que mudou. **Troca do Coolify para este formato:** [migrar-do-coolify.md](migrar-do-coolify.md).
+
+Os arquivos reais estão em [`infra/`](../../infra):
 
 ```
 infra/
@@ -17,7 +21,10 @@ infra/
 
 | Serviço | Imagem | Função | Exposição |
 |---|---|---|---|
-| `api` | build de `apps/api/Dockerfile` | API, Socket.IO, bot | só rede interna (3000), via Caddy |
+| `api` | `ghcr.io/willradoux/screen-api` (`apps/api/Dockerfile`) | API, Socket.IO, bot | só rede interna (3000), via Caddy |
+| `web` | `ghcr.io/willradoux/screen-web` (`apps/web/Dockerfile`) | o app (nginx) | via Caddy (`APP_DOMAIN`) |
+| `landing` | `ghcr.io/willradoux/screen-landing` (`apps/web/Dockerfile.landing`) | a LP (nginx) | via Caddy (`LANDING_DOMAIN`) |
+| `redis`, `egress` | `redis:7`, `livekit/egress:v1.9` | gravação de reuniões | só rede interna |
 | `mongo` | `mongo:7` | Banco | **só rede interna** |
 | `livekit` | `livekit/livekit-server:v1.9` | SFU | 7880 via Caddy; 7881/tcp e 7882/udp diretos |
 | `coturn` | `coturn/coturn:4.6` | TURN/STUN | host network: 3478 e relay 49152-49252/udp |
@@ -33,7 +40,8 @@ Decisões:
 
 | Host | Aponta para | Serviço |
 |---|---|---|
-| `app.exemplo.com` | A (IP da VPS) | Frontend (nginx) |
+| `app.exemplo.com` | A (IP da VPS) | Caddy -> web (o app) |
+| `conheca.app.exemplo.com` | A (IP da VPS) | Caddy -> landing (a LP) |
 | `api.exemplo.com` | IP da VPS | Caddy -> api:3000 |
 | `live.exemplo.com` | IP da VPS | Caddy -> livekit:7880 |
 | `turn.exemplo.com` | IP da VPS | Coturn (sem proxy) |

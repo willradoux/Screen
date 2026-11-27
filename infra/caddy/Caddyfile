@@ -1,13 +1,24 @@
-{
-	# E-mail para avisos do Let's Encrypt (opcional)
-	# email admin@exemplo.com
+# Proxy da VPS (infra/docker-compose.yml). O Caddy tira e renova o HTTPS sozinho (Let's Encrypt):
+# basta o DNS de cada domínio apontar para o IP da VPS (sem o proxy laranja da Cloudflare).
+# O app (Screen).
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:80
 }
 
+# A LP (a TV), container próprio.
+{$LANDING_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy landing:80
+}
+
+# API REST e Socket.IO (o Caddy repassa o WebSocket sozinho).
 {$API_DOMAIN} {
 	encode zstd gzip
 	reverse_proxy api:3000
 }
 
+# Sinalização do LiveKit (WebSocket). O vídeo em si vai direto pelas portas 7881/tcp e 7882/udp.
 {$LIVE_DOMAIN} {
 	reverse_proxy livekit:7880
 }

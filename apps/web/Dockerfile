@@ -11,7 +11,9 @@ COPY apps/web apps/web
 COPY apps/api/package.json apps/api/package.json
 ARG VITE_API_URL
 ARG VITE_SOCKET_URL
-ENV VITE_API_URL=$VITE_API_URL VITE_SOCKET_URL=$VITE_SOCKET_URL
+# Endereço da LP separada: quem chega deslogado no endereço principal vai para lá.
+ARG VITE_LANDING_URL
+ENV VITE_API_URL=$VITE_API_URL VITE_SOCKET_URL=$VITE_SOCKET_URL VITE_LANDING_URL=$VITE_LANDING_URL
 RUN npm ci --ignore-scripts \
  && npm run build -w @screem/shared \
  && npm run build -w @screem/web

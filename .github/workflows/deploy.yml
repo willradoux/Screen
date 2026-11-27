@@ -1,0 +1,137 @@
+name: Deploy
+
+# Depois que o CI passa no main: monta só as imagens que mudaram (api, web, landing), guarda no
+# GHCR e atualiza a VPS por SSH. Só o serviço que mudou reinicia: mexer na LP ou no visual não
+# derruba ninguém da call. A VPS não compila nada.
+#
+# Configuração (Settings > Secrets and variables > Actions), ver docs/infra/migrar-do-coolify.md:
+#   Variables: APP_DOMAIN, LANDING_DOMAIN, API_DOMAIN
+#   Secrets:   VPS_HOST, VPS_USER, VPS_SSH_KEY  (e VPS_PATH, se não for /opt/screen)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Botão "Run workflow": monta e sobe tudo (por exemplo, depois de mudar um domínio).
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  changes:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.pick.outputs.api }}
+      web: ${{ steps.pick.outputs.web }}
+      landing: ${{ steps.pick.outputs.landing }}
+      infra: ${{ steps.pick.outputs.infra }}
+      sha: ${{ steps.pick.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - id: pick
+        shell: bash
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            for s in api web landing infra; do echo "$s=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
+          # O que mudou desde o último deploy que deu certo (ou desde o commit anterior).
+          BEFORE="${{ github.event.workflow_run.head_commit.id }}~1"
+          PREV=$(gh run list --workflow deploy.yml --branch main --status success --limit 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)
+          [ -n "$PREV" ] && git cat-file -e "$PREV" 2>/dev/null && BEFORE="$PREV"
+          FILES=$(git diff --name-only "$BEFORE" "$SHA")
+          echo "$FILES"
+          has() { echo "$FILES" | grep -Eq "$1" && echo true || echo false; }
+          echo "api=$(has '^(apps/api/|packages/shared/|package-lock.json)')" >> "$GITHUB_OUTPUT"
+          echo "web=$(has '^(apps/web/|packages/shared/|package-lock.json)')" >> "$GITHUB_OUTPUT"
+          echo "landing=$(has '^(apps/web/(src/(features/landing|shared|styles|index.css|landing.tsx)|public/|landing.html|Dockerfile.landing|nginx.conf|vite.config.ts|package.json)|packages/shared/|package-lock.json)')" >> "$GITHUB_OUTPUT"
+          echo "infra=$(has '^infra/(docker-compose.yml|caddy/)')" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  build:
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+          - name: web
+            dockerfile: apps/web/Dockerfile
+          - name: landing
+            dockerfile: apps/web/Dockerfile.landing
+    steps:
+      - name: Mudou?
+        id: on
+        shell: bash
+        run: echo "go=${{ needs.changes.outputs[matrix.name] }}" >> "$GITHUB_OUTPUT"
+      - if: steps.on.outputs.go == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.sha }}
+      - if: steps.on.outputs.go == 'true'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.on.outputs.go == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - if: steps.on.outputs.go == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/screen-${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/screen-${{ matrix.name }}:${{ needs.changes.outputs.sha }}
+          # As URLs entram no JavaScript no build (web e landing); a API ignora.
+          build-args: |
+            VITE_API_URL=https://${{ vars.API_DOMAIN }}/api/v1
+            VITE_SOCKET_URL=https://${{ vars.API_DOMAIN }}
+            VITE_LANDING_URL=https://${{ vars.LANDING_DOMAIN }}
+            VITE_APP_URL=https://${{ vars.APP_DOMAIN }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Atualiza a VPS (só o que mudou)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.VPS_PATH || '/opt/screen' }}"
+            git fetch --quiet origin main && git checkout --quiet "${{ needs.changes.outputs.sha }}"
+            C="docker compose -f infra/docker-compose.yml --env-file infra/.env"
+            S=""
+            [ "${{ needs.changes.outputs.api }}" = "true" ] && S="$S api"
+            [ "${{ needs.changes.outputs.web }}" = "true" ] && S="$S web"
+            [ "${{ needs.changes.outputs.landing }}" = "true" ] && S="$S landing"
+            [ -n "$S" ] && $C pull $S
+            # Recria só o que mudou de imagem ou de configuração (o resto nem reinicia).
+            $C up -d --remove-orphans
+            [ "${{ needs.changes.outputs.infra }}" = "true" ] && $C exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
+            docker image prune -f >/dev/null
+            $C ps

@@ -4,7 +4,8 @@ import { Backdrop } from './Backdrop';
 import { Intro } from './Intro';
 import { Layout } from './Layout';
 import { StatusCard } from '../shared/ui/StatusCard';
-import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff } from './guards';
+import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff, ToLanding } from './guards';
+import { LANDING_URL } from '../shared/lib/config';
 import { HomePage } from '../features/rooms/HomePage';
 import { FeaturesPage } from '../features/guide/FeaturesPage';
 import { GuidePage } from '../features/guide/GuidePage';
@@ -100,7 +101,7 @@ export function App() {
           {/* Pública: apresenta o Screen e ensina a usar, sem exigir login. */}
           <Route path="/features" element={<FeaturesPage />} />
           {/* Pública: a página de apresentação do Screen. */}
-          <Route path="/sobre" element={<LandingPage />} />
+          <Route path="/sobre" element={LANDING_URL ? <ToLanding /> : <LandingPage />} />
           {StageLab && <Route path="/__lab" element={<StageLab />} />}
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../auth/AuthProvider', () => ({
   useAuth: () => ({ state: { status: 'anonymous' } }),
+  useOptionalAuth: () => ({ state: { status: 'anonymous' } }),
 }));
 
 import { LandingPage } from './LandingPage';

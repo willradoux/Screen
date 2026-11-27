@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthProvider';
+import { LANDING_URL } from '../shared/lib/config';
 import { messageFor } from '../shared/lib/errors';
 import { isAdmin, isStaff } from '../shared/lib/moderation-rules';
 import { Bare } from '../shared/ui/Bare';
@@ -16,6 +18,18 @@ export function FullPageSpinner({ label = 'Carregando' }: { label?: string }) {
 }
 
 /** Só passa quem está logado. Anônimos vão para o login e voltam para onde estavam. */
+/**
+ * Leva para a apresentação: a LP separada (outro subdomínio) quando configurada, senão a /sobre
+ * de dentro do app (desenvolvimento).
+ */
+export function ToLanding() {
+  useEffect(() => {
+    if (LANDING_URL) window.location.replace(LANDING_URL);
+  }, []);
+  if (!LANDING_URL) return <Navigate to="/sobre" replace />;
+  return <FullPageSpinner />;
+}
+
 export function RequireAuth() {
   const { state, refresh } = useAuth();
   const location = useLocation();
@@ -29,7 +43,7 @@ export function RequireAuth() {
       // Quem acabou de sair (menu "Sair") vai para o login, como sempre.
       const loggedOut = (location.state as { loggedOut?: boolean } | null)?.loggedOut === true;
       if (location.pathname === '/' && !location.search && !loggedOut) {
-        return <Navigate to="/sobre" replace />;
+        return <ToLanding />;
       }
       const redirect = encodeURIComponent(location.pathname + location.search);
       return <Navigate to={`/login?redirect=${redirect}`} replace />;

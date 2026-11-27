@@ -2,8 +2,12 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+  // `vite build --mode landing`: só a LP (landing.html), em dist-landing, para o container próprio.
+  ...(mode === 'landing' && {
+    build: { outDir: 'dist-landing', rollupOptions: { input: 'landing.html' } },
+  }),
   // O e2e grava rastros em e2e/.results: o dev server não vigia (no Windows o arquivo fica
   // travado e derrubava o vite).
   server: { port: 5173, watch: { ignored: ['**/e2e/.results/**', '**/test-results/**'] } },
@@ -18,4 +22,4 @@ export default defineConfig({
     // Telas com a sala inteira montada passam de 5 s em máquina lenta ou ocupada (falhava ao acaso).
     testTimeout: 15_000,
   },
-});
+}));

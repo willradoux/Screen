@@ -9,7 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "build:landing": "tsc -p tsconfig.json --noEmit && vite build --mode landing"
   },
   "dependencies": {
     "@fontsource-variable/fustat": "^5.2.5",

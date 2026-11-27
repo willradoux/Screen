@@ -1,3 +1,6 @@
+# DESCONTINUADO: a VPS passa a rodar infra/docker-compose.yml (Caddy + deploy pelo GitHub Actions).
+# Fica aqui só até a troca terminar: docs/infra/migrar-do-coolify.md
+#
 # Deploy no Coolify (VPS própria). Guia: docs/infra/deploy-coolify.md
 #
 # No Coolify: New Resource > Public/Private Repository > Build Pack "Docker Compose"

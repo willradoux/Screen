@@ -1,49 +1,109 @@
-# Produção (VPS). Uso:
-#   cp infra/.env.example infra/.env   # e preencher
-#   docker compose -f infra/docker-compose.yml --env-file infra/.env up -d --build
-# Documentação: docs/infra/README.md
+# Produção na VPS, sem Coolify: um compose só, com o Caddy na frente (HTTPS automático).
+# Troca do Coolify para este compose: docs/infra/migrar-do-coolify.md
+#
+#   cp infra/.env.example infra/.env   # e preencher (fica só na VPS, nunca no Git)
+#   docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
+#
+# As imagens de api, web e landing são montadas pelo GitHub Actions (.github/workflows/deploy.yml)
+# e baixadas do GHCR: a VPS não compila nada. Para montar na própria VPS (emergência), use
+# `docker compose ... up -d --build`.
+#
+#   app      https://APP_DOMAIN      → web      (o Screen)
+#   LP       https://LANDING_DOMAIN  → landing  (a TV)
+#   API      https://API_DOMAIN      → api:3000
+#   LiveKit  https://LIVE_DOMAIN     → livekit:7880 (o vídeo em si vai direto pelas portas 7881/7882)
 
-name: screem
+name: screen
 
 services:
+  # Proxy reverso: HTTPS (Let's Encrypt) e roteamento por domínio. Única entrada pelas 80/443.
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?ex. screen.exemplo.com}
+      LANDING_DOMAIN: ${LANDING_DOMAIN:?ex. conheca.screen.exemplo.com}
+      API_DOMAIN: ${API_DOMAIN:?ex. api.screen.exemplo.com}
+      LIVE_DOMAIN: ${LIVE_DOMAIN:?ex. live.screen.exemplo.com}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - landing
+      - api
+
   mongo:
     image: mongo:7
     restart: unless-stopped
+    # Servidor pequeno (4 GB): o cache padrão do Mongo (metade da RAM) tiraria memória do LiveKit.
+    command: ['mongod', '--wiredTigerCacheSizeGB', '0.5']
+    cpu_shares: 512
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-screem}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?defina MONGO_PASSWORD}
     volumes:
       - mongo_data:/data/db
-    networks: [internal]
     healthcheck:
       test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 10
-    logging: &logging
-      driver: json-file
-      options: { max-size: '10m', max-file: '5' }
 
   api:
+    image: ${IMAGE_REGISTRY:-ghcr.io/willradoux}/screen-api:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
-    env_file: ../apps/api/.env
     environment:
-      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/screem?authSource=admin
+      NODE_ENV: production
+      PORT: '3000'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TIMEZONE: ${TIMEZONE:-America/Sao_Paulo}
+      # Atrás do Caddy há 1 proxy. Se colocar a Cloudflare na frente, use 2.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      PUBLIC_API_URL: https://${API_DOMAIN}
+      WEB_URL: https://${APP_DOMAIN}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:?ex. .exemplo.com}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      COOKIE_SECRET: ${COOKIE_SECRET:?defina COOKIE_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?defina TOKEN_ENCRYPTION_KEY}
+      MONGODB_URI: mongodb://${MONGO_USER:-screem}:${MONGO_PASSWORD}@mongo:27017/screem?authSource=admin
       LIVEKIT_URL: http://livekit:7880
       LIVEKIT_PUBLIC_URL: wss://${LIVE_DOMAIN}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
-      # Atrás do Caddy: sem isto o limite de requisições enxerga só o IP do proxy e todo mundo divide o mesmo limite.
-      TRUST_PROXY: '1'
-      # Métricas Prometheus em porta interna. NÃO há `ports:` aqui de propósito: só a rede do Docker alcança.
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET}
+      JOIN_TOKEN_TTL_SECONDS: ${JOIN_TOKEN_TTL_SECONDS:-600}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?defina DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:?defina DISCORD_CLIENT_SECRET}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?defina DISCORD_GUILD_ID}
+      DISCORD_REDIRECT_URI: https://${API_DOMAIN}/api/v1/auth/discord/callback
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?defina DISCORD_BOT_TOKEN}
+      BOOTSTRAP_ADMIN_IDS: ${BOOTSTRAP_ADMIN_IDS:-}
+      OWNER_IDS: ${OWNER_IDS:-}
+      ADMIN_ROLE_IDS: ${ADMIN_ROLE_IDS:-}
+      MEETING_MENTION_ROLE_ID: ${MEETING_MENTION_ROLE_ID:-}
+      EMPTY_LIVE_END_SECONDS: ${EMPTY_LIVE_END_SECONDS:-60}
+      EMPTY_MEETING_END_MINUTES: ${EMPTY_MEETING_END_MINUTES:-15}
+      SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-15}
+      # Métricas só na rede interna (nenhum domínio aponta para esta porta).
       METRICS_PORT: '9100'
+      # Gravação de reuniões: a API lê os arquivos que o Egress escreve (mesmo volume).
+      RECORDINGS_DIR: /recordings
+      RECORDINGS_EGRESS_DIR: /out
+      RECORDING_RETENTION_DAYS: ${RECORDING_RETENTION_DAYS:-10}
+    volumes:
+      - recordings:/recordings
     depends_on:
       mongo: { condition: service_healthy }
       livekit: { condition: service_started }
-    networks: [internal]
     healthcheck:
       test:
         - CMD
@@ -53,42 +113,97 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-    logging: *logging
+
+  # O app (arquivos estáticos servidos pelo nginx). As URLs entram no JavaScript no build.
+  web:
+    image: ${IMAGE_REGISTRY:-ghcr.io/willradoux}/screen-web:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: https://${API_DOMAIN}/api/v1
+        VITE_SOCKET_URL: https://${API_DOMAIN}
+        VITE_LANDING_URL: https://${LANDING_DOMAIN}
+    restart: unless-stopped
+
+  # A LP (a TV), num container próprio: mexer nela não reinicia o app nem a API.
+  landing:
+    image: ${IMAGE_REGISTRY:-ghcr.io/willradoux}/screen-landing:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile.landing
+      args:
+        VITE_API_URL: https://${API_DOMAIN}/api/v1
+        VITE_APP_URL: https://${APP_DOMAIN}
+    restart: unless-stopped
 
   livekit:
     image: livekit/livekit-server:v1.9
     restart: unless-stopped
-    # Configuração inline para poder usar variáveis do compose (segredos).
     environment:
       LIVEKIT_CONFIG: |
         port: 7880
-        log_level: info
+        log_level: warn
         rtc:
           tcp_port: 7881
           udp_port: 7882
           use_external_ip: true
           turn_servers:
-            - host: ${TURN_DOMAIN}
+            - host: ${TURN_DOMAIN:?ex. turn.exemplo.com}
               port: 3478
               protocol: udp
               username: livekit
-              credential: ${TURN_PASSWORD}
+              credential: ${TURN_PASSWORD:?defina TURN_PASSWORD}
             - host: ${TURN_DOMAIN}
               port: 3478
               protocol: tcp
               username: livekit
               credential: ${TURN_PASSWORD}
+        redis:
+          address: redis:6379
         keys:
           ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
         webhook:
           api_key: ${LIVEKIT_API_KEY}
           urls:
             - http://api:3000/api/v1/livekit/webhook
+    # Centenas de conexões simultâneas: o padrão do Docker (1024 arquivos abertos) é pouco.
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    # Em uma VPS de 1 vCPU o LiveKit é o que mais precisa de CPU: ganha prioridade sobre o resto.
+    cpu_shares: 4096
+    # Mídia não passa pelo Caddy: estas portas precisam estar abertas no firewall da VPS.
     ports:
       - '7881:7881/tcp'
       - '7882:7882/udp'
-    networks: [internal]
-    logging: *logging
+
+  # Mensagens entre o LiveKit e o Egress (gravação).
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+
+  # Grava as reuniões em arquivo. Usa um Chrome sem tela, por isso pede SYS_ADMIN e bastante CPU.
+  egress:
+    image: livekit/egress:v1.9
+    restart: unless-stopped
+    # A gravação (Chrome + ffmpeg) é pesada: nunca deve tirar CPU do LiveKit durante um evento grande.
+    cpu_shares: 256
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        log_level: info
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://livekit:7880
+        redis:
+          address: redis:6379
+    volumes:
+      - recordings:/out
+    depends_on:
+      - livekit
+      - redis
 
   coturn:
     image: coturn/coturn:4.6
@@ -101,7 +216,7 @@ services:
       - --listening-port=3478
       - --realm=${TURN_DOMAIN}
       - --server-name=${TURN_DOMAIN}
-      - --external-ip=${TURN_EXTERNAL_IP}
+      - --external-ip=${TURN_EXTERNAL_IP:?IP público da VPS}
       - --min-port=49152
       - --max-port=49252
       - --fingerprint
@@ -116,46 +231,9 @@ services:
       - --denied-peer-ip=169.254.0.0-169.254.255.255
       - --denied-peer-ip=172.16.0.0-172.31.255.255
       - --denied-peer-ip=192.168.0.0-192.168.255.255
-    logging: *logging
-
-  # Opcional: docker compose --profile monitoring up -d
-  # Sem porta publicada; para ver a interface use um túnel SSH (veja docs/infra/README.md).
-  prometheus:
-    image: prom/prometheus:v2.55.1
-    profiles: [monitoring]
-    restart: unless-stopped
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=15d
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus_data:/prometheus
-    networks: [internal]
-    logging: *logging
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    environment:
-      API_DOMAIN: ${API_DOMAIN}
-      LIVE_DOMAIN: ${LIVE_DOMAIN}
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on: [api, livekit]
-    networks: [internal]
-    logging: *logging
-
-networks:
-  internal: {}
 
 volumes:
   mongo_data: {}
+  recordings: {}
   caddy_data: {}
   caddy_config: {}
-  prometheus_data: {}

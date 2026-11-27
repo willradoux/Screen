@@ -4,3 +4,4 @@ coverage
 package-lock.json
 *.md
 apps/web/public/mediapipe
+dist-landing

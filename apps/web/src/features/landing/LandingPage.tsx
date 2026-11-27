@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthProvider';
+import { AppLink } from './AppLink';
+import { useOptionalAuth } from '../auth/AuthProvider';
 import { SKIP_INTRO_EVENT } from '../../shared/lib/intro';
 import { Icon } from '../../shared/ui/Icon';
 import { LiveLogo } from '../../shared/ui/LiveLogo';
@@ -38,8 +38,8 @@ function GithubMark() {
 }
 
 export function LandingPage() {
-  const { state } = useAuth();
-  const logged = state.status === 'authenticated';
+  // Na LP separada não há login do app: quem clica em Entrar passa pelo Discord e cai nas salas.
+  const logged = useOptionalAuth()?.state.status === 'authenticated';
   const [ch, setCh] = useState(0);
   const [booted, setBooted] = useState(false);
   const [auto, setAuto] = useState(() => !motionOff());
@@ -229,9 +229,9 @@ export function LandingPage() {
             </span>
           </button>
           {logged ? (
-            <Link to="/" className="lp-btn lp-btn-small">
+            <AppLink to="/" className="lp-btn lp-btn-small">
               Salas
-            </Link>
+            </AppLink>
           ) : (
             <a href={api.loginUrl('/')} className="lp-btn lp-btn-small">
               Entrar
