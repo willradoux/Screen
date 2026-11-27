@@ -7,6 +7,7 @@ import { StatusCard } from './components/StatusCard';
 import { FullPageSpinner, RequireAdmin, RequireAuth, RequireStaff } from './components/guards';
 import { HomePage } from './pages/HomePage';
 import { FeaturesPage } from './pages/FeaturesPage';
+import { GuidePage } from './pages/GuidePage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
 import { PreferencesPage } from './pages/PreferencesPage';
@@ -106,6 +107,7 @@ export function App() {
               <Route index element={<HomePage />} />
               <Route path="reunioes" element={<MeetingsPage />} />
               <Route path="preferencias" element={<PreferencesPage />} />
+              <Route path="guia" element={<GuidePage />} />
               <Route path="r/:roomId" element={<RoomPage />} />
               <Route element={<RequireStaff />}>
                 <Route path="admin" element={<AdminHomePage />} />

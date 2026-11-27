@@ -80,6 +80,11 @@ test('sala: entrar, ver o topo, falar no chat, ver as pessoas e sair', async ({ 
   await expect(page.getByRole('complementary', { name: 'Pessoas' })).toContainText('Will');
 
   await expectNoSideScroll(page);
+  // A barra de controles cabe inteira na tela (o Sair nunca fica cortado, nem no celular).
+  const leave = await page.getByRole('button', { name: 'Sair da sala' }).boundingBox();
+  const width = page.viewportSize()!.width;
+  expect(leave!.x).toBeGreaterThanOrEqual(0);
+  expect(leave!.x + leave!.width).toBeLessThanOrEqual(width);
   await page.getByRole('button', { name: 'Fechar painel' }).click();
   await page.getByRole('button', { name: 'Sair da sala' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Salas' })).toBeVisible();

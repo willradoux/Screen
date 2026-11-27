@@ -1478,3 +1478,1131 @@ body {
     grid-column: 2;
   }
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Gerenciar reuniões: o calendário do mês e a lista à esquerda; o formulário fixo à direita.
+ * ------------------------------------------------------------------------------------- */
+
+.am-layout {
+  display: grid;
+  align-items: start;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 26rem);
+}
+
+.am-side {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 1100px) {
+  .am-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .am-side {
+    position: static;
+    order: -1;
+  }
+}
+
+.am-form {
+  border-radius: 22px !important;
+  padding: 26px 28px !important;
+}
+
+.am-form h2 {
+  font-size: 22px;
+  font-weight: 450 !important;
+}
+
+.am-cal {
+  border-radius: 24px;
+  background: var(--v3-card);
+  padding: 24px 26px 26px;
+}
+
+.am-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.am-cal-head h2 {
+  font-size: 22px;
+  font-weight: 450 !important;
+  color: var(--v3-text);
+}
+
+.am-cal-nav {
+  display: grid;
+  height: 36px;
+  width: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--v3-pill);
+  color: var(--v3-text);
+}
+
+.am-cal-nav:hover {
+  background: var(--v3-pill-hover);
+}
+
+.am-cal-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.am-cal-week {
+  padding: 0 4px 4px;
+  font-size: 13px;
+  color: var(--v3-text-3);
+}
+
+.am-cal-day {
+  display: flex;
+  min-height: 84px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 12px;
+  background: var(--v3-elev);
+  padding: 8px;
+  text-align: left;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.am-cal-day:hover:not(:disabled) {
+  background: var(--v3-pill-hover);
+}
+
+.am-cal-day:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.am-cal-day[data-out] {
+  background: transparent;
+}
+
+.am-cal-day[data-out] .am-cal-num {
+  color: var(--v3-text-3);
+}
+
+.am-cal-day[data-today] {
+  box-shadow: inset 0 0 0 1.5px var(--brand-400);
+}
+
+.am-cal-day[data-today] .am-cal-num {
+  color: var(--brand-400);
+}
+
+.am-cal-day[data-picked] {
+  background: var(--v3-pill-hover);
+  box-shadow: inset 0 0 0 1.5px var(--v3-text-2);
+}
+
+.am-cal-num {
+  font-size: 14px;
+  color: var(--v3-text);
+}
+
+.am-cal-chip,
+.am-cal-more {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.35);
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--v3-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-mode='light'] .am-cal-chip,
+:root[data-mode='light'] .am-cal-more {
+  background: rgb(0 0 0 / 0.07);
+}
+
+@media (max-width: 640px) {
+  .am-cal {
+    padding: 16px;
+  }
+
+  .am-cal-grid {
+    gap: 4px;
+  }
+
+  .am-cal-day {
+    min-height: 48px;
+    padding: 6px;
+  }
+
+  .am-cal-chip {
+    display: none;
+  }
+
+  .am-cal-day:has(.am-cal-chip)::after {
+    content: '';
+    height: 6px;
+    width: 6px;
+    border-radius: 999px;
+    background: var(--brand-400);
+  }
+}
+
+/* Cada reunião numa linha: a data, o nome e os selos; os botões embaixo. */
+.am-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.am-row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 18px;
+  background: var(--v3-card);
+  padding: 16px 18px;
+}
+
+.am-row[data-status='ENDED'],
+.am-row[data-status='CANCELED'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+}
+
+.am-row-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.am-row .meet-date {
+  width: 64px;
+  flex: none;
+  background: var(--v3-elev);
+}
+
+.am-row-title {
+  font-size: 17px;
+  font-weight: 450 !important;
+  color: var(--v3-text);
+}
+
+.am-row-when {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.am-row-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.am-row-body {
+  padding-left: 80px;
+}
+
+@media (max-width: 640px) {
+  .am-row-body {
+    padding-left: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Filtros em pílula (Pessoas, Auditoria): a escolhida em branco.
+ * ------------------------------------------------------------------------------------- */
+
+.chip-filter {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: var(--v3-pill);
+  padding: 0 18px;
+  font-size: 15px;
+  color: var(--v3-text);
+  transition: background-color 160ms var(--ease-out);
+}
+
+.chip-filter:hover {
+  background: var(--v3-pill-hover);
+}
+
+.chip-filter[aria-checked='true'],
+.chip-filter[aria-pressed='true'] {
+  background: var(--v3-text);
+  color: var(--v3-bg);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Pessoas com acesso: tabela leve com a pessoa, o papel, de onde vem e desde quando.
+ * ------------------------------------------------------------------------------------- */
+
+.pp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pp-search {
+  display: flex;
+  height: 42px;
+  min-width: min(100%, 260px);
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  background: var(--v3-card);
+  padding: 0 16px;
+  color: var(--v3-text-3);
+}
+
+.pp-search:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand-400) 60%, transparent);
+}
+
+.pp-search input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  font-size: 15px;
+  color: var(--v3-text);
+  outline: none;
+}
+
+.pp-head,
+.pp-cells {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(90px, 0.5fr) minmax(0, 1fr) minmax(0, 0.7fr);
+}
+
+.pp-head {
+  border-bottom: 1px solid var(--v3-line);
+  padding: 0 18px 12px;
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.pp-row {
+  margin-top: 6px;
+  border-radius: 16px;
+  padding: 14px 18px;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.pp-row:hover,
+.pp-row:focus-within {
+  background: var(--v3-card);
+}
+
+.pp-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.pp-name,
+.pp-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-name {
+  font-size: 16px;
+  color: var(--v3-text);
+}
+
+.pp-sub,
+.pp-since {
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.pp-from {
+  font-size: 15px;
+  color: var(--v3-text-2);
+}
+
+.pp-role {
+  display: inline-flex;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--v3-text);
+}
+
+.pp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-left: 50px;
+}
+
+.pp-foot {
+  max-width: 70ch;
+  padding-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--v3-text-3);
+}
+
+@media (max-width: 760px) {
+  .pp-head {
+    display: none;
+  }
+
+  .pp-cells {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+
+  .pp-from,
+  .pp-since {
+    grid-column: 1 / -1;
+    padding-left: 50px;
+  }
+
+  .pp-row {
+    background: var(--v3-card);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Auditoria: linhas leves agrupadas por dia; a hora em cinza, a ação e o tipo em etiqueta.
+ * ------------------------------------------------------------------------------------- */
+
+.audit-more {
+  border-radius: 16px;
+  background: var(--v3-card);
+  padding: 12px 16px;
+}
+
+.audit-more summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--v3-text-2);
+}
+
+.audit-v4 {
+  border-collapse: separate;
+  border-spacing: 0 4px;
+}
+
+.audit-v4 thead th {
+  padding: 0 16px 8px;
+  font-size: 13px;
+  font-weight: 400 !important;
+  color: var(--v3-text-3);
+}
+
+.audit-v4 .audit-day th {
+  padding: 18px 4px 6px;
+  font-size: 15px;
+  font-weight: 450 !important;
+  color: var(--v3-text-2);
+}
+
+.audit-v4 tbody tr[data-testid='audit-row'] td {
+  padding: 14px 16px;
+  font-size: 15px;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.audit-v4 tbody tr[data-testid='audit-row'] td:first-child {
+  border-radius: 14px 0 0 14px;
+}
+
+.audit-v4 tbody tr[data-testid='audit-row'] td:last-child {
+  border-radius: 0 14px 14px 0;
+}
+
+.audit-v4 tbody tr[data-testid='audit-row']:hover td {
+  background: var(--v3-card);
+}
+
+.audit-time {
+  width: 72px;
+  white-space: nowrap;
+  color: var(--v3-text-3);
+}
+
+.audit-action {
+  color: var(--v3-text);
+}
+
+.audit-action > span:first-child {
+  margin-right: 10px;
+}
+
+.audit-kind {
+  display: inline-flex;
+  border-radius: 999px;
+  background: var(--v3-elev);
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--v3-text-2);
+  white-space: nowrap;
+}
+
+.audit-who {
+  color: var(--v3-text-2);
+}
+
+.audit-muted {
+  color: var(--v3-text-3);
+}
+
+@media (max-width: 640px) {
+  .audit-v4 .audit-day,
+  .audit-v4 .audit-day th {
+    display: block;
+    background: transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Configurações: cartões em duas colunas; listas de calls e cargos como linhas com chave.
+ * ------------------------------------------------------------------------------------- */
+
+.set-grid {
+  display: grid;
+  align-items: start;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+
+.set-grid > :not(.set-card) {
+  grid-column: 1 / -1;
+}
+
+.set-card {
+  border-radius: 22px !important;
+  padding: 24px 26px !important;
+}
+
+.set-card-title {
+  font-size: 20px;
+  font-weight: 450 !important;
+  color: var(--v3-text);
+}
+
+.set-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.set-toggle {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--v3-line);
+  font-size: 16px;
+  color: var(--v3-text);
+  cursor: pointer;
+}
+
+.set-toggle:last-child {
+  border-bottom: 0;
+}
+
+.set-toggle:has(.toggle-input:not(:checked)) > span {
+  color: var(--v3-text-2);
+}
+
+/* Caixinha que vira chave liga/desliga (o mesmo checkbox por baixo). O seletor com
+   input[type] ganha da regra geral das caixas de seleção (18 px). */
+input[type='checkbox'].toggle-input {
+  position: relative;
+  height: 30px;
+  min-height: 0;
+  width: 52px;
+  flex: none;
+  appearance: none;
+  border-radius: 999px;
+  background: #3a3a40;
+  cursor: pointer;
+  transition: background-color 200ms var(--ease-out);
+}
+
+input[type='checkbox'].toggle-input::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  height: 22px;
+  width: 22px;
+  border-radius: 999px;
+  background: #8b8b94;
+  transition:
+    transform 220ms var(--ease-out),
+    background-color 200ms var(--ease-out);
+}
+
+input[type='checkbox'].toggle-input:checked {
+  background: var(--brand-400);
+}
+
+input[type='checkbox'].toggle-input:checked::after {
+  background: #0a0a0a;
+  transform: translateX(22px);
+}
+
+.toggle-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+:root[data-motion='off'] .toggle-input,
+:root[data-motion='off'] .toggle-input::after {
+  transition: none;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Escolha em pílula (período das estatísticas): a escolhida num tom acima.
+ * ------------------------------------------------------------------------------------- */
+
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--v3-card);
+  padding: 4px;
+}
+
+.seg-opt {
+  height: 38px;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 15px;
+  color: var(--v3-text-2);
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+
+.seg-opt:hover {
+  color: var(--v3-text);
+}
+
+.seg-opt[aria-pressed='true'] {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Estatísticas: o gráfico (barras cinza, o dia de hoje em lima) e o ranking ao lado.
+ * ------------------------------------------------------------------------------------- */
+
+.stats-row {
+  display: grid;
+  align-items: start;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .stats-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stats-card {
+  border-radius: 22px !important;
+  padding: 24px 26px !important;
+}
+
+.stats-sub {
+  margin-top: -8px;
+  font-size: 14px;
+  color: var(--v3-text-3);
+}
+
+.bars {
+  position: relative;
+  padding-top: 26px;
+}
+
+.bars-grid {
+  position: absolute;
+  inset: 26px 0 26px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.bars-grid span {
+  border-top: 1px solid var(--v3-line);
+}
+
+.bars-grid span::before {
+  content: attr(data-v);
+  position: relative;
+  top: -18px;
+  font-size: 11px;
+  color: var(--v3-text-3);
+}
+
+.bars-plot {
+  position: relative;
+  display: flex;
+  height: 220px;
+  align-items: flex-end;
+  gap: clamp(2px, 0.5vw, 6px);
+}
+
+.bars-bar {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: #4a4a52;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.bars-bar:hover {
+  background: #6a6a74;
+}
+
+.bars-bar[data-last] {
+  background: var(--brand-400);
+}
+
+.bars-peak {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--v3-text);
+  white-space: nowrap;
+}
+
+.bars-x {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--v3-text-3);
+}
+
+.stats-top {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stats-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: var(--v3-text);
+}
+
+.stats-top-bar {
+  display: block;
+  height: 4px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--v3-elev);
+}
+
+.stats-top-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #8b8b94;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Guia: passos numerados em cartões (número em lima) e perguntas comuns separadas por linha.
+ * ------------------------------------------------------------------------------------- */
+
+.guide-steps {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+
+.guide-step {
+  border-radius: 22px;
+  background: var(--v3-card);
+  padding: 24px 26px 26px;
+}
+
+.guide-num {
+  font-size: 14px;
+  color: var(--brand-400);
+}
+
+:root[data-mode='light'] .guide-num {
+  color: var(--brand-600);
+}
+
+.guide-title {
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 450 !important;
+  line-height: 1.25;
+  color: var(--v3-text);
+}
+
+.guide-body {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--v3-text-2);
+}
+
+.guide-faq-title {
+  font-size: 22px;
+  font-weight: 450 !important;
+  color: var(--v3-text);
+}
+
+.guide-faq {
+  margin-top: 12px;
+}
+
+.guide-faq > div {
+  border-bottom: 1px solid var(--v3-line);
+  padding: 18px 0;
+}
+
+.guide-faq > div:last-child {
+  border-bottom: 0;
+}
+
+.guide-faq dt {
+  font-size: 17px;
+  color: var(--v3-text);
+}
+
+.guide-faq dd {
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--v3-text-2);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Pessoas na sala: linha limpa (avatar, nome, papel · estado); clicar abre o menu embaixo,
+ * com "Só pra você" e "Moderação". Os alfinetes ficam à direita, fora do menu.
+ * ------------------------------------------------------------------------------------- */
+
+.person-row {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-radius: 14px;
+  transition: background-color 160ms var(--ease-out);
+}
+
+.person-row:hover,
+.person-row:has(details[open]) {
+  background: var(--v3-card);
+}
+
+.person-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 8px 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.person-head::-webkit-details-marker {
+  display: none;
+}
+
+div.person-head {
+  cursor: default;
+}
+
+.person-name,
+.person-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-name {
+  font-size: 15px;
+  color: var(--v3-text);
+}
+
+.person-sub {
+  font-size: 13px;
+  color: var(--v3-text-3);
+}
+
+.person-more {
+  flex: none;
+  color: var(--v3-text-3);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+}
+
+.person-row:hover .person-more,
+.person-head:focus-visible .person-more,
+details[open] > .person-head .person-more {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .person-more {
+    opacity: 1;
+  }
+}
+
+.person-pins {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px 0 0;
+}
+
+.person-body {
+  padding: 2px 12px 14px 62px;
+  animation: v3-fade 220ms var(--ease-out) both;
+}
+
+.person-section {
+  margin: 10px 0 6px;
+  font-size: 12px;
+  color: var(--v3-text-3);
+}
+
+.person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .person-body {
+    padding-left: 12px;
+  }
+}
+
+/* Seletor do chat (só o admin geral vê): título em cima, três opções lado a lado em pílula. */
+.chat-mode {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  border-radius: 16px;
+  background: var(--v3-card);
+  padding: 10px 6px 6px;
+}
+
+.chat-mode-title {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--v3-text-3);
+}
+
+.chat-mode-opt {
+  justify-content: center;
+  height: 34px;
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 450;
+  white-space: nowrap;
+}
+
+.chat-mode-opt[aria-checked='true'] {
+  background: var(--v3-elev);
+  color: var(--v3-text);
+}
+
+.chat-mode-opt[aria-checked='true'][data-mode='off'] {
+  background: #2b1311;
+  color: var(--p-coral);
+}
+
+/* Menu da pessoa: o conteúdo usa a largura toda do painel. */
+.person-body {
+  padding-left: 12px;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Avisos (tela 07 do design): faixa tingida pelo tipo, aviso rápido em pílula e cartões de
+ * bloqueio. Sempre em faixa ou cartão próprio, nunca por cima de botão, nome ou vídeo.
+ * ------------------------------------------------------------------------------------- */
+
+.alert {
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  font-size: 14px;
+}
+
+.alert[data-tone='warning'] {
+  background: #241811 !important;
+  box-shadow: inset 0 0 0 1px rgb(255 160 110 / 0.18) !important;
+}
+
+.alert[data-tone='error'] {
+  background: #261312 !important;
+  box-shadow: inset 0 0 0 1px rgb(255 120 105 / 0.2) !important;
+}
+
+.alert[data-tone='info'],
+.alert[data-tone='success'] {
+  background: var(--v3-card) !important;
+}
+
+:root[data-mode='light'] .alert[data-tone='warning'] {
+  background: #fff4ea !important;
+}
+
+:root[data-mode='light'] .alert[data-tone='error'] {
+  background: #fff0ee !important;
+}
+
+.toast {
+  align-items: center;
+  border-radius: 999px;
+  background: #151517;
+  box-shadow:
+    inset 0 0 0 1px var(--v3-line),
+    0 18px 40px -14px rgb(0 0 0 / 0.55);
+  padding: 8px 10px 8px 8px;
+}
+
+.toast p {
+  padding-top: 0;
+  font-size: 14px;
+  font-weight: 450;
+}
+
+.status-card {
+  border-radius: 22px !important;
+  background: var(--v3-card) !important;
+  padding: 28px !important;
+}
+
+.status-card :is(h1, h2) {
+  font-weight: 450 !important;
+}
+
+/* "Na plateia": um cartão do tamanho de uma miniatura, com os rostos e o número grande. */
+.stage-audience-cell {
+  display: flex;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.stage-audience-cell .stage-audience {
+  position: static;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+  border-radius: 18px;
+  background: var(--v3-card);
+  box-shadow: inset 0 0 0 1px var(--v3-line);
+  padding: 14px 18px;
+  font-weight: 400;
+  color: var(--v3-text);
+}
+
+.stage-audience-faces {
+  display: flex;
+  flex: none;
+}
+
+.stage-audience-faces > * {
+  margin-left: -10px;
+  box-shadow: 0 0 0 2px var(--v3-card);
+}
+
+.stage-audience-faces > :first-child {
+  margin-left: 0;
+}
+
+.stage-audience-label {
+  display: block;
+  font-size: 13px;
+  color: var(--v3-text-3);
+}
+
+.stage-audience-count {
+  display: block;
+  font-size: clamp(16px, 1.6vw, 24px);
+  letter-spacing: -0.01em;
+}
+
+@container (max-width: 220px) {
+  .stage-audience-faces {
+    display: none;
+  }
+}
+
+/* Reunião aberta: o relógio e o fundo na cor do selo (menta), não no coral da live. */
+.call-top-live[data-tone='open'] {
+  background: #10261a;
+}
+
+.call-top-live[data-tone='open'] .call-top-clock {
+  color: #8df0c2;
+}
+
+/* Celular (tela 18): o chat entra na barra de baixo; compartilhar tela some (o navegador do
+   celular não deixa). No computador o chat fica na faixa da esquerda. */
+.ctl-mobile-only {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .ctl-mobile-only {
+    display: inline-flex;
+  }
+
+  .call-float [aria-label^='Tela:']:disabled {
+    display: none;
+  }
+}
+
+/* Celular: a pílula volta a ser compacta (o padding maior do computador cortava o Sair) e,
+   no toque, o botão de tela sai (celular não compartilha tela pelo navegador). */
+@media (max-width: 640px) {
+  .call-float {
+    padding: 4px;
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  .call-float [aria-label^='Tela:'] {
+    display: none;
+  }
+}

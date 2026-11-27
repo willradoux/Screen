@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { DateTimeField } from '../../components/DateTimeField';
 import { Link } from 'react-router-dom';
 import {
@@ -13,7 +13,6 @@ import {
   inputClass,
 } from '../../components/ui';
 import { Icon } from '../../components/Icon';
-import { CoverChip, WidgetCover } from '../../components/Widget';
 import { StatusBadge } from '../../components/RoomCard';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
@@ -86,8 +85,19 @@ export function buildMeetingInput(
   };
 }
 
-function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
+function MeetingForm({
+  onCreated,
+  pickedDay,
+}: {
+  onCreated: (m: Meeting) => void;
+  /** Dia escolhido no calendário ("2026-12-17"): vira a data do formulário (20:00 se vazio). */
+  pickedDay?: string | null;
+}) {
   const [values, setValues] = useState<MeetingFormValues>(emptyForm);
+  useEffect(() => {
+    if (!pickedDay) return;
+    setValues((v) => ({ ...v, when: `${pickedDay}T${v.when.slice(11, 16) || '20:00'}` }));
+  }, [pickedDay]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -111,7 +121,7 @@ function MeetingForm({ onCreated }: { onCreated: (m: Meeting) => void }) {
   const scheduled = values.when !== '';
 
   return (
-    <Card>
+    <Card className="am-form">
       <form onSubmit={(e) => void submit(e)} className="space-y-4" aria-label="Nova reunião">
         <h2 className="text-lg font-semibold text-zinc-50">Nova reunião</h2>
         <Field label="Título" htmlFor="m-title">
@@ -230,6 +240,128 @@ function ReportView({ report }: { report: MeetingReport }) {
   );
 }
 
+const MONTH_SHORT = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
+const TIME_SHORT = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+/** A data num quadrinho: mês (coral) em cima, dia embaixo. */
+function MeetingDate({ iso }: { iso: string | null }) {
+  const d = iso ? new Date(iso) : null;
+  return (
+    <span className="meet-date" aria-hidden="true">
+      <span>{d ? MONTH_SHORT.format(d).replace('.', '') : '—'}</span>
+      <span>{d ? String(d.getDate()).padStart(2, '0') : ''}</span>
+    </span>
+  );
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const MONTH_TITLE = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
+const WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+/**
+ * O mês com as reuniões de cada dia. Clicar num dia de hoje em diante põe a data no formulário de
+ * nova reunião.
+ */
+export function MeetingCalendar({
+  meetings,
+  onPick,
+  picked,
+}: {
+  meetings: Meeting[];
+  onPick: (day: string) => void;
+  picked: string | null;
+}) {
+  const today = new Date();
+  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const first = new Date(month.getFullYear(), month.getMonth(), 1 - month.getDay());
+  // Só as semanas que o mês ocupa (5 ou 6, às vezes 4).
+  const inMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const days = Array.from(
+    { length: Math.ceil((month.getDay() + inMonth) / 7) * 7 },
+    (_, i) => new Date(first.getFullYear(), first.getMonth(), first.getDate() + i),
+  );
+  const byDay = new Map<string, Meeting[]>();
+  for (const m of meetings) {
+    const iso = m.startsAt ?? m.openedAt;
+    if (!iso || m.status === 'CANCELED') continue;
+    const k = dayKey(new Date(iso));
+    byDay.set(k, [...(byDay.get(k) ?? []), m]);
+  }
+  const todayKey = dayKey(today);
+  const shift = (n: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
+  const title = MONTH_TITLE.format(month);
+  return (
+    <section aria-label="Calendário de reuniões" className="am-cal">
+      <header className="am-cal-head">
+        <h2>{title.charAt(0).toUpperCase() + title.slice(1)}</h2>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}
+          >
+            Hoje
+          </button>
+          <button
+            type="button"
+            className="am-cal-nav"
+            aria-label="Mês anterior"
+            onClick={() => shift(-1)}
+          >
+            <Icon name="chevron_right" size="1.2rem" className="rotate-180" />
+          </button>
+          <button
+            type="button"
+            className="am-cal-nav"
+            aria-label="Próximo mês"
+            onClick={() => shift(1)}
+          >
+            <Icon name="chevron_right" size="1.2rem" />
+          </button>
+        </div>
+      </header>
+      <div className="am-cal-grid">
+        {WEEK.map((w) => (
+          <span key={w} className="am-cal-week" aria-hidden="true">
+            {w}
+          </span>
+        ))}
+        {days.map((d) => {
+          const k = dayKey(d);
+          const list = byDay.get(k) ?? [];
+          const past = k < todayKey;
+          return (
+            <button
+              key={k}
+              type="button"
+              className="am-cal-day"
+              data-out={d.getMonth() !== month.getMonth() || undefined}
+              data-today={k === todayKey || undefined}
+              data-picked={k === picked || undefined}
+              disabled={past}
+              aria-pressed={k === picked}
+              aria-label={`${d.getDate()} de ${MONTH_TITLE.format(d)}${
+                list.length ? `: ${list.map((m) => m.title).join(', ')}` : ''
+              }`}
+              onClick={() => onPick(k)}
+            >
+              <span className="am-cal-num">{d.getDate()}</span>
+              {list.slice(0, 2).map((m) => (
+                <span key={m.id} className="am-cal-chip">
+                  {TIME_SHORT.format(new Date(m.startsAt ?? m.openedAt ?? ''))}{' '}
+                  {m.title.split(/\s+/)[0]}
+                </span>
+              ))}
+              {list.length > 2 && <span className="am-cal-more">+{list.length - 2}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -264,11 +396,13 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
   }
 
   return (
-    <li className="widget" data-testid="meeting-row">
-      <WidgetCover
-        tone={meeting.status === 'ENDED' || meeting.status === 'CANCELED' ? 'off' : 'live'}
-        left={
-          <>
+    <li className="am-row" data-testid="meeting-row" data-status={meeting.status}>
+      <div className="am-row-main">
+        <MeetingDate iso={meeting.startsAt ?? meeting.openedAt ?? meeting.endedAt} />
+        <div className="min-w-0 flex-1">
+          <h3 className="am-row-title">{meeting.title}</h3>
+          <p className="am-row-when">{formatDateTime(meeting.startsAt ?? meeting.openedAt)}</p>
+          <p className="am-row-badges">
             <StatusBadge room={meeting} />
             {(meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') &&
               (meeting.announced ? (
@@ -276,38 +410,33 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
               ) : (
                 <Badge tone="warn">Ainda não divulgada</Badge>
               ))}
-          </>
-        }
-        right={
-          <CoverChip icon="schedule">
-            {formatDateTime(meeting.startsAt ?? meeting.openedAt)}
-          </CoverChip>
-        }
-      />
-      <div className="widget-body">
-        <h3 className="text-[15px] font-bold leading-snug text-zinc-50">{meeting.title}</h3>
-
-        {!meeting.announced &&
-          meeting.reminders.length > 0 &&
-          (meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
-            <p className="text-xs text-zinc-500">Os lembretes só começam depois de divulgar.</p>
-          )}
-
-        {meeting.reminders.length > 0 && meeting.status === 'SCHEDULED' && (
-          <p className="flex flex-wrap items-center justify-center gap-1 text-xs text-zinc-500">
-            Lembretes:{' '}
-            {meeting.reminders.map((r) => (
-              <Badge key={r.minutesBefore} tone={r.sent ? 'open' : 'neutral'}>
-                {formatReminder(r.minutesBefore)}
-                {r.sent ? (
-                  <Icon name="check" size="0.9rem" className="ml-0.5" label="enviado" />
-                ) : null}
-              </Badge>
-            ))}
           </p>
-        )}
 
-        <div className="mt-auto flex flex-wrap justify-center gap-2 pt-1">
+          {!meeting.announced &&
+            meeting.reminders.length > 0 &&
+            (meeting.status === 'SCHEDULED' || meeting.status === 'OPEN') && (
+              <p className="mt-1 text-xs text-zinc-500">
+                Os lembretes só começam depois de divulgar.
+              </p>
+            )}
+
+          {meeting.reminders.length > 0 && meeting.status === 'SCHEDULED' && (
+            <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-zinc-500">
+              Lembretes:{' '}
+              {meeting.reminders.map((r) => (
+                <Badge key={r.minutesBefore} tone={r.sent ? 'open' : 'neutral'}>
+                  {formatReminder(r.minutesBefore)}
+                  {r.sent ? (
+                    <Icon name="check" size="0.9rem" className="ml-0.5" label="enviado" />
+                  ) : null}
+                </Badge>
+              ))}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="am-row-body">
+        <div className="flex flex-wrap gap-2">
           <Link to={`/r/${meeting.id}`} className="btn btn-secondary btn-sm">
             Abrir página da sala
           </Link>
@@ -434,15 +563,21 @@ export function AdminMeetingsPage() {
     return { active, ended };
   });
 
+  const [picked, setPicked] = useState<string | null>(null);
   return (
     <>
-      <PageTitle description="Crie, agende e divulgue reuniões; abra, cancele e veja o relatório.">
+      <PageTitle description="Agende, divulgue, abra, reagende e cancele. Veja o relatório das que terminaram.">
         Gerenciar reuniões
       </PageTitle>
-      <div className="grid gap-6 lg:grid-cols-[24rem_1fr]">
-        <MeetingForm onCreated={() => void reload({ silent: true })} />
-
-        <div className="space-y-6">
+      <div className="am-layout">
+        <div className="space-y-8">
+          {state.status === 'ready' && (
+            <MeetingCalendar
+              meetings={[...state.data.active, ...state.data.ended]}
+              picked={picked}
+              onPick={setPicked}
+            />
+          )}
           {state.status === 'loading' && <Spinner label="Carregando reuniões…" />}
           {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
           {state.status === 'ready' && (
@@ -457,7 +592,7 @@ export function AdminMeetingsPage() {
                     Nenhuma reunião aberta ou agendada. Crie uma no formulário ao lado.
                   </p>
                 ) : (
-                  <ul className="widget-grid widget-grid-fill stagger">
+                  <ul className="am-list stagger">
                     {state.data.active.map((m) => (
                       <MeetingRow
                         key={m.id}
@@ -476,7 +611,7 @@ export function AdminMeetingsPage() {
                 {state.data.ended.length === 0 ? (
                   <p className="ink-soft px-1 text-sm">Nenhuma reunião encerrada ainda.</p>
                 ) : (
-                  <ul className="widget-grid widget-grid-fill stagger">
+                  <ul className="am-list stagger">
                     {state.data.ended.map((m) => (
                       <MeetingRow
                         key={m.id}
@@ -489,6 +624,9 @@ export function AdminMeetingsPage() {
               </Section>
             </>
           )}
+        </div>
+        <div className="am-side">
+          <MeetingForm onCreated={() => void reload({ silent: true })} pickedDay={picked} />
         </div>
       </div>
     </>

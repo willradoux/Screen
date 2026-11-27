@@ -585,8 +585,23 @@ export function Stage({
   const audience =
     hidden > 0 ? (
       <p className="stage-audience tabular" data-testid="audience-count">
-        <Icon name="group" size="0.95rem" />
-        {lectureMode ? 'Na plateia' : 'Só ouvindo'}: {hidden} {hidden === 1 ? 'pessoa' : 'pessoas'}
+        <span className="stage-audience-faces" aria-hidden="true">
+          {tiles
+            .filter((t) => !visible.includes(t))
+            .slice(0, 4)
+            .map((t) => (
+              <Avatar key={t.identity} name={t.name} url={t.avatarUrl} size="md" />
+            ))}
+        </span>
+        <span className="min-w-0">
+          <span className="stage-audience-label">
+            {lectureMode ? 'Na plateia' : 'Só ouvindo'}
+            <span className="sr-only">:</span>
+          </span>{' '}
+          <span className="stage-audience-count">
+            {hidden} {hidden === 1 ? 'pessoa' : 'pessoas'}
+          </span>
+        </span>
       </p>
     ) : null;
 
@@ -682,7 +697,11 @@ export function Stage({
       </div>
     ));
     return (
-      <div className="stage-focus" data-layout="focus" data-strip={rest.length > 0 || undefined}>
+      <div
+        className="stage-focus"
+        data-layout="focus"
+        data-strip={rest.length > 0 || audience ? true : undefined}
+      >
         {mains.length > 1 ? (
           <div
             className="stage-pinned"
@@ -699,7 +718,7 @@ export function Stage({
         ) : (
           cells
         )}
-        {rest.length > 0 && (
+        {(rest.length > 0 || audience) && (
           <div className="stage-strip">
             {rest.map((p) => (
               <div
@@ -710,9 +729,12 @@ export function Stage({
                 <PieceView piece={p} small extras={extras} />
               </div>
             ))}
+            {/* Quem só assiste: um cartão na fileira, ao lado das miniaturas (nada por cima). */}
+            {audience && (
+              <div className="stage-cell stage-thumb stage-audience-cell">{audience}</div>
+            )}
           </div>
         )}
-        {audience}
       </div>
     );
   }
@@ -739,7 +761,7 @@ export function Stage({
           <PieceView piece={p} extras={extras} />
         </div>
       ))}
-      {audience}
+      {audience && <div className="stage-cell stage-audience-cell">{audience}</div>}
     </div>
   );
 }

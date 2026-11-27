@@ -325,7 +325,7 @@ function ConnectedRoom({
             Acelera DEV · {tiles.length} {tiles.length === 1 ? 'pessoa' : 'pessoas'}
           </p>
         </div>
-        <span className="call-top-live">
+        <span className="call-top-live" data-tone={room.type === 'LIVE' ? 'live' : 'open'}>
           <StatusBadge room={room} />
           {room.status === 'OPEN' && <OpenClock since={room.openedAt} />}
         </span>

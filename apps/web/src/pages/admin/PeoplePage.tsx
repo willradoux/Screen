@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import {
   Alert,
   Avatar,
-  Badge,
   Button,
   Card,
   Field,
@@ -11,6 +10,7 @@ import {
   inputClass,
 } from '../../components/ui';
 import { useAuth } from '../../auth/AuthProvider';
+import { Icon } from '../../components/Icon';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
 import { formatDateTime } from '../../lib/format';
@@ -137,27 +137,32 @@ function PersonRow({
 
   const name = person.displayName ?? person.username ?? person.userId;
   return (
-    <li className="surface px-4 py-3.5" data-testid="panel-user">
-      <div className="flex flex-wrap items-center gap-3">
-        <Avatar name={name} url={person.avatarUrl} size="sm" />
-        <div className="min-w-0">
-          <p className="font-medium text-zinc-100">
-            {name} {isMe && <span className="text-xs text-zinc-500">(você)</span>}
-          </p>
-          <p className="text-xs text-zinc-500">
-            {person.userId}
-            {!person.inServer && ' · fora do servidor'}
-            {person.note && ` · ${person.note}`}
-          </p>
-        </div>
-        <Badge tone={person.role === 'ADMIN' ? 'live' : 'scheduled'}>
-          {person.role === 'ADMIN' ? 'Admin' : 'Moderador'}
-        </Badge>
-        <span className="ml-auto text-xs text-zinc-500">
-          desde {formatDateTime(person.addedAt)}
+    <li className="pp-row" data-testid="panel-user">
+      <div className="pp-cells">
+        <span className="pp-person">
+          <Avatar name={name} url={person.avatarUrl} size="md" />
+          <span className="min-w-0">
+            <span className="pp-name">
+              {name} {isMe && <span className="text-xs text-zinc-500">(você)</span>}
+            </span>
+            <span className="pp-sub">
+              {person.username ? `@${person.username}` : person.userId}
+            </span>
+          </span>
         </span>
+        <span>
+          <span className="pp-role" data-role={person.role}>
+            {person.role === 'ADMIN' ? 'Admin' : 'Moderador'}
+          </span>
+        </span>
+        <span className="pp-from">
+          Adicionado no painel
+          {!person.inServer && ' · fora do servidor'}
+          {person.note && ` · ${person.note}`}
+        </span>
+        <span className="pp-since">desde {formatDateTime(person.addedAt)}</span>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="pp-actions">
         <Button
           size="sm"
           loading={busy === 'role'}
@@ -219,37 +224,95 @@ function PersonRow({
 export function PeoplePage() {
   const { user } = useAuth();
   const { state, reload } = useAsync(() => api.panelUsers.list());
+  const [filter, setFilter] = useState<'ALL' | 'ADMIN' | 'MOD'>('ALL');
+  const [query, setQuery] = useState('');
+  const all = state.status === 'ready' ? state.data : [];
+  const q = query.trim().toLowerCase();
+  const shown = all.filter(
+    (p) =>
+      (filter === 'ALL' || p.role === filter) &&
+      (!q || [p.displayName, p.username, p.userId].some((v) => v?.toLowerCase().includes(q))),
+  );
+  const chips = [
+    { value: 'ALL' as const, label: 'Todos', count: all.length },
+    {
+      value: 'ADMIN' as const,
+      label: 'Admins',
+      count: all.filter((p) => p.role === 'ADMIN').length,
+    },
+    { value: 'MOD' as const, label: 'Mods', count: all.filter((p) => p.role === 'MOD').length },
+  ];
 
   return (
     <>
       <PageTitle description="Quem acessa o painel sem depender de cargo no Discord.">
         Pessoas com acesso
       </PageTitle>
-      <div className="grid gap-6 lg:grid-cols-[24rem_1fr]">
-        <AddForm onAdded={() => void reload({ silent: true })} />
-        <div className="space-y-4">
-          <Alert tone="info" title="Quem mais acessa o painel">
-            Quem tem cargo de administrador ou moderador no Discord (veja em Configurações), o dono
-            do servidor e quem tem a permissão Administrador. Esta lista é só para quem não tem
-            nenhum desses.
-          </Alert>
+      <div className="am-layout">
+        <div className="space-y-5">
+          <div className="pp-toolbar">
+            <div role="radiogroup" aria-label="Mostrar" className="flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={filter === c.value}
+                  className="chip-filter"
+                  onClick={() => setFilter(c.value)}
+                >
+                  {c.label} <span className="tabular">{c.count}</span>
+                </button>
+              ))}
+            </div>
+            <label className="pp-search">
+              <Icon name="search" size="1.1rem" />
+              <span className="sr-only">Buscar pelo nome</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar pelo nome"
+              />
+            </label>
+          </div>
           {state.status === 'loading' && <Spinner label="Carregando…" />}
           {state.status === 'error' && <Alert tone="error">{describeError(state.error)}</Alert>}
           {state.status === 'ready' && state.data.length === 0 && (
             <p className="ink-soft px-1 text-sm">Ninguém foi adicionado manualmente.</p>
           )}
-          {state.status === 'ready' && state.data.length > 0 && (
-            <ul className="stagger space-y-2">
-              {state.data.map((p) => (
-                <PersonRow
-                  key={p.userId}
-                  person={p}
-                  isMe={p.userId === user?.id}
-                  onChanged={() => void reload({ silent: true })}
-                />
-              ))}
-            </ul>
+          {state.status === 'ready' && state.data.length > 0 && shown.length === 0 && (
+            <p className="ink-soft px-1 text-sm">Ninguém com esse filtro.</p>
           )}
+          {state.status === 'ready' && shown.length > 0 && (
+            <div className="pp-table">
+              <div className="pp-head" aria-hidden="true">
+                <span>Pessoa</span>
+                <span>Papel</span>
+                <span>De onde vem</span>
+                <span>Desde</span>
+              </div>
+              <ul className="stagger">
+                {shown.map((p) => (
+                  <PersonRow
+                    key={p.userId}
+                    person={p}
+                    isMe={p.userId === user?.id}
+                    onChanged={() => void reload({ silent: true })}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
+          <p className="pp-foot">
+            Também acessam o painel, sem estar nesta lista: quem tem cargo de administrador ou
+            moderador no Discord (veja em Configurações), o dono do servidor e quem tem a permissão
+            Administrador. O admin geral modera qualquer pessoa; os outros, só quem tem papel menor
+            que o seu.
+          </p>
+        </div>
+        <div className="am-side">
+          <AddForm onAdded={() => void reload({ silent: true })} />
         </div>
       </div>
     </>

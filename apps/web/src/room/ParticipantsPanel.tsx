@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Avatar, Badge, Button, Spinner } from '../components/ui';
+import { Alert, Avatar, Button, Spinner } from '../components/ui';
 import { api } from '../lib/api';
 import { describeError } from '../lib/errors';
 import { ALL_SOURCES_LABEL } from '../lib/labels';
@@ -376,207 +376,239 @@ function ParticipantsPanelView({
           const mayModerate = staff && canModerateTarget(me, { id: p.userId, role: p.role });
           const isPending = pending?.userId === p.userId;
           return (
-            <li key={p.userId} className="rounded-xl bg-white/5 p-2" data-testid="person">
-              <div className="flex items-center gap-2">
-                <Avatar name={p.displayName} url={p.avatarUrl} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm text-zinc-100">
-                  {p.displayName}
-                  {p.userId === me.id && <span className="text-zinc-500"> (você)</span>}
-                </span>
-                {p.role !== 'MEMBER' && <Badge tone="scheduled">{ROLE_LABEL[p.role]}</Badge>}
-                {p.isSpeaker && <Badge tone="open">No palco</Badge>}
-                {p.mutedByModeration && <Badge tone="warn">Silenciado</Badge>}
-                {onPin && (
-                  <span className="flex flex-none items-center gap-1">
-                    {sharingIds?.has(p.userId) && (
-                      <PinToggle
-                        label={`tela de ${p.displayName}`}
-                        icon="screen_share"
-                        on={pinnedKeys.has(screenKey(p.userId))}
-                        onClick={() => onPin(screenPin(p.userId))}
-                      />
-                    )}
+            <li key={p.userId} className="person-row" data-testid="person">
+              {(() => {
+                const head = (
+                  <>
+                    <Avatar name={p.displayName} url={p.avatarUrl} size="md" />
+                    <span className="min-w-0 flex-1">
+                      <span className="person-name">
+                        {p.displayName}
+                        {p.userId === me.id && <span className="text-zinc-500"> (você)</span>}
+                      </span>
+                      <span className="person-sub">
+                        {[
+                          ROLE_LABEL[p.role],
+                          p.isSpeaker && 'no palco',
+                          p.mutedByModeration && 'silenciado',
+                          sharingIds?.has(p.userId) && 'compartilhando a tela',
+                          hands.some((h) => h.userId === p.userId) && 'pediu a palavra',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                  </>
+                );
+                const hasMenu =
+                  p.userId !== me.id ||
+                  (canStage && p.userId === me.id) ||
+                  p.mutedSources.length > 0;
+                if (!hasMenu) return <div className="person-head">{head}</div>;
+                return (
+                  <details className="person-menu" open={isPending || undefined}>
+                    <summary className="person-head" aria-label={`Opções de ${p.displayName}`}>
+                      {head}
+                      <Icon name="more_horiz" size="1.2rem" className="person-more" />
+                    </summary>
+                    <div className="person-body">
+                      {p.userId !== me.id && <p className="person-section">Só pra você</p>}
+                      {p.userId !== me.id && (
+                        <PersonAudio
+                          id={p.userId}
+                          name={p.displayName}
+                          sharing={sharingIds?.has(p.userId)}
+                        />
+                      )}
+
+                      {canStage && p.userId === me.id && (
+                        <div className="mt-2 pl-9">
+                          <Button
+                            size="sm"
+                            variant={p.isSpeaker ? 'secondary' : 'primary'}
+                            loading={busy === `self-stage`}
+                            onClick={() =>
+                              void run(
+                                'self-stage',
+                                () =>
+                                  p.isSpeaker
+                                    ? api.moderation.demote(room.id, me.id)
+                                    : api.moderation.promote(room.id, me.id),
+                                p.isSpeaker ? 'Você saiu do palco.' : 'Você subiu ao palco.',
+                              )
+                            }
+                          >
+                            {p.isSpeaker ? 'Sair do palco' : 'Subir ao palco'}
+                          </Button>{' '}
+                          {spotlightButton(p)}
+                        </div>
+                      )}
+
+                      {p.mutedSources.length > 0 && (
+                        <p className="mt-1 pl-9 text-xs text-zinc-500">
+                          Bloqueado: {p.mutedSources.map((s) => ALL_SOURCES_LABEL[s]).join(', ')}
+                        </p>
+                      )}
+
+                      {mayModerate && !isPending && <p className="person-section">Moderação</p>}
+                      {mayModerate && !isPending && (
+                        <div className="person-actions">
+                          {p.mutedByModeration ? (
+                            <Button
+                              size="sm"
+                              loading={busy === `unmute:${p.userId}`}
+                              onClick={() =>
+                                void run(
+                                  `unmute:${p.userId}`,
+                                  () => api.moderation.unmute(room.id, p.userId),
+                                  `${p.displayName} liberado(a).`,
+                                )
+                              }
+                            >
+                              Liberar
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              loading={busy === `mute:${p.userId}`}
+                              onClick={() =>
+                                void run(
+                                  `mute:${p.userId}`,
+                                  () => api.moderation.mute(room.id, p.userId),
+                                  `${p.displayName} silenciado(a).`,
+                                )
+                              }
+                            >
+                              Silenciar
+                            </Button>
+                          )}
+                          {canStage && spotlightButton(p)}
+                          {!canStage ? null : p.isSpeaker ? (
+                            <Button
+                              size="sm"
+                              loading={busy === `demote:${p.userId}`}
+                              onClick={() =>
+                                void run(
+                                  `demote:${p.userId}`,
+                                  () => api.moderation.demote(room.id, p.userId),
+                                  `${p.displayName} saiu do palco.`,
+                                )
+                              }
+                            >
+                              Tirar do palco
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              loading={busy === `promote:${p.userId}`}
+                              onClick={() =>
+                                void run(
+                                  `promote:${p.userId}`,
+                                  () => api.moderation.promote(room.id, p.userId),
+                                  `${p.displayName} subiu ao palco.`,
+                                )
+                              }
+                            >
+                              Subir ao palco
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setPending({ userId: p.userId, action: 'kick' })}
+                          >
+                            Expulsar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setPending({ userId: p.userId, action: 'ban' })}
+                          >
+                            Banir
+                          </Button>
+                        </div>
+                      )}
+
+                      {mayModerate && isPending && pending && (
+                        <div
+                          className="mt-2 space-y-2 pl-9"
+                          role="group"
+                          aria-label={`Confirmar ${pending.action === 'kick' ? 'expulsão' : 'banimento'}`}
+                        >
+                          <p className="text-sm text-amber-200">
+                            {pending.action === 'kick'
+                              ? `Expulsar ${p.displayName}? A pessoa pode voltar.`
+                              : `Banir ${p.displayName} desta sala?`}
+                          </p>
+                          {pending.action === 'ban' && (
+                            <label className="flex items-center gap-2 text-sm text-zinc-300">
+                              Por quanto tempo
+                              <select
+                                value={banMinutes}
+                                onChange={(e) => setBanMinutes(Number(e.target.value))}
+                                className="rounded bg-zinc-950 px-2 py-1"
+                              >
+                                {options.map((o) => (
+                                  <option key={o.minutes} value={o.minutes}>
+                                    {o.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              loading={busy === `${pending.action}:${p.userId}`}
+                              onClick={() =>
+                                void run(
+                                  `${pending.action}:${p.userId}`,
+                                  () =>
+                                    pending.action === 'kick'
+                                      ? api.moderation.kick(room.id, p.userId)
+                                      : api.moderation.ban(room.id, p.userId, {
+                                          durationMinutes: options.some(
+                                            (o) => o.minutes === banMinutes,
+                                          )
+                                            ? banMinutes
+                                            : 60,
+                                        }),
+                                  pending.action === 'kick'
+                                    ? `${p.displayName} expulso(a).`
+                                    : `${p.displayName} banido(a).`,
+                                )
+                              }
+                            >
+                              Confirmar
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setPending(null)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                );
+              })()}
+              {onPin && (
+                <span className="person-pins">
+                  {sharingIds?.has(p.userId) && (
                     <PinToggle
-                      label={`câmera de ${p.displayName}`}
-                      icon="keep"
-                      on={pinnedKeys.has(personKey(p.userId))}
-                      onClick={() => onPin(cameraPin(p.userId))}
+                      label={`tela de ${p.displayName}`}
+                      icon="screen_share"
+                      on={pinnedKeys.has(screenKey(p.userId))}
+                      onClick={() => onPin(screenPin(p.userId))}
                     />
-                  </span>
-                )}
-              </div>
-
-              {p.userId !== me.id && (
-                <PersonAudio
-                  id={p.userId}
-                  name={p.displayName}
-                  sharing={sharingIds?.has(p.userId)}
-                />
-              )}
-
-              {canStage && p.userId === me.id && (
-                <div className="mt-2 pl-9">
-                  <Button
-                    size="sm"
-                    variant={p.isSpeaker ? 'secondary' : 'primary'}
-                    loading={busy === `self-stage`}
-                    onClick={() =>
-                      void run(
-                        'self-stage',
-                        () =>
-                          p.isSpeaker
-                            ? api.moderation.demote(room.id, me.id)
-                            : api.moderation.promote(room.id, me.id),
-                        p.isSpeaker ? 'Você saiu do palco.' : 'Você subiu ao palco.',
-                      )
-                    }
-                  >
-                    {p.isSpeaker ? 'Sair do palco' : 'Subir ao palco'}
-                  </Button>{' '}
-                  {spotlightButton(p)}
-                </div>
-              )}
-
-              {p.mutedSources.length > 0 && (
-                <p className="mt-1 pl-9 text-xs text-zinc-500">
-                  Bloqueado: {p.mutedSources.map((s) => ALL_SOURCES_LABEL[s]).join(', ')}
-                </p>
-              )}
-
-              {mayModerate && !isPending && (
-                <div className="mt-2 flex flex-wrap gap-1.5 pl-9">
-                  {p.mutedByModeration ? (
-                    <Button
-                      size="sm"
-                      loading={busy === `unmute:${p.userId}`}
-                      onClick={() =>
-                        void run(
-                          `unmute:${p.userId}`,
-                          () => api.moderation.unmute(room.id, p.userId),
-                          `${p.displayName} liberado(a).`,
-                        )
-                      }
-                    >
-                      Liberar
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      loading={busy === `mute:${p.userId}`}
-                      onClick={() =>
-                        void run(
-                          `mute:${p.userId}`,
-                          () => api.moderation.mute(room.id, p.userId),
-                          `${p.displayName} silenciado(a).`,
-                        )
-                      }
-                    >
-                      Silenciar
-                    </Button>
                   )}
-                  {canStage && spotlightButton(p)}
-                  {!canStage ? null : p.isSpeaker ? (
-                    <Button
-                      size="sm"
-                      loading={busy === `demote:${p.userId}`}
-                      onClick={() =>
-                        void run(
-                          `demote:${p.userId}`,
-                          () => api.moderation.demote(room.id, p.userId),
-                          `${p.displayName} saiu do palco.`,
-                        )
-                      }
-                    >
-                      Tirar do palco
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      loading={busy === `promote:${p.userId}`}
-                      onClick={() =>
-                        void run(
-                          `promote:${p.userId}`,
-                          () => api.moderation.promote(room.id, p.userId),
-                          `${p.displayName} subiu ao palco.`,
-                        )
-                      }
-                    >
-                      Subir ao palco
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => setPending({ userId: p.userId, action: 'kick' })}
-                  >
-                    Expulsar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => setPending({ userId: p.userId, action: 'ban' })}
-                  >
-                    Banir
-                  </Button>
-                </div>
-              )}
-
-              {mayModerate && isPending && pending && (
-                <div
-                  className="mt-2 space-y-2 pl-9"
-                  role="group"
-                  aria-label={`Confirmar ${pending.action === 'kick' ? 'expulsão' : 'banimento'}`}
-                >
-                  <p className="text-sm text-amber-200">
-                    {pending.action === 'kick'
-                      ? `Expulsar ${p.displayName}? A pessoa pode voltar.`
-                      : `Banir ${p.displayName} desta sala?`}
-                  </p>
-                  {pending.action === 'ban' && (
-                    <label className="flex items-center gap-2 text-sm text-zinc-300">
-                      Por quanto tempo
-                      <select
-                        value={banMinutes}
-                        onChange={(e) => setBanMinutes(Number(e.target.value))}
-                        className="rounded bg-zinc-950 px-2 py-1"
-                      >
-                        {options.map((o) => (
-                          <option key={o.minutes} value={o.minutes}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      loading={busy === `${pending.action}:${p.userId}`}
-                      onClick={() =>
-                        void run(
-                          `${pending.action}:${p.userId}`,
-                          () =>
-                            pending.action === 'kick'
-                              ? api.moderation.kick(room.id, p.userId)
-                              : api.moderation.ban(room.id, p.userId, {
-                                  durationMinutes: options.some((o) => o.minutes === banMinutes)
-                                    ? banMinutes
-                                    : 60,
-                                }),
-                          pending.action === 'kick'
-                            ? `${p.displayName} expulso(a).`
-                            : `${p.displayName} banido(a).`,
-                        )
-                      }
-                    >
-                      Confirmar
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setPending(null)}>
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
+                  <PinToggle
+                    label={`câmera de ${p.displayName}`}
+                    icon="keep"
+                    on={pinnedKeys.has(personKey(p.userId))}
+                    onClick={() => onPin(cameraPin(p.userId))}
+                  />
+                </span>
               )}
             </li>
           );

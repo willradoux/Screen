@@ -11,7 +11,7 @@ interface Feature {
   text: string;
 }
 
-interface Step {
+export interface Step {
   title: string;
   body: ReactNode;
 }
@@ -69,7 +69,7 @@ const FEATURES: Feature[] = [
   },
 ];
 
-const MEMBER_STEPS: Step[] = [
+export const MEMBER_STEPS: Step[] = [
   {
     title: 'Entre com o Discord',
     body: (
@@ -167,7 +167,7 @@ const MEMBER_STEPS: Step[] = [
   },
 ];
 
-const ADMIN_STEPS: Step[] = [
+export const ADMIN_STEPS: Step[] = [
   {
     title: 'Quem é admin',
     body: (

@@ -88,7 +88,8 @@ export function Alert({
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
-      className="surface pop-in flex gap-3 rounded-2xl px-3.5 py-3 text-sm"
+      data-tone={tone}
+      className="alert surface pop-in flex gap-3 rounded-2xl px-3.5 py-3 text-sm"
     >
       <Icon name={t.icon} size="1.15rem" className={`mt-0.5 ${t.color}`} />
       <div className="min-w-0 text-zinc-200">

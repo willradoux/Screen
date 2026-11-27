@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Alert, Button, Card, Field, PageTitle, Spinner, inputClass } from '../../components/ui';
+import { Icon, type IconName } from '../../components/Icon';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
 import type { GuildChannel, GuildRole, Settings, SettingsPatch } from '../../lib/types';
@@ -147,12 +148,15 @@ function CheckList({
   selected,
   onChange,
   emptyText,
+  icon,
 }: {
   legend: string;
   items: { id: string; label: string; group?: string }[];
   selected: string[];
   onChange: (ids: string[]) => void;
   emptyText: string;
+  /** Ícone de cada linha (ex.: fone para as calls de voz). */
+  icon?: IconName;
 }) {
   const toggle = (id: string, on: boolean) =>
     onChange(on ? [...selected, id] : selected.filter((s) => s !== id));
@@ -189,15 +193,17 @@ function CheckList({
                 </button>
               </div>
             )}
-            <div className="grid gap-1 sm:grid-cols-2">
+            <div className="set-list">
               {inGroup.map((i) => (
-                <label key={i.id} className="flex min-h-8 items-center gap-2 text-sm text-zinc-300">
+                <label key={i.id} className="set-toggle">
+                  {icon && <Icon name={icon} size="1.2rem" className="text-zinc-400" />}
+                  <span className="min-w-0 flex-1 truncate">{i.label}</span>
                   <input
                     type="checkbox"
+                    className="toggle-input"
                     checked={selected.includes(i.id)}
                     onChange={(e) => toggle(i.id, e.target.checked)}
                   />
-                  {i.label}
                 </label>
               ))}
             </div>
@@ -216,9 +222,9 @@ function CheckList({
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <Card className="space-y-4">
+    <Card className="set-card space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-50">{title}</h2>
+        <h2 className="set-card-title">{title}</h2>
         {hint && <p className="mt-1 text-sm text-zinc-500">{hint}</p>}
       </div>
       {children}
@@ -290,7 +296,7 @@ function SettingsEditor({
     <form
       noValidate
       onSubmit={(e) => void submit(e)}
-      className="space-y-6"
+      className="set-grid"
       aria-label="Configurações"
     >
       <Section
@@ -298,6 +304,7 @@ function SettingsEditor({
         hint="Marque as calls onde a pessoa pode transmitir tela e câmera. Quando alguém entra numa delas, o bot abre a sessão e manda o link no chat da própria call."
       >
         <CheckList
+          icon="headphones"
           legend="Calls de voz"
           items={voices.map((v) => ({ id: v.id, label: v.name, group: categoryName(v.parentId) }))}
           selected={form.liveChannelIds}

@@ -397,6 +397,23 @@ export function Controls({
             onClick={() => void toggle('screen')}
           />
         </div>
+        {/* Celular: o chat também fica na barra de baixo (no computador, na faixa da esquerda). */}
+        {onToggleChat && (
+          <span className="ctl-mobile-only relative">
+            <RoundButton
+              icon="chat"
+              short="Chat"
+              fullLabel={chatUnread > 0 ? `Chat (${chatUnread} novas)` : 'Abrir o chat'}
+              active={chatOpen}
+              onClick={onToggleChat}
+            />
+            {chatUnread > 0 && !chatOpen && (
+              <span aria-hidden="true" className="chat-badge tabular">
+                {chatUnread > 99 ? '99+' : chatUnread}
+              </span>
+            )}
+          </span>
+        )}
         <RoundButton
           icon="call_end"
           short="Sair da sala"

@@ -2,6 +2,7 @@ import smartDisplay from '@material-symbols/svg-400/rounded/smart_display.svg?ur
 import helpIcon from '@material-symbols/svg-400/rounded/help.svg?url';
 import editCalendar from '@material-symbols/svg-400/rounded/edit_calendar.svg?url';
 import linkIcon from '@material-symbols/svg-400/rounded/link.svg?url';
+import searchIcon from '@material-symbols/svg-400/rounded/search.svg?url';
 import sendIcon from '@material-symbols/svg-400/rounded/send.svg?url';
 import deleteIcon from '@material-symbols/svg-400/rounded/delete.svg?url';
 import chatIcon from '@material-symbols/svg-400/rounded/chat.svg?url';
@@ -94,6 +95,7 @@ const ICONS = {
   edit_calendar: editCalendar,
   link: linkIcon,
   send: sendIcon,
+  search: searchIcon,
   delete: deleteIcon,
   chat: chatIcon,
   fullscreen: fullscreenIcon,

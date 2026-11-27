@@ -62,6 +62,19 @@ function setup(
 const row = (name: string) =>
   screen.getByText(name).closest('[data-testid="person"]') as HTMLElement;
 
+describe('ParticipantsPanel: menu da pessoa', () => {
+  it('a lista fica limpa: o menu (só pra você e moderação) abre ao clicar na pessoa', async () => {
+    setup('ADMIN');
+    await screen.findByText('Membro Um');
+    const menu = row('Membro Um').querySelector('details')!;
+    expect(menu).not.toHaveAttribute('open');
+    await userEvent.click(within(row('Membro Um')).getByLabelText('Opções de Membro Um'));
+    expect(menu).toHaveAttribute('open');
+    expect(within(row('Membro Um')).getByText('Só pra você')).toBeInTheDocument();
+    expect(within(row('Membro Um')).getByText('Moderação')).toBeInTheDocument();
+  });
+});
+
 describe('ParticipantsPanel: quem pode moderar quem', () => {
   it('membro vê a lista mas nenhuma ação', async () => {
     setup('MEMBER');
@@ -132,8 +145,9 @@ describe('ParticipantsPanel: quem pode moderar quem', () => {
       }),
     ]);
     await screen.findByText('Membro Um');
-    expect(within(row('Membro Um')).getByText('No palco')).toBeInTheDocument();
-    expect(within(row('Membro Dois')).getByText('Silenciado')).toBeInTheDocument();
+    // Embaixo do nome: o papel e o estado ("Membro · no palco").
+    expect(within(row('Membro Um')).getByText(/Membro · no palco/)).toBeInTheDocument();
+    expect(within(row('Membro Dois')).getByText(/Membro · silenciado/)).toBeInTheDocument();
     expect(
       within(row('Membro Dois')).getByText(/Bloqueado: microfone, câmera/),
     ).toBeInTheDocument();

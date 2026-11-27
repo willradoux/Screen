@@ -112,7 +112,7 @@ export function Layout() {
   const items: NavItem[] = [
     { to: '/', label: 'Salas', icon: 'smart_display', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
-    { to: '/features', label: 'Guia', icon: 'help' },
+    { to: '/guia', label: 'Guia', icon: 'help' },
   ];
 
   const admin: NavItem[] = [];

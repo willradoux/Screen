@@ -79,6 +79,7 @@ const ROUTES: { path: string; expect: RegExp | string; level?: number }[] = [
   { path: '/reunioes', expect: 'Reuniões' },
   { path: '/preferencias', expect: 'Preferências' },
   { path: '/features', expect: /Transmita tela/ },
+  { path: '/guia', expect: 'Guia' },
   { path: '/sobre', expect: /carregando/, level: 0 },
   { path: '/admin', expect: 'Painel' },
   { path: '/admin/reunioes', expect: 'Gerenciar reuniões' },
