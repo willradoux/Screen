@@ -34,6 +34,7 @@ jobs:
       landing: ${{ steps.pick.outputs.landing }}
       infra: ${{ steps.pick.outputs.infra }}
       sha: ${{ steps.pick.outputs.sha }}
+      ready: ${{ steps.pick.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +45,13 @@ jobs:
         run: |
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          # Sem os domínios configurados no GitHub (antes da troca do Coolify), não faz nada.
+          if [ -z "${{ vars.API_DOMAIN }}" ] || [ -z "${{ vars.APP_DOMAIN }}" ] || [ -z "${{ vars.LANDING_DOMAIN }}" ]; then
+            echo "Deploy ainda não configurado (Variables APP_DOMAIN, LANDING_DOMAIN, API_DOMAIN): pulando."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             for s in api web landing infra; do echo "$s=true" >> "$GITHUB_OUTPUT"; done
             exit 0
@@ -64,6 +72,7 @@ jobs:
 
   build:
     needs: changes
+    if: needs.changes.outputs.ready == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -112,9 +121,17 @@ jobs:
 
   deploy:
     needs: [changes, build]
+    # Sem o SSH configurado (VPS_HOST), as imagens ficam no GHCR e a VPS não é tocada.
+    if: needs.changes.outputs.ready == 'true'
     runs-on: ubuntu-latest
+    env:
+      HAS_SSH: ${{ secrets.VPS_HOST != '' }}
     steps:
+      - name: SSH configurado?
+        if: env.HAS_SSH != 'true'
+        run: echo "Sem VPS_HOST nos Secrets - imagens publicadas, VPS nao atualizada."
       - name: Atualiza a VPS (só o que mudou)
+        if: env.HAS_SSH == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
