@@ -4,6 +4,7 @@ import type { CallInfo } from '../../shared/lib/types';
 import { useAsync } from '../../shared/lib/useAsync';
 import { EmptyState, Section } from '../../shared/ui/ui';
 import { AvatarStack, CoverChip } from '../../shared/ui/Widget';
+import { roomPath } from '../../shared/lib/paths';
 
 /**
  * Só as calls que têm gente agora. Call vazia não aparece (mesmo estando habilitada para live).
@@ -60,7 +61,7 @@ export function CallsSection({
               </p>
               <div className="sp-card-actions">
                 {call.roomId ? (
-                  <Link to={`/r/${call.roomId}`} className="btn btn-secondary btn-sm">
+                  <Link to={roomPath(call.roomId)} className="btn btn-secondary btn-sm">
                     Abrir a sala{call.mediaState === 'IDLE' ? ' (ativa a sessão)' : ''}
                   </Link>
                 ) : (

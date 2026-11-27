@@ -5,7 +5,7 @@ name: Deploy
 # derruba ninguém da call. A VPS não compila nada.
 #
 # Configuração (Settings > Secrets and variables > Actions), ver docs/infra/migrar-do-coolify.md:
-#   Variables: APP_DOMAIN, LANDING_DOMAIN, API_DOMAIN
+#   Variables: APP_DOMAIN, API_DOMAIN
 #   Secrets:   VPS_HOST, VPS_USER, VPS_SSH_KEY  (e VPS_PATH, se não for /opt/screen)
 
 on:
@@ -46,8 +46,8 @@ jobs:
           SHA=$(git rev-parse HEAD)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           # Sem os domínios configurados no GitHub (antes da troca do Coolify), não faz nada.
-          if [ -z "${{ vars.API_DOMAIN }}" ] || [ -z "${{ vars.APP_DOMAIN }}" ] || [ -z "${{ vars.LANDING_DOMAIN }}" ]; then
-            echo "Deploy ainda não configurado (Variables APP_DOMAIN, LANDING_DOMAIN, API_DOMAIN): pulando."
+          if [ -z "${{ vars.API_DOMAIN }}" ] || [ -z "${{ vars.APP_DOMAIN }}" ]; then
+            echo "Deploy ainda não configurado (Variables APP_DOMAIN e API_DOMAIN): pulando."
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -114,8 +114,7 @@ jobs:
           build-args: |
             VITE_API_URL=https://${{ vars.API_DOMAIN }}/api/v1
             VITE_SOCKET_URL=https://${{ vars.API_DOMAIN }}
-            VITE_LANDING_URL=https://${{ vars.LANDING_DOMAIN }}
-            VITE_APP_URL=https://${{ vars.APP_DOMAIN }}
+            VITE_LANDING_URL=https://${{ vars.APP_DOMAIN }}/
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 

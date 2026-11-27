@@ -31,7 +31,7 @@ describe('/screen', () => {
     const room = [...b.rooms.rooms.values()][0]!;
 
     const r = await b.router.handle(MEMBER, call('screen', 'link'));
-    expect(r.content).toContain(`${WEB_URL}/r/${room.id}`);
+    expect(r.content).toContain(`${WEB_URL}/call/${room.id}`);
     expect(r.content).toContain(`<#${VOICE_1}>`);
   });
 
@@ -44,7 +44,7 @@ describe('/screen', () => {
     await join(b, MEMBER.userId, OUTSIDE_VOICE);
     const other = await b.router.handle(MEMBER, call('screen', 'link'));
     expect(other.content).toContain('não tem live aberta');
-    expect(other.content).not.toContain('/r/');
+    expect(other.content).not.toContain('/call/');
   });
 
   it('salas: lives abertas e reuniões, cada uma com o link', async () => {
@@ -58,7 +58,7 @@ describe('/screen', () => {
     expect(r.content).toContain('**Ao vivo agora**');
     expect(r.content).toContain('**Reuniões**');
     expect(r.content).toContain('Reunião mensal (aberta agora)');
-    for (const room of b.rooms.rooms.values()) expect(r.content).toContain(`/r/${room.id}`);
+    for (const room of b.rooms.rooms.values()) expect(r.content).toContain(`/call/${room.id}`);
   });
 
   it('salas: sem nada aberto, diz como abrir', async () => {

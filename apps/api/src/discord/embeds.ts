@@ -34,7 +34,7 @@ const footer = (webUrl: string) => {
 };
 
 export const roomUrl = (webUrl: string, roomId: string) =>
-  `${webUrl.replace(/\/$/, '')}/r/${roomId}`;
+  `${webUrl.replace(/\/$/, '')}/call/${roomId}`;
 
 /** Guia público (sem login): para quem nunca usou. */
 const guideUrl = (webUrl: string) => `${webUrl.replace(/\/$/, '')}/features`;

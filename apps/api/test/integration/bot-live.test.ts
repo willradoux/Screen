@@ -55,7 +55,7 @@ describe('entrada num canal da categoria de lives', () => {
             type: 2,
             style: 5,
             label: 'Abrir sala',
-            url: `${WEB_URL}/r/${room.id}`,
+            url: `${WEB_URL}/call/${room.id}`,
             emoji: { name: '▶️' },
           },
           // Ao lado, o guia para quem nunca usou.

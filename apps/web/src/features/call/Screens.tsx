@@ -14,6 +14,7 @@ import { formatDateTime, formatDuration, timeUntil } from '../../shared/lib/form
 import { messageFor } from '../../shared/lib/errors';
 import type { AccessResult, CallInfo, EndReason, Room } from '../../shared/lib/types';
 import { useNow } from '../meetings/MeetingsPage';
+import { HOME } from '../../shared/lib/paths';
 
 /** Centraliza os estados da sala na área do painel, com respiro em cima e embaixo. */
 function Center({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ function Center({ children }: { children: React.ReactNode }) {
 }
 
 const BackHome = () => (
-  <Link to="/" className="btn btn-ghost btn-sm w-fit">
+  <Link to={HOME} className="btn btn-ghost btn-sm w-fit">
     <Icon name="arrow_back" size="1rem" />
     Voltar para as salas
   </Link>

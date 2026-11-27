@@ -4,16 +4,17 @@ import { Icon, type IconName } from '../../shared/ui/Icon';
 import { LiveLogo } from '../../shared/ui/LiveLogo';
 import { api } from '../../shared/lib/api';
 import { SceneBot, SceneCall, ScenePin, SceneRoom } from './scenes';
+import { HOME } from '../../shared/lib/paths';
 
 /* Os canais da TV: abertura, recursos, dúvidas e a chamada final (os do "como usa" vêm das cenas). */
 
 function Cta({ logged }: { logged: boolean }) {
   return logged ? (
-    <AppLink to="/" className="lp-btn lp-btn-main">
+    <AppLink to={HOME} className="lp-btn lp-btn-main">
       Ir para as salas <Icon name="arrow_forward" size="1.1em" />
     </AppLink>
   ) : (
-    <a href={api.loginUrl('/')} className="lp-btn lp-btn-main">
+    <a href={api.loginUrl(HOME)} className="lp-btn lp-btn-main">
       Entrar com Discord <Icon name="arrow_forward" size="1.1em" />
     </a>
   );

@@ -1,7 +1,7 @@
 # Infraestrutura e deploy
 
-Tudo roda em Docker numa VPS, num compose só, com o Caddy na frente. A LP fica num container próprio,
-no subdomínio dela. As imagens são montadas pelo GitHub Actions (`.github/workflows/deploy.yml`) e a VPS
+Tudo roda em Docker numa VPS, num compose só, com o Caddy na frente. Num domínio só: `/` é a LP
+(container próprio), `/dashboard` e `/call/<sala>` são o app. As imagens são montadas pelo GitHub Actions (`.github/workflows/deploy.yml`) e a VPS
 só baixa e reinicia o que mudou. **Troca do Coolify para este formato:** [migrar-do-coolify.md](migrar-do-coolify.md).
 
 Os arquivos reais estão em [`infra/`](../../infra):
@@ -22,8 +22,8 @@ infra/
 | Serviço | Imagem | Função | Exposição |
 |---|---|---|---|
 | `api` | `ghcr.io/willradoux/screen-api` (`apps/api/Dockerfile`) | API, Socket.IO, bot | só rede interna (3000), via Caddy |
-| `web` | `ghcr.io/willradoux/screen-web` (`apps/web/Dockerfile`) | o app (nginx) | via Caddy (`APP_DOMAIN`) |
-| `landing` | `ghcr.io/willradoux/screen-landing` (`apps/web/Dockerfile.landing`) | a LP (nginx) | via Caddy (`LANDING_DOMAIN`) |
+| `web` | `ghcr.io/willradoux/screen-web` (`apps/web/Dockerfile`) | o app (nginx) | via Caddy: tudo menos `/` e `/lp/` |
+| `landing` | `ghcr.io/willradoux/screen-landing` (`apps/web/Dockerfile.landing`) | a LP (nginx) | via Caddy: `/` e `/lp/` |
 | `redis`, `egress` | `redis:7`, `livekit/egress:v1.9` | gravação de reuniões | só rede interna |
 | `mongo` | `mongo:7` | Banco | **só rede interna** |
 | `livekit` | `livekit/livekit-server:v1.9` | SFU | 7880 via Caddy; 7881/tcp e 7882/udp diretos |
@@ -40,8 +40,7 @@ Decisões:
 
 | Host | Aponta para | Serviço |
 |---|---|---|
-| `app.exemplo.com` | A (IP da VPS) | Caddy -> web (o app) |
-| `conheca.app.exemplo.com` | A (IP da VPS) | Caddy -> landing (a LP) |
+| `app.exemplo.com` | A (IP da VPS) | Caddy -> landing em `/`, web no resto |
 | `api.exemplo.com` | IP da VPS | Caddy -> api:3000 |
 | `live.exemplo.com` | IP da VPS | Caddy -> livekit:7880 |
 | `turn.exemplo.com` | IP da VPS | Coturn (sem proxy) |

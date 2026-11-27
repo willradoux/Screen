@@ -90,7 +90,7 @@ describe('CallsSection', () => {
     expect(await screen.findByText('Sala 1')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Abrir a sala \(ativa a sessão\)/ })).toHaveAttribute(
       'href',
-      `/r/${'R'.repeat(22)}`,
+      `/call/${'R'.repeat(22)}`,
     );
     expect(screen.queryByText('Sala 2')).not.toBeInTheDocument();
     expect(screen.queryByText('Sala 3')).not.toBeInTheDocument();

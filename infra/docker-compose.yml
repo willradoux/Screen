@@ -8,10 +8,10 @@
 # e baixadas do GHCR: a VPS não compila nada. Para montar na própria VPS (emergência), use
 # `docker compose ... up -d --build`.
 #
-#   app      https://APP_DOMAIN      → web      (o Screen)
-#   LP       https://LANDING_DOMAIN  → landing  (a TV)
-#   API      https://API_DOMAIN      → api:3000
-#   LiveKit  https://LIVE_DOMAIN     → livekit:7880 (o vídeo em si vai direto pelas portas 7881/7882)
+#   https://APP_DOMAIN/            → landing  (a LP, a TV)
+#   https://APP_DOMAIN/dashboard   → web      (o app: /dashboard, /call/<sala>, /admin...)
+#   https://API_DOMAIN             → api:3000
+#   https://LIVE_DOMAIN            → livekit:7880 (o vídeo em si vai direto pelas portas 7881/7882)
 
 name: screen
 
@@ -26,7 +26,6 @@ services:
       - '443:443/udp'
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?ex. screen.exemplo.com}
-      LANDING_DOMAIN: ${LANDING_DOMAIN:?ex. conheca.screen.exemplo.com}
       API_DOMAIN: ${API_DOMAIN:?ex. api.screen.exemplo.com}
       LIVE_DOMAIN: ${LIVE_DOMAIN:?ex. live.screen.exemplo.com}
     volumes:
@@ -123,10 +122,11 @@ services:
       args:
         VITE_API_URL: https://${API_DOMAIN}/api/v1
         VITE_SOCKET_URL: https://${API_DOMAIN}
-        VITE_LANDING_URL: https://${LANDING_DOMAIN}
+        # A LP fica no "/" do mesmo domínio.
+        VITE_LANDING_URL: https://${APP_DOMAIN}/
     restart: unless-stopped
 
-  # A LP (a TV), num container próprio: mexer nela não reinicia o app nem a API.
+  # A LP (a TV), num container próprio, no "/" do domínio: mexer nela não reinicia o app nem a API.
   landing:
     image: ${IMAGE_REGISTRY:-ghcr.io/willradoux}/screen-landing:${IMAGE_TAG:-latest}
     build:
@@ -134,7 +134,6 @@ services:
       dockerfile: apps/web/Dockerfile.landing
       args:
         VITE_API_URL: https://${API_DOMAIN}/api/v1
-        VITE_APP_URL: https://${APP_DOMAIN}
     restart: unless-stopped
 
   livekit:

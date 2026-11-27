@@ -62,10 +62,12 @@ export function formatReminder(minutes: number): string {
 
 /** Só caminhos relativos do próprio site (evita redirect aberto). */
 export function safeRedirect(value: string | null | undefined): string {
-  if (!value) return '/';
-  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/';
+  // O início de quem está logado é /dashboard (o "/" é a LP).
+  const home = '/dashboard';
+  if (!value || value === '/') return home;
+  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return home;
   // eslint-disable-next-line no-control-regex
-  if (/[\u0000-\u001f\u007f\\]/.test(value)) return '/';
+  if (/[\u0000-\u001f\u007f\\]/.test(value)) return home;
   return value;
 }
 

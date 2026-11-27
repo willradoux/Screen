@@ -68,7 +68,7 @@ Removem a referência em `guild_settings` (canal/categoria vira `null`, cargo sa
 Título:  🔴 Live aberta: <nome do canal>
 Corpo:   <usuário> iniciou uma sala. Entre no canal de voz e abra o Screem para transmitir câmera e tela.
 Campos:  Participantes: 3 · Canal: #live-1
-Botão:   [Abrir sala] -> https://app.exemplo.com/r/<roomId>   (estilo Link)
+Botão:   [Abrir sala] -> https://app.exemplo.com/call/<roomId>   (estilo Link)
 Rodapé:  Acelera DEV · Screem
 ```
 
@@ -145,7 +145,7 @@ Ainda não implementado: depende do LiveKit e da moderação.
 Título:  📅 Reunião: Reunião mensal de dezembro
 Corpo:   <descrição>
 Campos:  Quando: <t:1796511600:F> (<t:1796511600:R>) · Quem pode: todos os membros
-Botão:   [Entrar na reunião] -> https://app.exemplo.com/r/<roomId>
+Botão:   [Entrar na reunião] -> https://app.exemplo.com/call/<roomId>
 Menção:  um cargo (`MEETING_MENTION_ROLE_ID`); se vazio, não marca ninguém (nem @everyone); só na mensagem inicial, edições não notificam de novo
 ```
 

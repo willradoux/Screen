@@ -38,7 +38,7 @@ describe('FeaturesPage', () => {
 
   it('tem botão para entrar e o seletor de tema', () => {
     setup();
-    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('button', { name: /tema/i })).toBeInTheDocument();
   });
 });

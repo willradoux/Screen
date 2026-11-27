@@ -17,6 +17,7 @@ import { formatDateTime } from '../../shared/lib/format';
 import { isAdmin } from '../../shared/lib/moderation-rules';
 import type { Meeting, Room, Settings } from '../../shared/lib/types';
 import { useAsync } from '../../shared/lib/useAsync';
+import { roomPath } from '../../shared/lib/paths';
 
 /** O que ainda falta configurar, em frases que dizem onde ir. */
 export function setupChecklist(s: Settings): { done: boolean; text: string }[] {
@@ -42,7 +43,7 @@ function LiveRow({ room }: { room: Room }) {
           {room.participantCount === 1 ? 'pessoa conectada' : 'pessoas conectadas'}
         </p>
       </div>
-      <Link to={`/r/${room.id}`} className="btn btn-secondary btn-sm">
+      <Link to={roomPath(room.id)} className="btn btn-secondary btn-sm">
         Abrir
       </Link>
     </li>

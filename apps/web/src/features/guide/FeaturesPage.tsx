@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../../shared/ui/Icon';
 import { ThemeToggle } from '../../shared/ui/ThemeToggle';
 import { SplitPanels } from '../../shared/ui/SplitPanels';
 import { LogoMark } from '../../shared/ui/Wordmark';
+import { HOME } from '../../shared/lib/paths';
 
 interface Feature {
   icon: IconName;
@@ -323,7 +324,7 @@ export function FeaturesPage() {
       sideLabel="Guia do Screen"
       side={
         <>
-          <Link to="/" aria-label="Screen — início" className="hub-brand hub-brand-top">
+          <Link to={HOME} aria-label="Screen — início" className="hub-brand hub-brand-top">
             <LogoMark className="h-8" />
             <span>screen</span>
           </Link>
@@ -354,7 +355,7 @@ export function FeaturesPage() {
               </span>
               <ThemeToggle />
             </div>
-            <Link to="/" className="btn btn-primary w-full">
+            <Link to={HOME} className="btn btn-primary w-full">
               Entrar
             </Link>
           </div>

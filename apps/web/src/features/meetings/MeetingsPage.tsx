@@ -8,6 +8,7 @@ import { describeError } from '../../shared/lib/errors';
 import { formatDuration, formatReminder, timeUntil } from '../../shared/lib/format';
 import type { Meeting } from '../../shared/lib/types';
 import { useAsync } from '../../shared/lib/useAsync';
+import { roomPath } from '../../shared/lib/paths';
 
 /** Relógio que atualiza a cada segundo (para a contagem regressiva). */
 export function useNow(intervalMs = 1000): number {
@@ -80,7 +81,7 @@ function NextMeeting({ meeting }: { meeting: Meeting }) {
             {meeting.reminders.map((r) => formatReminder(r.minutesBefore)).join(', ')} antes.
           </p>
         )}
-        <Link to={`/r/${meeting.id}`} className="btn btn-secondary mt-2 w-fit">
+        <Link to={roomPath(meeting.id)} className="btn btn-secondary mt-2 w-fit">
           Ver sala
         </Link>
       </div>
@@ -124,7 +125,7 @@ function MeetingRow({ meeting, now }: { meeting: Meeting; now: number }) {
       onClick={(e) => {
         // A linha inteira leva para a sala (o botão é o caminho do teclado).
         if ((e.target as HTMLElement).closest('a, button')) return;
-        navigate(`/r/${meeting.id}`);
+        navigate(roomPath(meeting.id));
       }}
     >
       <span className="meet-date" aria-hidden="true">
@@ -143,7 +144,7 @@ function MeetingRow({ meeting, now }: { meeting: Meeting; now: number }) {
       </span>
       <span className="meet-row-who">{who(meeting)}</span>
       <Link
-        to={`/r/${meeting.id}`}
+        to={roomPath(meeting.id)}
         className={`btn btn-sm ${open ? 'btn-primary' : 'btn-secondary'}`}
         aria-describedby={nameId}
       >

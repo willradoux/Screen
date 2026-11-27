@@ -75,6 +75,7 @@ function open(path: string, role: 'MEMBER' | 'MOD' | 'ADMIN' = 'ADMIN') {
 }
 
 const ROUTES: { path: string; expect: RegExp | string; level?: number }[] = [
+  { path: '/dashboard', expect: 'Salas' },
   { path: '/', expect: 'Salas' },
   { path: '/reunioes', expect: 'Reuniões' },
   { path: '/preferencias', expect: 'Preferências' },
@@ -88,6 +89,7 @@ const ROUTES: { path: string; expect: RegExp | string; level?: number }[] = [
   { path: '/admin/estatisticas', expect: 'Estatísticas' },
   { path: '/admin/gravacoes', expect: 'Gravações' },
   { path: '/admin/auditoria', expect: 'Auditoria' },
+  { path: `/call/${ROOM_ID}`, expect: /Verificando seu acesso/, level: 0 },
   { path: `/r/${ROOM_ID}`, expect: /Verificando seu acesso/, level: 0 },
   { path: '/rota-que-nao-existe', expect: 'Página não encontrada' },
 ];
@@ -112,7 +114,7 @@ describe('auditoria de rotas (permissões)', () => {
       expect(await screen.findByText('Acesso restrito')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Voltar para a página principal/ })).toHaveAttribute(
         'href',
-        '/',
+        '/dashboard',
       );
       unmount();
     }
@@ -172,5 +174,16 @@ describe('cobertura de rotas', () => {
         `rota sem auditoria: ${p}`,
       ).toBe(true);
     }
+  });
+});
+
+describe('endereços novos (LP no "/", app em /dashboard e /call)', () => {
+  it('o link antigo da sala (/r/...) leva para /call/... e mantém o resto do endereço', async () => {
+    const { roomPath, isRoomPath, HOME } = await import('../shared/lib/paths');
+    expect(HOME).toBe('/dashboard');
+    expect(roomPath('abc')).toBe('/call/abc');
+    expect(isRoomPath('/call/abc')).toBe(true);
+    expect(isRoomPath('/r/abc')).toBe(true);
+    expect(isRoomPath('/dashboard')).toBe(false);
   });
 });

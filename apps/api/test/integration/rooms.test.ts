@@ -436,7 +436,7 @@ describe('GET /rooms e /rooms/:id', () => {
       status: 'OPEN',
       participantCount: 1,
       voiceChannelId: VOICE_1,
-      url: `${WEB_URL}/r/${live.id}`,
+      url: `${WEB_URL}/call/${live.id}`,
     });
     expect(res.body.page).toEqual({ next: null, limit: 20 });
   });

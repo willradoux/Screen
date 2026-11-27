@@ -80,7 +80,7 @@ describe('botão Enviar aviso', () => {
     expect(ctx.gateway.sent).toHaveLength(1);
     const msg = ctx.gateway.sent[0]!;
     expect(msg.payload.embeds[0]!.title).toContain('Reunião mensal');
-    expect(JSON.stringify(msg.payload.components)).toContain(`/r/${id}`);
+    expect(JSON.stringify(msg.payload.components)).toContain(`/call/${id}`);
     expect(ctx.rooms.rooms.get(id)!.announceMessageId).toBe(msg.messageId);
     expect(ctx.auditRepo.records.filter((r) => r.action === 'MEETING_ANNOUNCED')).toMatchObject([
       { actorId: ADMIN, roomId: id, meta: { resend: false } },

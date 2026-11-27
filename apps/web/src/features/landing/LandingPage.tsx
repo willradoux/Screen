@@ -17,6 +17,7 @@ import { Caption } from './scenes';
 import { Knob, Osd } from './tv-parts';
 import { Tutorial, markTutorialSeen, tutorialSeen } from './Tutorial';
 import { useSound } from './useSound';
+import { HOME } from '../../shared/lib/paths';
 
 /*
  * Página de apresentação do Screen (/sobre). A página é uma TV numa paisagem: cada canal é uma
@@ -229,11 +230,11 @@ export function LandingPage() {
             </span>
           </button>
           {logged ? (
-            <AppLink to="/" className="lp-btn lp-btn-small">
+            <AppLink to={HOME} className="lp-btn lp-btn-small">
               Salas
             </AppLink>
           ) : (
-            <a href={api.loginUrl('/')} className="lp-btn lp-btn-small">
+            <a href={api.loginUrl(HOME)} className="lp-btn lp-btn-small">
               Entrar
             </a>
           )}

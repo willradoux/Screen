@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Backdrop } from './Backdrop';
 import { Intro } from './Intro';
 import { Layout } from './Layout';
@@ -12,6 +12,7 @@ import { GuidePage } from '../features/guide/GuidePage';
 import { LoginPage } from '../features/auth/LoginPage';
 import { MeetingsPage } from '../features/meetings/MeetingsPage';
 import { PreferencesPage } from '../features/preferences/PreferencesPage';
+import { HOME, roomPath } from '../shared/lib/paths';
 
 // A sala puxa o LiveKit e o Socket.IO (a maior parte do código) e a administração só
 // serve para admins: carregam sob demanda, para login e lista de salas abrirem rápido.
@@ -74,7 +75,7 @@ function NotFound() {
         title="Página não encontrada"
         headingLevel={1}
         actions={
-          <Link to="/" className="btn btn-primary">
+          <Link to={HOME} className="btn btn-primary">
             Voltar para as salas
           </Link>
         }
@@ -85,9 +86,17 @@ function NotFound() {
   );
 }
 
+/** Leva o link antigo da sala (`/r/:roomId`, dos convites já mandados) para `/call/:roomId`. */
+function OldRoomLink() {
+  const { roomId = '' } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`${roomPath(roomId)}${search}`} replace />;
+}
+
 /**
- * Rotas do Screen. `/r/:roomId` é o link que o bot manda no Discord e não pode mudar
- * (docs/frontend/README.md).
+ * Rotas do Screen. No mesmo domínio, `/` é a LP (container próprio, em produção), `/dashboard` é
+ * o início de quem está logado e `/call/:roomId` é a chamada. `/r/:roomId` (o link que o bot
+ * mandava) continua valendo e redireciona.
  */
 export function App() {
   usePrefetchRoom();
@@ -105,11 +114,13 @@ export function App() {
           {StageLab && <Route path="/__lab" element={<StageLab />} />}
           <Route element={<RequireAuth />}>
             <Route element={<Layout />}>
-              <Route index element={<HomePage />} />
+              <Route index element={<Navigate to={HOME} replace />} />
+              <Route path="dashboard" element={<HomePage />} />
               <Route path="reunioes" element={<MeetingsPage />} />
               <Route path="preferencias" element={<PreferencesPage />} />
               <Route path="guia" element={<GuidePage />} />
-              <Route path="r/:roomId" element={<RoomPage />} />
+              <Route path="call/:roomId" element={<RoomPage />} />
+              <Route path="r/:roomId" element={<OldRoomLink />} />
               <Route element={<RequireStaff />}>
                 <Route path="admin" element={<AdminHomePage />} />
               </Route>

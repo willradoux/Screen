@@ -148,7 +148,7 @@ describe('LoginPage', () => {
     renderRoutes('/login?redirect=//evil.com');
     const link = await screen.findByRole('link', { name: /entrar com discord/i });
     expect(link.getAttribute('href')).toBe(
-      'http://localhost:3000/api/v1/auth/discord?redirect=%2F',
+      'http://localhost:3000/api/v1/auth/discord?redirect=%2Fdashboard',
     );
   });
 

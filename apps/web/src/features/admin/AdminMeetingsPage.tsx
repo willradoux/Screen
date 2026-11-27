@@ -24,6 +24,7 @@ import {
 } from '../../shared/lib/format';
 import type { Meeting, MeetingReport } from '../../shared/lib/types';
 import { useAsync } from '../../shared/lib/useAsync';
+import { roomPath } from '../../shared/lib/paths';
 
 const REMINDER_CHOICES = [
   { minutes: 1440, label: '24 h antes' },
@@ -442,7 +443,7 @@ function MeetingRow({ meeting, onChanged }: { meeting: Meeting; onChanged: () =>
       </div>
       <div className="am-row-body">
         <div className="flex flex-wrap gap-2">
-          <Link to={`/r/${meeting.id}`} className="btn btn-secondary btn-sm">
+          <Link to={roomPath(meeting.id)} className="btn btn-secondary btn-sm">
             Abrir página da sala
           </Link>
 

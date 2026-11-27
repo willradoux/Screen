@@ -84,7 +84,7 @@ describe('login completo', () => {
       const ctx = buildTestApp();
       ctx.discord.addMember(USER);
       const { cb } = await login(ctx, USER, evil);
-      expect(cb.headers.location, evil).toBe('http://localhost:5173/');
+      expect(cb.headers.location, evil).toBe('http://localhost:5173/dashboard');
     }
   });
 

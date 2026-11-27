@@ -9,6 +9,7 @@ import { SetupBanners } from './SetupBanners';
 import { ThemeToggle } from '../shared/ui/ThemeToggle';
 import { Avatar } from '../shared/ui/ui';
 import { LogoMark } from '../shared/ui/Wordmark';
+import { HOME } from '../shared/lib/paths';
 
 interface NavItem {
   to: string;
@@ -112,7 +113,7 @@ export function Layout() {
   }, [immersive]);
 
   const items: NavItem[] = [
-    { to: '/', label: 'Salas', icon: 'smart_display', end: true },
+    { to: HOME, label: 'Salas', icon: 'smart_display', end: true },
     { to: '/reunioes', label: 'Reuniões', icon: 'calendar_month' },
     { to: '/guia', label: 'Guia', icon: 'help' },
   ];
@@ -142,7 +143,7 @@ export function Layout() {
 
             {/* Celular: topo enxuto com o botão que abre o menu. */}
             <header className="hub-mobilebar surface">
-              <NavLink to="/" aria-label="Screen — início" className="hub-brand">
+              <NavLink to={HOME} aria-label="Screen — início" className="hub-brand">
                 <LogoMark className="h-7" />
                 <span>screen</span>
               </NavLink>
@@ -162,7 +163,7 @@ export function Layout() {
             )}
 
             <aside id="hub-menu" className="hub-sidebar surface" data-open={drawer || undefined}>
-              <NavLink to="/" aria-label="Screen — início" className="hub-brand hub-brand-top">
+              <NavLink to={HOME} aria-label="Screen — início" className="hub-brand hub-brand-top">
                 <LogoMark className="h-8" />
                 <span>screen</span>
               </NavLink>

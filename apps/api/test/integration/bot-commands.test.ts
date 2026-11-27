@@ -209,7 +209,7 @@ describe('/reuniao criar', () => {
 
     const room = [...b.rooms.rooms.values()][0]!;
     expect(room).toMatchObject({ type: 'MEETING', status: 'OPEN', createdBy: ADMIN.userId });
-    expect(r.content).toContain(`${WEB_URL}/r/${room.id}`);
+    expect(r.content).toContain(`${WEB_URL}/call/${room.id}`);
 
     expect(b.gateway.sent).toHaveLength(1);
     const msg = b.gateway.sent[0]!;
@@ -218,7 +218,7 @@ describe('/reuniao criar', () => {
     expect(msg.payload.allowed_mentions).toEqual({ parse: [] });
     expect(msg.payload.embeds[0]!.title).toBe('Reunião aberta agora: Reunião mensal');
     expect(msg.payload.embeds[0]!.description).toBe('Pauta do mês');
-    expect(JSON.stringify(msg.payload.components)).toContain(`${WEB_URL}/r/${room.id}`);
+    expect(JSON.stringify(msg.payload.components)).toContain(`${WEB_URL}/call/${room.id}`);
   });
 
   it('marca só o cargo configurado', async () => {
@@ -457,8 +457,8 @@ describe('/reuniao cancelar, encerrar, listar', () => {
     const r = await b.router.handle(ADMIN, call('reuniao', 'listar'));
     expect(r.content).toContain('Futura');
     expect(r.content).toContain('Aberta agora');
-    expect(r.content).toContain(`${WEB_URL}/r/${scheduled.id}`);
-    expect(r.content).toContain(`${WEB_URL}/r/${open.id}`);
+    expect(r.content).toContain(`${WEB_URL}/call/${scheduled.id}`);
+    expect(r.content).toContain(`${WEB_URL}/call/${open.id}`);
   });
 
   it('listar vazio', async () => {

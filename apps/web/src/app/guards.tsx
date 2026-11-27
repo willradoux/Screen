@@ -8,6 +8,7 @@ import { Bare } from '../shared/ui/Bare';
 import { Loader } from '../shared/ui/Loader';
 import { StatusCard } from '../shared/ui/StatusCard';
 import { Button } from '../shared/ui/ui';
+import { HOME } from '../shared/lib/paths';
 
 export function FullPageSpinner({ label = 'Carregando' }: { label?: string }) {
   return (
@@ -83,7 +84,7 @@ function Restricted({ text }: { text: string }) {
         tone="warning"
         title="Acesso restrito"
         actions={
-          <Link to="/" className="btn btn-secondary">
+          <Link to={HOME} className="btn btn-secondary">
             Voltar para a página principal
           </Link>
         }

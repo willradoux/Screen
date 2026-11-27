@@ -32,8 +32,8 @@ describe('HomePage', () => {
     expect(screen.getByText(/4\/25 pessoas/)).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: 'Entrar' });
     expect(links.map((l) => l.getAttribute('href'))).toEqual([
-      '/r/AAAAAAAAAAAAAAAAAAAAAA',
-      '/r/BBBBBBBBBBBBBBBBBBBBBB',
+      '/call/AAAAAAAAAAAAAAAAAAAAAA',
+      '/call/BBBBBBBBBBBBBBBBBBBBBB',
     ]);
   });
 
@@ -72,7 +72,7 @@ describe('MeetingsPage', () => {
     expect(screen.getByText(/Lembretes no Discord: 1 d, 1 h, 5 min antes/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute(
       'href',
-      '/r/BBBBBBBBBBBBBBBBBBBBBB',
+      '/call/BBBBBBBBBBBBBBBBBBBBBB',
     );
   });
 

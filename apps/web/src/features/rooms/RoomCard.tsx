@@ -10,6 +10,7 @@ import { Avatar, Badge } from '../../shared/ui/ui';
 import { usePersonTint } from '../../shared/lib/personColor';
 import { Icon } from '../../shared/ui/Icon';
 import type { Person } from '../../shared/ui/Widget';
+import { roomPath } from '../../shared/lib/paths';
 
 export function StatusBadge({ room }: { room: Pick<Room, 'type' | 'status'> }) {
   if (room.status === 'OPEN') {
@@ -99,7 +100,7 @@ export function RoomCard({
       onClick={(e) => {
         // O card inteiro leva para a sala (o botão redondo é o caminho do teclado).
         if ((e.target as HTMLElement).closest('a, button')) return;
-        navigate(`/r/${room.id}`);
+        navigate(roomPath(room.id));
       }}
     >
       <div className="sp-cover" data-tone={tone} style={tint}>
@@ -122,7 +123,7 @@ export function RoomCard({
         )}
 
         <Link
-          to={`/r/${room.id}`}
+          to={roomPath(room.id)}
           aria-label={open ? 'Entrar' : 'Ver sala'}
           aria-describedby={titleId}
           title={open ? 'Entrar' : 'Ver sala'}

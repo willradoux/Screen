@@ -1,8 +1,8 @@
 // Service worker do Screen. Faz o site ser instalável e abrir rápido.
 // Regras: NUNCA guarda respostas da API nem do Socket.IO (dados sempre frescos e privados);
 // guarda só os arquivos do próprio site, para abrir mesmo com internet ruim.
-const CACHE = 'screem-shell-v1';
-const SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'screem-shell-v2';
+const SHELL = ['/dashboard', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
 
   // Navegação: rede primeiro; se estiver sem internet, mostra a casca do app.
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match('/')));
+    event.respondWith(fetch(req).catch(() => caches.match('/dashboard')));
     return;
   }
 

@@ -76,7 +76,7 @@ describe('POST /meetings', () => {
       maxParticipants: 500,
       reminders: [],
       allowedRoleIds: [],
-      url: `${WEB_URL}/r/${res.body.data.id}`,
+      url: `${WEB_URL}/call/${res.body.data.id}`,
     });
     expect(ctx.gateway.sent).toHaveLength(1);
     expect(ctx.gateway.sent[0]!.channelId).toBe(ANNOUNCE);

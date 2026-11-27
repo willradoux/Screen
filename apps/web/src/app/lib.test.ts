@@ -92,13 +92,13 @@ describe('format', () => {
   it.each([
     ['/r/abc', '/r/abc'],
     ['/r/abc?x=1#y', '/r/abc?x=1#y'],
-    [null, '/'],
-    ['', '/'],
-    ['//evil.com', '/'],
-    ['/\\evil.com', '/'],
-    ['https://evil.com', '/'],
-    ['javascript:alert(1)', '/'],
-    ['/ok\nSet-Cookie: x', '/'],
+    [null, '/dashboard'],
+    ['', '/dashboard'],
+    ['//evil.com', '/dashboard'],
+    ['/\\evil.com', '/dashboard'],
+    ['https://evil.com', '/dashboard'],
+    ['javascript:alert(1)', '/dashboard'],
+    ['/ok\nSet-Cookie: x', '/dashboard'],
   ])('safeRedirect(%j) -> %j', (input, expected) => {
     expect(safeRedirect(input)).toBe(expected);
   });

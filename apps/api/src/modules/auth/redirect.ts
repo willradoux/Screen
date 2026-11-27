@@ -1,8 +1,16 @@
+/** O início de quem está logado no app (o "/" do domínio é a LP). */
+export const HOME_PATH = '/dashboard';
+
 /**
- * Aceita apenas caminhos relativos ao próprio frontend. Qualquer outra coisa
- * vira "/". Evita open redirect no fim do login.
+ * Aceita apenas caminhos relativos ao próprio frontend. Qualquer outra coisa (e o "/", que é a LP)
+ * vira o início do app. Evita open redirect no fim do login.
  */
 export function sanitizeRedirect(input: string | undefined | null): string {
+  const safe = check(input);
+  return safe === '/' ? HOME_PATH : safe;
+}
+
+function check(input: string | undefined | null): string {
   if (!input) return '/';
   if (input.length > 500) return '/';
   // Precisa começar com uma única "/" (nem "//" nem "/\", que o navegador trata como host).

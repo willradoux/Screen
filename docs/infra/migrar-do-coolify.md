@@ -1,16 +1,25 @@
 # Sair do Coolify: Caddy + compose + deploy pelo GitHub
 
 Depois da troca, a VPS roda **um compose só** (`infra/docker-compose.yml`), com o **Caddy** na frente
-(HTTPS automático) e a **LP num container próprio**, no subdomínio dela. As imagens são montadas pelo
-**GitHub Actions** e a VPS só baixa e reinicia o que mudou.
+(HTTPS automático) e a **LP num container próprio**. Tudo num domínio só:
+
+| Endereço | O que é | Container |
+|---|---|---|
+| `screen.willradoux.com/` | a LP (a TV) | `landing` |
+| `screen.willradoux.com/dashboard` | salas (início de quem está logado) | `web` |
+| `screen.willradoux.com/call/<sala>` | a chamada | `web` |
+| `screen.willradoux.com/r/<sala>` | link antigo do bot: redireciona para `/call/<sala>` | `web` |
+| `/admin`, `/reunioes`, `/login`... | o resto do app | `web` |
+
+As imagens são montadas pelo **GitHub Actions** e a VPS só baixa e reinicia o que mudou.
 
 ```
 VPS (sem Coolify)
 ├─ caddy     80/443, HTTPS automático
-│   ├─ APP_DOMAIN      → web      (o Screen)
-│   ├─ LANDING_DOMAIN  → landing  (a LP, a TV)
-│   ├─ API_DOMAIN      → api:3000
-│   └─ LIVE_DOMAIN     → livekit:7880
+│   ├─ APP_DOMAIN /, /lp/*  → landing  (a LP, a TV)
+│   ├─ APP_DOMAIN o resto   → web      (o app)
+│   ├─ API_DOMAIN           → api:3000
+│   └─ LIVE_DOMAIN          → livekit:7880
 ├─ web, landing   nginx com os arquivos prontos
 ├─ api            Node (API, Socket.IO, bot)
 ├─ mongo, redis   só rede interna
@@ -29,9 +38,9 @@ mudou: mexer na LP ou no visual não derruba ninguém da call.
 
 ## Antes do dia (sem derrubar nada)
 
-### 1. DNS da LP
-Crie um registro **A** do subdomínio da LP (ex.: `conheca.screen.willradoux.com`) apontando para o IP da
-VPS, **sem proxy** da Cloudflare (nuvem cinza). Os outros domínios não mudam.
+### 1. DNS
+Nada muda: `screen`, `api.screen`, `live.screen` e o do TURN continuam apontando para a VPS, **sem
+proxy** da Cloudflare (nuvem cinza).
 
 ### 2. Discord
 No [portal de desenvolvedores](https://discord.com/developers/applications) > OAuth2 > Redirects, o
@@ -44,7 +53,6 @@ mantiver o domínio.
 | Nome | Exemplo |
 |---|---|
 | `APP_DOMAIN` | `screen.willradoux.com` |
-| `LANDING_DOMAIN` | `conheca.screen.willradoux.com` |
 | `API_DOMAIN` | `api.screen.willradoux.com` |
 
 **Secrets:**
@@ -121,8 +129,8 @@ sudo bash infra/scripts/ufw.sh
 ```
 
 ### 6. Testar
-- A LP abre no subdomínio dela e o "Entrar com Discord" leva ao login.
-- O app abre; deslogado, o endereço principal manda para a LP.
+- `screen.willradoux.com` abre a LP e o "Entrar com Discord" leva ao login e volta em `/dashboard`.
+- Um link antigo de sala (`/r/...`) abre a mesma sala em `/call/...`.
 - Login, criar/entrar numa sala, câmera, tela, chat e o bot (`/screen link`).
 - `curl https://API_DOMAIN/api/v1/health` responde.
 

@@ -7,6 +7,7 @@ import { tintStyle } from '../../shared/lib/personColor';
 import { api } from '../../shared/lib/api';
 import { messageFor } from '../../shared/lib/errors';
 import { safeRedirect } from '../../shared/lib/format';
+import { isRoomPath } from '../../shared/lib/paths';
 
 /**
  * Login (design premium, tela 04): à esquerda uma call de mentira nas cores das pessoas; à
@@ -25,7 +26,7 @@ export function LoginPage() {
 
   const denied = state.status === 'denied' ? state.code : null;
   const code = errorCode ?? denied;
-  const toRoom = redirect.startsWith('/r/');
+  const toRoom = isRoomPath(redirect);
 
   return (
     <div className="login2">

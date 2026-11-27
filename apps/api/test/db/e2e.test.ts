@@ -361,7 +361,7 @@ describe('fluxo completo de uma live (MongoDB real)', () => {
     const roomId = stored!._id as string;
     expect(w.gateway.sent).toHaveLength(1);
     expect(JSON.stringify(w.gateway.sent[0]!.payload.components)).toContain(
-      `${WEB_URL}/r/${roomId}`,
+      `${WEB_URL}/call/${roomId}`,
     );
     expect(stored!.announceMessageId).toBe(w.gateway.sent[0]!.messageId);
 

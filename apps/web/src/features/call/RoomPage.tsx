@@ -38,6 +38,7 @@ import { defaultSessionDeps, useRoomSession, type SessionDeps } from './useRoomS
 import { useAudienceSubscriptions } from './useAudienceSubscriptions';
 import { useParticipants, type Tile } from './useParticipants';
 import { countVideos, isBigRoom, profileFor, wantedVideo } from './lib/bigRoom';
+import { HOME } from '../../shared/lib/paths';
 
 /** Avisa que a pessoa saiu da call e será removida da live em instantes. */
 function VoiceWarning({ warning }: { warning: { secondsLeft: number; receivedAt: number } }) {
@@ -317,7 +318,7 @@ function ConnectedRoom({
     >
       {/* Topo: a marca, a sala (nome, ao vivo e há quanto tempo), quem está e Convidar. */}
       <header className="call-top">
-        <Link to="/" className="call-top-logo" aria-label="Voltar pras salas">
+        <Link to={HOME} className="call-top-logo" aria-label="Voltar pras salas">
           <LogoMark className="h-9" />
         </Link>
         <div className="call-top-title">
@@ -620,7 +621,7 @@ function RoomPageInner({
   const phase = state.phase;
   async function leave() {
     await session.leave();
-    navigate('/');
+    navigate(HOME);
   }
 
   let body;

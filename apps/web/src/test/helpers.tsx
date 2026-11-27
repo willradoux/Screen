@@ -87,7 +87,7 @@ export function renderWithApp(ui: ReactElement, opts: { route?: string; path?: s
       <AuthProvider>
         <Routes>
           <Route path={path} element={ui} />
-          <Route path="/" element={<p>página inicial</p>} />
+          <Route path="/dashboard" element={<p>página inicial</p>} />
           <Route path="/login" element={<p>página de login</p>} />
         </Routes>
       </AuthProvider>

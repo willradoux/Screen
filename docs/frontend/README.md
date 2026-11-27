@@ -72,11 +72,13 @@ apps/web/src/
 | Rota | Quem | Conteúdo |
 |---|---|---|
 | `/login` | todos | Botão "Entrar com Discord"; mostra `?error=` |
-| `/` | logado | Salas abertas e agendadas (`GET /rooms`) |
+| `/` | todos | A LP (em produção é outro container, no mesmo domínio; logado no app, vai para `/dashboard`) |
+| `/dashboard` | logado | Salas abertas e agendadas (`GET /rooms`) |
 | `/reunioes` | logado | Reuniões e a próxima com contagem regressiva |
 | `/preferencias` | logado | Modo, fundo, animações e sons (ficam no navegador) |
 | `/features` | todos | Guia: como funciona |
-| `/r/:roomId` | logado | **A sala.** É o link que o bot manda no Discord e **não pode mudar** |
+| `/call/:roomId` | logado | **A sala.** É o link que o bot manda no Discord |
+| `/r/:roomId` | logado | Link antigo da sala (convites já mandados): redireciona para `/call/:roomId` e **não pode sumir** |
 | `/admin` | MOD, ADMIN | Painel: números do momento, lives abertas, reuniões, o que falta configurar |
 | `/admin/reunioes` | ADMIN | Criar, agendar, reagendar, abrir, cancelar, encerrar, relatório |
 | `/admin/pessoas` | ADMIN | Quem acessa o painel sem depender de cargo no Discord |

@@ -61,7 +61,7 @@ describe('lembretes', () => {
     expect(sent.payload.content).toBeUndefined();
     expect(sent.payload.allowed_mentions).toEqual({ parse: [] });
     expect(sent.payload.embeds[0]!.description).toMatch(/^Começa <t:\d+:R>\.$/);
-    expect(JSON.stringify(sent.payload.components)).toContain(`/r/${room.id}`);
+    expect(JSON.stringify(sent.payload.components)).toContain(`/call/${room.id}`);
   });
 
   it('marca o cargo configurado', async () => {

@@ -1,15 +1,20 @@
 # Proxy da VPS (infra/docker-compose.yml). O Caddy tira e renova o HTTPS sozinho (Let's Encrypt):
 # basta o DNS de cada domínio apontar para o IP da VPS (sem o proxy laranja da Cloudflare).
-# O app (Screen).
+
+# O Screen, num domínio só:
+#   /            → a LP (container landing), e os arquivos dela em /lp/
+#   todo o resto → o app (container web): /dashboard, /call/<sala>, /admin, /login...
 {$APP_DOMAIN} {
 	encode zstd gzip
-	reverse_proxy web:80
-}
 
-# A LP (a TV), container próprio.
-{$LANDING_DOMAIN} {
-	encode zstd gzip
-	reverse_proxy landing:80
+	@landing path / /index.html /lp/*
+	handle @landing {
+		reverse_proxy landing:80
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
 }
 
 # API REST e Socket.IO (o Caddy repassa o WebSocket sozinho).

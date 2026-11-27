@@ -156,15 +156,15 @@ describe('embeds', () => {
   const ctx = { webUrl: 'https://app.exemplo.com/', participants: 3 };
 
   it('roomUrl não duplica a barra', () => {
-    expect(roomUrl('https://app.exemplo.com/', 'abc')).toBe('https://app.exemplo.com/r/abc');
-    expect(roomUrl('https://app.exemplo.com', 'abc')).toBe('https://app.exemplo.com/r/abc');
+    expect(roomUrl('https://app.exemplo.com/', 'abc')).toBe('https://app.exemplo.com/call/abc');
+    expect(roomUrl('https://app.exemplo.com', 'abc')).toBe('https://app.exemplo.com/call/abc');
   });
 
   it('live aberta: título, contagem, canal clicável e botão de link', () => {
     const m = buildRoomMessage(live, ctx);
     expect(m.embeds[0]!.title).toBe('Live aberta: Live 1');
     expect(JSON.stringify(m.embeds[0]!.fields)).toContain('<#123>');
-    expect(JSON.stringify(m.components)).toContain('https://app.exemplo.com/r/abc');
+    expect(JSON.stringify(m.components)).toContain('https://app.exemplo.com/call/abc');
     expect(m.content).toBeUndefined();
   });
 

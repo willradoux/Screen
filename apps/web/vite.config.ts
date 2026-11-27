@@ -5,8 +5,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   // `vite build --mode landing`: só a LP (landing.html), em dist-landing, para o container próprio.
+  // Os arquivos dela vão em /lp/ (o app usa /assets/): no mesmo domínio, o Caddy manda /lp/ para a LP.
   ...(mode === 'landing' && {
-    build: { outDir: 'dist-landing', rollupOptions: { input: 'landing.html' } },
+    build: { outDir: 'dist-landing', assetsDir: 'lp', rollupOptions: { input: 'landing.html' } },
   }),
   // O e2e grava rastros em e2e/.results: o dev server não vigia (no Windows o arquivo fica
   // travado e derrubava o vite).

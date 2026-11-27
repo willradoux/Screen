@@ -54,7 +54,7 @@ describe('RoomCard (card de sala)', () => {
       <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route path="/" element={ui} />
-          <Route path="/r/:id" element={<p>dentro da sala</p>} />
+          <Route path="/call/:id" element={<p>dentro da sala</p>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -62,7 +62,7 @@ describe('RoomCard (card de sala)', () => {
   it('sala aberta: botão de entrar com o nome da sala como descrição', () => {
     inRoutes(<RoomCard room={makeRoom({ title: 'Live - Codando' })} />);
     const enter = screen.getByRole('link', { name: 'Entrar' });
-    expect(enter).toHaveAttribute('href', `/r/${makeRoom().id}`);
+    expect(enter).toHaveAttribute('href', `/call/${makeRoom().id}`);
     expect(enter).toHaveAccessibleDescription('Live - Codando');
     expect(screen.getByText(/2\/25 pessoas/)).toBeInTheDocument();
   });
