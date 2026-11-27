@@ -4,8 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import './styles/v3.css';
 import './styles/premium.css';
-import { App } from './App';
-import { AuthProvider } from './auth/AuthProvider';
+import { App } from './app/App';
+import { AuthProvider } from './features/auth/AuthProvider';
 
 // Service worker: deixa o site instalável como app e abrir rápido (só em produção).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

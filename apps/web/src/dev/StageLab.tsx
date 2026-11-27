@@ -1,8 +1,8 @@
 import type { TrackPublication } from 'livekit-client';
 import { useMemo, useState } from 'react';
-import { Creature } from '../components/Creature';
-import { Stage, STAGE_LAYOUTS, type StageLayout } from '../room/Stage';
-import type { Tile } from '../room/useParticipants';
+import { Creature } from '../shared/ui/Creature';
+import { Stage, STAGE_LAYOUTS, type StageLayout } from '../features/call/Stage';
+import type { Tile } from '../features/call/useParticipants';
 
 /*
  * Laboratório do palco (SÓ em desenvolvimento, rota /__lab): pessoas falsas com vídeo gerado

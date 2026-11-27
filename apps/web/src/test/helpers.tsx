@@ -2,9 +2,9 @@ import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { vi } from 'vitest';
-import { AuthProvider } from '../auth/AuthProvider';
-import { api, ApiError } from '../lib/api';
-import type { Meeting, Participant, Room, User } from '../lib/types';
+import { AuthProvider } from '../features/auth/AuthProvider';
+import { api, ApiError } from '../shared/lib/api';
+import type { Meeting, Participant, Room, User } from '../shared/lib/types';
 
 export const makeUser = (over: Partial<User> = {}): User => ({
   id: '111111111111111111',

@@ -2,7 +2,7 @@
 
 Stack: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, `livekit-client` e `socket.io-client`. Hospedado na VPS: build estático servido por nginx (`apps/web/Dockerfile`).
 
-A aparência (temas, componentes, hub, moldura da chamada, abertura, sons, acessibilidade) está em [design-system.md](../design-system.md).
+A aparência (temas, componentes, hub, moldura da chamada, abertura, sons, acessibilidade) está em [design-system.md](../design-system.md). Como as pastas são organizadas (e as regras entre elas): [arquitetura.md](arquitetura.md).
 
 **Este frontend é descartável.** Tudo que ele sabe vem do contrato do backend ([backend/](../backend/README.md)); nada de regra de negócio mora aqui. A interface só esconde ou desabilita o que o servidor recusaria, e o servidor confere tudo de novo.
 
@@ -149,7 +149,7 @@ O painel de pessoas mostra, para cada uma, só as ações que a hierarquia permi
 
 ## Erros
 
-Decide-se sempre pelo `code`, nunca pelo texto do servidor. `lib/errors.ts` traduz cada código; um código desconhecido cai numa frase genérica (nunca quebra). Falha de rede vira `NETWORK_ERROR`.
+Decide-se sempre pelo `code`, nunca pelo texto do servidor. `shared/lib/errors.ts` traduz cada código; um código desconhecido cai numa frase genérica (nunca quebra). Falha de rede vira `NETWORK_ERROR`.
 
 ## Reuniões no painel de admin
 

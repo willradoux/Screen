@@ -16,5 +16,39 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  // Camadas do site (docs/frontend/arquitetura.md): shared não conhece ninguém; uma funcionalidade
+  // não importa o app. Testes que montam o site inteiro ficam em app/.
+  {
+    files: ['apps/web/src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/features/**', '**/app/**'],
+              message: 'shared/ não importa de features/ nem de app/ (é a base de todos).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/app/**'],
+              message: 'features/ não importa de app/; o que é comum vai para shared/.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );

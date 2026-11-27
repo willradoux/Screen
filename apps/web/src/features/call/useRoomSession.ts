@@ -1,0 +1,588 @@
+import { Room as LiveKitRoom, RoomEvent, VideoPresets, type RoomOptions } from 'livekit-client';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
+import { api as realApi, ApiError } from '../../shared/lib/api';
+import { SOCKET_URL } from '../../shared/lib/config';
+import { describeError } from '../../shared/lib/errors';
+import type {
+  ChatAck,
+  ChatMessage,
+  Poll,
+  Caption,
+  EndReason,
+  JoinResult,
+  ModerationAction,
+  RaisedHand,
+  Room,
+  ChatMode,
+} from '../../shared/lib/types';
+import {
+  initialSessionState,
+  pollIntervalMs,
+  sessionReducer,
+  type SessionState,
+} from './sessionReducer';
+
+/** Tudo que o hook usa de fora, para poder trocar por dublês nos testes. */
+export interface SessionDeps {
+  api: Pick<typeof realApi, 'rooms'>;
+  createLiveKitRoom: () => LiveKitRoom;
+  createSocket: () => Socket;
+}
+
+/** Qualidade recomendada em docs/backend/livekit-webrtc.md. */
+export const LIVEKIT_OPTIONS: RoomOptions = {
+  adaptiveStream: true,
+  dynacast: true,
+  publishDefaults: { simulcast: true, videoCodec: 'vp8', red: true, dtx: true },
+  videoCaptureDefaults: { resolution: VideoPresets.h720.resolution },
+};
+
+export const defaultSessionDeps: SessionDeps = {
+  api: realApi,
+  createLiveKitRoom: () => new LiveKitRoom(LIVEKIT_OPTIONS),
+  createSocket: () =>
+    io(SOCKET_URL, {
+      path: '/socket.io',
+      withCredentials: true,
+      transports: ['websocket'],
+      reconnection: true,
+    }),
+};
+
+export interface RoomSession {
+  state: SessionState;
+  /** Dados públicos da sala (título, tipo, capacidade...). */
+  room: Room | null;
+  /** Sala do LiveKit, depois de conectada. */
+  media: LiveKitRoom | null;
+  permissions: JoinResult['permissions'] | null;
+  /** Muda a cada evento que altera quem está na sala (para atualizar a lista). */
+  participantsVersion: number;
+  /** Fila de quem pediu a palavra (reuniões). */
+  hands: RaisedHand[];
+  /** A sala está sendo gravada? Todos precisam saber. */
+  recording: boolean;
+  /** Legendas recentes de quem está falando (somem sozinhas). */
+  captions: Caption[];
+  /** Manda o que a pessoa acabou de falar para a sala. */
+  sendCaption: (text: string, final: boolean) => void;
+  /** Chat e enquete da sala (docs/backend/eventos-socketio.md). */
+  chat: RoomChat;
+  join: () => Promise<void>;
+  leave: () => Promise<void>;
+  retry: () => void;
+}
+
+/**
+ * Orquestra a entrada na sala: checa o acesso (e continua checando enquanto o
+ * bloqueio pode passar), entra, conecta no LiveKit e no Socket.IO, e traduz os
+ * eventos do servidor em mudanças de estado.
+ * Fluxo: docs/frontend/README.md.
+ */
+export function useRoomSession(
+  roomId: string,
+  myId: string,
+  deps: SessionDeps = defaultSessionDeps,
+): RoomSession {
+  const [state, dispatch] = useReducer(sessionReducer, initialSessionState);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [media, setMedia] = useState<LiveKitRoom | null>(null);
+  const [permissions, setPermissions] = useState<JoinResult['permissions'] | null>(null);
+  const [participantsVersion, setParticipantsVersion] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const [hands, setHands] = useState<RaisedHand[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [captions, setCaptions] = useState<Caption[]>([]);
+  // Chat: as mensagens ficam no navegador (localStorage) enquanto a sala está aberta.
+  const chatKey = `screem-chat:${roomId}`;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => readChat(chatKey));
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [pendingPolls, setPendingPolls] = useState<Poll[]>([]);
+  const [chatMode, setChatMode] = useState<ChatMode>('open');
+  // Quem está digitando (resumo da sala que o servidor manda no máximo 1 vez por segundo).
+  const [typing, setTyping] = useState<{
+    people: { userId: string; name: string }[];
+    count: number;
+    until: number;
+  }>({ people: [], count: 0, until: 0 });
+  const lastTypingSent = useRef(0);
+  // Grava no navegador só depois de 1 s sem mensagem nova (não a cada mensagem).
+  const writeTimer = useRef(0);
+  const latestMessages = useRef(messages);
+  const saveMessages = useCallback(
+    (update: (list: ChatMessage[]) => ChatMessage[]) =>
+      setMessages((list) => {
+        const next = update(list).slice(-CHAT_KEEP);
+        latestMessages.current = next;
+        window.clearTimeout(writeTimer.current);
+        writeTimer.current = window.setTimeout(() => {
+          writeTimer.current = 0;
+          writeChat(chatKey, next);
+        }, 1_000);
+        return next;
+      }),
+    [chatKey],
+  );
+  // Fechou a página antes do 1 s: grava agora.
+  useEffect(() => {
+    const flush = () => {
+      if (writeTimer.current) writeChat(chatKey, latestMessages.current);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, [chatKey]);
+
+  const mediaRef = useRef<LiveKitRoom | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const joinedRef = useRef(false);
+  const depsRef = useRef(deps);
+  depsRef.current = deps;
+
+  const bump = useCallback(() => setParticipantsVersion((v) => v + 1), []);
+
+  const teardown = useCallback(() => {
+    socketRef.current?.removeAllListeners();
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    void mediaRef.current?.disconnect();
+    mediaRef.current = null;
+    setMedia(null);
+  }, []);
+
+  // ---- 1. Acesso: checa ao entrar na página e a cada nova tentativa ----
+  const checkAccess = useCallback(async () => {
+    try {
+      const [roomData, access] = await Promise.all([
+        depsRef.current.api.rooms.get(roomId),
+        depsRef.current.api.rooms.access(roomId),
+      ]);
+      setRoom(roomData);
+      dispatch({ type: 'ACCESS_RESULT', access, lectureMode: roomData.lectureMode });
+    } catch (err) {
+      dispatch({
+        type: 'FAILED',
+        code: err instanceof ApiError ? err.code : 'UNKNOWN_ERROR',
+        message: describeError(err),
+      });
+    }
+  }, [roomId]);
+
+  useEffect(() => {
+    if (state.phase.kind !== 'checking') return;
+    void checkAccess();
+  }, [state.phase.kind, checkAccess, attempt]);
+
+  // ---- 2. Bloqueio que pode passar sozinho: pergunta de novo de tempos em tempos ----
+  const blockedAccess = state.phase.kind === 'blocked' ? state.phase.access : null;
+  useEffect(() => {
+    if (!blockedAccess) return;
+    const interval = pollIntervalMs(blockedAccess);
+    if (interval === null) return;
+    const id = setTimeout(() => void checkAccess(), interval);
+    return () => clearTimeout(id);
+  }, [blockedAccess, checkAccess]);
+
+  // ---- 3. Eventos do servidor ----
+  const wireSocket = useCallback(
+    (socket: Socket) => {
+      const subscribe = () => {
+        socket.emit(
+          'room:subscribe',
+          { roomId },
+          (res: {
+            ok: boolean;
+            data?: { poll?: Poll | null; pendingPolls?: Poll[]; chatMode?: ChatMode };
+            error?: { code: string; message: string };
+          }) => {
+            if (res?.ok) {
+              setPoll(res.data?.poll ?? null);
+              setPendingPolls(res.data?.pendingPolls ?? []);
+              setChatMode(res.data?.chatMode ?? 'open');
+            }
+            if (!res?.ok) {
+              dispatch({
+                type: 'FAILED',
+                code: res?.error?.code ?? 'UNKNOWN_ERROR',
+                message: res?.error?.message ?? 'Não foi possível acompanhar a sala.',
+              });
+            } else {
+              bump();
+            }
+          },
+        );
+      };
+      // Também ao reconectar: a resposta traz o estado atual (docs/backend/eventos-socketio.md).
+      socket.on('connect', subscribe);
+
+      // Mensagens que chegam juntas entram de uma vez (um redesenho só, a cada 150 ms).
+      let incoming: ChatMessage[] = [];
+      let flushTimer = 0;
+      socket.on('chat:message', (m: ChatMessage) => {
+        incoming.push(m);
+        if (flushTimer) return;
+        flushTimer = window.setTimeout(() => {
+          const batch = incoming;
+          incoming = [];
+          flushTimer = 0;
+          // Quem mandou a mensagem parou de digitar.
+          const authors = new Set(batch.map((x) => x.userId));
+          setTyping((t) => ({ ...t, people: t.people.filter((x) => !authors.has(x.userId)) }));
+          saveMessages((list) => {
+            const ids = new Set(list.map((x) => x.id));
+            return [...list, ...batch.filter((x) => !ids.has(x.id))];
+          });
+        }, 150);
+      });
+      socket.on('chat:deleted', (p: { id: string }) =>
+        saveMessages((list) => list.filter((m) => m.id !== p.id)),
+      );
+      socket.on('poll:state', (p: { poll: Poll | null }) => setPoll(p.poll));
+      socket.on('chat:mode', (p: { mode: ChatMode }) => setChatMode(p.mode));
+      socket.on(
+        'chat:typing',
+        (p: { people?: { userId: string; name: string }[]; count?: number }) =>
+          setTyping({
+            people: p.people ?? [],
+            count: p.count ?? 0,
+            until: Date.now() + TYPING_SHOW_MS,
+          }),
+      );
+      socket.on('poll:pending', (p: { polls: Poll[] }) => setPendingPolls(p.polls ?? []));
+
+      socket.on('room:ended', (p: { reason: EndReason }) => {
+        // A sala fechou: o chat some de vez.
+        clearChat(chatKey);
+        setMessages([]);
+        setPoll(null);
+        dispatch({ type: 'ENDED', reason: p.reason });
+        teardown();
+      });
+      socket.on('moderation:action', (p: ModerationAction) => {
+        if (p.action === 'KICKED' || p.action === 'BANNED') {
+          dispatch({
+            type: 'REMOVED',
+            action: p.action,
+            reason: p.reason,
+            expiresAt: p.expiresAt ?? null,
+          });
+          teardown();
+        }
+      });
+      // A sessão de vídeo ficou em espera: derruba a conexão e mostra a tela de reativar.
+      socket.on('session:idle', (p: { reason?: 'NOBODY_CONNECTED' | 'NOBODY_STREAMING' }) => {
+        joinedRef.current = false;
+        dispatch({ type: 'SESSION_IDLE', reason: p?.reason ?? null });
+        teardown();
+        setRoom((r) => (r ? { ...r, mediaState: 'IDLE' } : r));
+      });
+      socket.on('caption', (p: Omit<Caption, 'at'>) => {
+        const at = Date.now();
+        setCaptions((list) => [
+          ...list.filter((c) => c.userId !== p.userId && at - c.at < 8000),
+          { ...p, at },
+        ]);
+      });
+      socket.on('recording:state', (p: { recording: boolean }) =>
+        setRecording(Boolean(p.recording)),
+      );
+      socket.on('hand:updated', (p: { hands: RaisedHand[] }) => setHands(p.hands ?? []));
+      socket.on('voice:warning', (p: { secondsLeft: number }) =>
+        dispatch({ type: 'VOICE_WARNING', secondsLeft: p.secondsLeft, at: Date.now() }),
+      );
+      socket.on('voice:restored', () => dispatch({ type: 'VOICE_RESTORED' }));
+      socket.on(
+        'room:updated',
+        (p: {
+          changes?: {
+            lectureMode?: boolean;
+            screenLock?: boolean;
+            spotlightId?: string | null;
+            mediaState?: 'ACTIVE' | 'IDLE';
+          };
+        }) => {
+          dispatch({
+            type: 'ROOM_UPDATED',
+            ...(p.changes?.lectureMode !== undefined ? { lectureMode: p.changes.lectureMode } : {}),
+          });
+          setRoom((r) =>
+            r
+              ? {
+                  ...r,
+                  ...(p.changes?.lectureMode !== undefined
+                    ? { lectureMode: p.changes.lectureMode }
+                    : {}),
+                  ...(p.changes?.screenLock !== undefined
+                    ? { screenLock: p.changes.screenLock }
+                    : {}),
+                  ...(p.changes?.spotlightId !== undefined
+                    ? { spotlightId: p.changes.spotlightId }
+                    : {}),
+                  ...(p.changes?.mediaState !== undefined
+                    ? { mediaState: p.changes.mediaState }
+                    : {}),
+                }
+              : r,
+          );
+        },
+      );
+      socket.on(
+        'participant:updated',
+        (p: { userId: string; isSpeaker: boolean; mutedByModeration: boolean }) => {
+          if (p.userId === myId) {
+            dispatch({
+              type: 'SELF_UPDATED',
+              isSpeaker: p.isSpeaker,
+              mutedByModeration: p.mutedByModeration,
+            });
+          }
+          bump();
+        },
+      );
+      socket.on('participant:joined', bump);
+      socket.on('participant:left', bump);
+      socket.on('session:revoked', () => {
+        dispatch({
+          type: 'FAILED',
+          code: 'UNAUTHENTICATED',
+          message: 'Sua sessão terminou. Entre de novo.',
+        });
+        teardown();
+      });
+      socket.on('connect_error', (e: Error) => {
+        // Só é fatal antes de entrar; depois, o Socket.IO reconecta sozinho.
+        if (e.message === 'UNAUTHENTICATED') {
+          dispatch({
+            type: 'FAILED',
+            code: 'UNAUTHENTICATED',
+            message: 'Faça login para continuar.',
+          });
+        }
+      });
+
+      if (socket.connected) subscribe();
+    },
+    [roomId, myId, bump, teardown],
+  );
+
+  // ---- 4. Entrar ----
+  const join = useCallback(async () => {
+    if (joinedRef.current) return;
+    joinedRef.current = true;
+    teardown(); // reconexão: começa limpo
+    dispatch({ type: 'JOIN_STARTED' });
+    try {
+      const result = await depsRef.current.api.rooms.join(roomId);
+      setPermissions(result.permissions);
+
+      const lk = depsRef.current.createLiveKitRoom();
+      lk.on(RoomEvent.Disconnected, () => {
+        joinedRef.current = false; // permite "Reconectar"
+        dispatch({ type: 'DISCONNECTED' });
+      });
+      // Guarda já: se a conexão falhar no meio, o teardown ainda consegue derrubá-la.
+      mediaRef.current = lk;
+      await lk.connect(result.livekit.url, result.livekit.token);
+      // Navegadores só tocam áudio depois de um gesto: o clique em "Entrar" conta.
+      await lk.startAudio().catch(() => undefined);
+      setMedia(lk);
+      // Só em desenvolvimento: deixa os testes no navegador publicarem câmera/voz de mentira.
+      if (import.meta.env.DEV) (window as unknown as { __screenRoom?: unknown }).__screenRoom = lk;
+
+      const socket = depsRef.current.createSocket();
+      socketRef.current = socket;
+      wireSocket(socket);
+
+      dispatch({ type: 'CONNECTED', lectureMode: result.room.lectureMode });
+      // Fila atual de quem pediu a palavra (só reuniões).
+      void depsRef.current.api.rooms
+        .hands?.(roomId)
+        .then(setHands)
+        .catch(() => undefined);
+    } catch (err) {
+      joinedRef.current = false;
+      teardown();
+      dispatch({
+        type: 'FAILED',
+        code: err instanceof ApiError ? err.code : 'CONNECTION_FAILED',
+        message:
+          err instanceof ApiError
+            ? describeError(err)
+            : 'Não foi possível conectar à sala de vídeo.',
+      });
+    }
+  }, [roomId, wireSocket, teardown]);
+
+  // ---- 5. Sair ----
+  const leave = useCallback(async () => {
+    teardown();
+    joinedRef.current = false;
+    try {
+      await depsRef.current.api.rooms.leave(roomId);
+    } catch {
+      // Sair nunca deve travar: o servidor também percebe a desconexão.
+    }
+  }, [roomId, teardown]);
+
+  const sendCaption = useCallback(
+    (text: string, final: boolean) => {
+      socketRef.current?.emit('caption:send', { roomId, text, final });
+    },
+    [roomId],
+  );
+
+  // Apaga o "digitando" se o servidor parar de mandar resumo.
+  useEffect(() => {
+    if (typing.count === 0) return;
+    const id = window.setTimeout(
+      () => setTyping({ people: [], count: 0, until: 0 }),
+      Math.max(100, typing.until - Date.now()),
+    );
+    return () => window.clearTimeout(id);
+  }, [typing]);
+
+  /** Manda um evento do chat/enquete e espera a confirmação do servidor. */
+  const ask = useCallback(
+    (event: string, payload: Record<string, unknown>) =>
+      new Promise<ChatAck>((resolve) => {
+        const socket = socketRef.current;
+        if (!socket?.connected) {
+          resolve({ ok: false, error: { code: 'OFFLINE', message: 'Sem conexão com a sala.' } });
+          return;
+        }
+        socket
+          .timeout(8000)
+          .emit(event, { roomId, ...payload }, (err: unknown, res: ChatAck) =>
+            resolve(
+              err
+                ? { ok: false, error: { code: 'TIMEOUT', message: 'O servidor não respondeu.' } }
+                : (res ?? { ok: false }),
+            ),
+          );
+      }),
+    [roomId],
+  );
+
+  const chat: RoomChat = useMemo(
+    () => ({
+      messages,
+      mode: chatMode,
+      poll,
+      pendingPolls,
+      typing: typing.people.filter((p) => p.userId !== myId).map((p) => p.name),
+      typingCount: Math.max(
+        0,
+        typing.count - (typing.people.some((p) => p.userId === myId) ? 1 : 0),
+      ),
+      notifyTyping: () => {
+        // Avisa no máximo a cada 1,5 s (o servidor também limita).
+        const t = Date.now();
+        if (t - lastTypingSent.current < 1_500) return;
+        lastTypingSent.current = t;
+        socketRef.current?.emit('chat:typing', { roomId });
+      },
+      send: (text) => ask('chat:send', { text }),
+      remove: (id) => ask('chat:delete', { id }),
+      propose: (question, options) => ask('poll:propose', { question, options }),
+      approve: (pollId) => ask('poll:approve', { pollId }),
+      reject: (pollId) => ask('poll:reject', { pollId }),
+      vote: (pollId, option) => ask('poll:vote', { pollId, option }),
+      close: (pollId) => ask('poll:close', { pollId }),
+      clear: (pollId) => ask('poll:clear', { pollId }),
+      setMode: (mode) => ask('chat:mode', { mode }),
+    }),
+    [messages, chatMode, poll, pendingPolls, typing, ask, roomId, myId],
+  );
+
+  const retry = useCallback(() => {
+    joinedRef.current = false;
+    dispatch({ type: 'RETRY' });
+    setAttempt((n) => n + 1);
+  }, []);
+
+  // Ao fechar a página ou trocar de sala, derruba as conexões.
+  useEffect(
+    () => () => {
+      socketRef.current?.removeAllListeners();
+      socketRef.current?.disconnect();
+      void mediaRef.current?.disconnect();
+    },
+    [],
+  );
+
+  return {
+    state,
+    room,
+    media,
+    permissions,
+    participantsVersion,
+    hands,
+    recording,
+    captions,
+    sendCaption,
+    chat,
+    join,
+    leave,
+    retry,
+  };
+}
+
+/** O chat da sala, como a tela usa. */
+export interface RoomChat {
+  messages: ChatMessage[];
+  /** Quem escreve agora: todos, só admins ou ninguém (o admin geral muda). */
+  mode: ChatMode;
+  /** Muda quem escreve (só admin geral; o servidor confere). */
+  setMode: (mode: ChatMode) => Promise<ChatAck>;
+  /** Enquete do topo (ou null). */
+  poll: Poll | null;
+  /** Sugestões esperando a moderação (só a moderação recebe). */
+  pendingPolls: Poll[];
+  /** Nomes de quem está digitando agora (até alguns) e quantos ao todo. */
+  typing: string[];
+  typingCount?: number;
+  /** Avisa que você está digitando (limitado). */
+  notifyTyping: () => void;
+  send: (text: string) => Promise<ChatAck>;
+  remove: (id: string) => Promise<ChatAck>;
+  propose: (question: string, options: string[]) => Promise<ChatAck>;
+  approve: (pollId: string) => Promise<ChatAck>;
+  reject: (pollId: string) => Promise<ChatAck>;
+  vote: (pollId: string, option: number) => Promise<ChatAck>;
+  close: (pollId: string) => Promise<ChatAck>;
+  clear: (pollId: string) => Promise<ChatAck>;
+}
+
+/** Por quanto tempo o "fulano está digitando" fica na tela depois do último aviso. */
+const TYPING_SHOW_MS = 3_500;
+
+/** Quantas mensagens o navegador guarda por sala (as mais antigas saem). */
+const CHAT_KEEP = 200;
+
+function readChat(key: string): ChatMessage[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(key) || '[]') as unknown;
+    return Array.isArray(list) ? (list as ChatMessage[]).slice(-CHAT_KEEP) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeChat(key: string, list: ChatMessage[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // Sem armazenamento: vale só enquanto a página está aberta.
+  }
+}
+
+function clearChat(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // nada a fazer
+  }
+}
