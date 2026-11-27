@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MODES,
   THEMES,
@@ -15,10 +15,10 @@ import {
   type Motion,
   type Theme,
 } from '../lib/theme';
-import { Sheet } from './Sheet';
+import { Popover } from './Popover';
 
 /**
- * Botão de tema: mostra a amostra do fundo atual e abre uma janela para escolher o fundo, o
+ * Botão de tema: mostra a amostra do fundo atual e abre um mini painel (que sai do próprio botão) para escolher o fundo, o
  * modo (escuro/claro) e se as animações ficam ligadas. Vale na hora e fica salvo.
  */
 export function ThemeToggle({
@@ -30,6 +30,7 @@ export function ThemeToggle({
   variant?: 'icon' | 'ctl' | 'menu';
 }) {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const [theme, setTheme] = useState<Theme>(() => readTheme());
   const [mode, setMode] = useState<Mode>(() => readMode());
   const [motion, setMotion] = useState<Motion>(() => readMotion());
@@ -47,8 +48,10 @@ export function ThemeToggle({
       {variant === 'menu' ? (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          ref={button}
+          onClick={() => setOpen((v) => !v)}
           aria-haspopup="dialog"
+          aria-expanded={open}
           aria-label={`Tema: ${info.label}. Trocar tema`}
           className="hub-link"
         >
@@ -62,8 +65,10 @@ export function ThemeToggle({
       ) : variant === 'ctl' ? (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          ref={button}
+          onClick={() => setOpen((v) => !v)}
           aria-haspopup="dialog"
+          aria-expanded={open}
           aria-label={`Tema: ${info.label}. Trocar tema`}
           data-tip="Tema"
           className="ctl-button"
@@ -79,8 +84,10 @@ export function ThemeToggle({
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          ref={button}
+          onClick={() => setOpen((v) => !v)}
           aria-haspopup="dialog"
+          aria-expanded={open}
           aria-label={`Tema: ${info.label}. Trocar tema`}
           className={withLabel ? 'btn btn-ghost btn-sm' : 'icon-button'}
         >
@@ -94,7 +101,7 @@ export function ThemeToggle({
       )}
 
       {open && (
-        <Sheet title="Tema" onClose={() => setOpen(false)}>
+        <Popover anchor={button} title="Tema" onClose={() => setOpen(false)}>
           <div className="theme-row">
             <p className="theme-row-label">Modo</p>
             <div role="radiogroup" aria-label="Modo" className="pref-segment">
@@ -161,7 +168,7 @@ export function ThemeToggle({
               <span className="switch-knob" />
             </span>
           </button>
-        </Sheet>
+        </Popover>
       )}
     </>
   );

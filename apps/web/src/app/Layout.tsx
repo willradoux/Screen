@@ -88,6 +88,8 @@ export function Layout() {
       accountButtonRef.current?.focus();
     };
     const onDown = (e: PointerEvent) => {
+      // Um mini painel aberto a partir do menu (o de Tema) conta como dentro.
+      if ((e.target as Element).closest?.('[data-popover]')) return;
       if (!footerRef.current?.contains(e.target as Node)) setAccountOpen(false);
     };
     document.addEventListener('keydown', onKey);

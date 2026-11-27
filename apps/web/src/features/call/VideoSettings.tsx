@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../shared/ui/Icon';
-import { Sheet } from '../../shared/ui/Sheet';
+import { Popover } from '../../shared/ui/Popover';
 import { setVideoPrefs, useVideoPrefs, type VideoPrefs } from './lib/videoPrefs';
 
 /** Um grupo de escolhas: cada opção é um desenho de como o vídeo fica + o nome. */
@@ -114,6 +114,7 @@ function Selfie({ mirror = false }: { mirror?: boolean }) {
 /** Ajustes de como os vídeos aparecem NA SUA TELA (preencher, posição e formato do quadro). */
 export function VideoSettings() {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const prefs = useVideoPrefs();
   const set =
     <K extends keyof VideoPrefs>(key: K) =>
@@ -124,7 +125,9 @@ export function VideoSettings() {
     <div>
       <button
         type="button"
+        ref={button}
         onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Ajustes do vídeo"
         data-tip="Vídeo"
@@ -136,7 +139,7 @@ export function VideoSettings() {
       </button>
 
       {open && (
-        <Sheet title="Como ver o vídeo" onClose={() => setOpen(false)}>
+        <Popover anchor={button} title="Como ver o vídeo" onClose={() => setOpen(false)}>
           <p className="px-1 text-xs text-zinc-500">
             <strong className="text-zinc-300">Vale só para a sua tela</strong>, menos &quot;Minha
             câmera&quot;: espelhada, todo mundo te vê espelhado.
@@ -188,7 +191,7 @@ export function VideoSettings() {
             <strong className="text-zinc-300">Automático</strong> segue a transmissão: quem
             transmite na vertical aparece na vertical; se deitar o celular, o quadro deita junto.
           </p>
-        </Sheet>
+        </Popover>
       )}
     </div>
   );

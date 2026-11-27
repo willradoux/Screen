@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon, type IconName } from '../../shared/ui/Icon';
-import { Sheet } from '../../shared/ui/Sheet';
+import { Popover } from '../../shared/ui/Popover';
 import { STAGE_LAYOUTS, type StageLayout } from './Stage';
 
 const ICON: Record<StageLayout, IconName> = {
@@ -52,13 +52,15 @@ export function LayoutPicker({
   onChange: (next: StageLayout) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const current = STAGE_LAYOUTS.find((l) => l.value === value)?.label ?? value;
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        ref={button}
+        onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`Layout: ${current}`}
@@ -71,7 +73,7 @@ export function LayoutPicker({
       </button>
 
       {open && (
-        <Sheet title="Layout" onClose={() => setOpen(false)}>
+        <Popover anchor={button} title="Layout" onClose={() => setOpen(false)}>
           <div role="radiogroup" aria-label="Layout" className="grid grid-cols-2 gap-2">
             {STAGE_LAYOUTS.map((l) => {
               const on = l.value === value;
@@ -83,7 +85,6 @@ export function LayoutPicker({
                   aria-checked={on}
                   onClick={() => {
                     onChange(l.value);
-                    setOpen(false);
                   }}
                   className={`layout-option ${on ? 'layout-option-on' : ''}`}
                 >
@@ -100,7 +101,7 @@ export function LayoutPicker({
             fica grande; sem tela, quem está falando. Para escolher, fixe a câmera ou a tela de
             alguém (no vídeo ou na lista de pessoas).
           </p>
-        </Sheet>
+        </Popover>
       )}
     </div>
   );

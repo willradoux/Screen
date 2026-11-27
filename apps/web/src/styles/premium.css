@@ -3461,3 +3461,115 @@ select {
   --v3-accent: var(--brand-400);
   color: #f5f5f7;
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Mini painel que sai do botão (Popover.tsx): Tema, Layout e Vídeo. Nasce do tamanho do botão
+ * e cresce até completar a forma (o clip-path é animado no próprio componente).
+ * ------------------------------------------------------------------------------------- */
+
+.popover {
+  position: fixed;
+  z-index: 60;
+  max-height: min(78dvh, 640px);
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--v3-elev);
+  box-shadow:
+    inset 0 0 0 1px var(--v3-line),
+    0 24px 60px -12px rgb(0 0 0 / 0.6);
+  padding: 12px;
+  outline: none;
+  /* Na troca de tema ele fica parado (fora do cross-fade da página). */
+  view-transition-name: popover;
+}
+
+:root[data-mode='light'] .popover {
+  box-shadow:
+    inset 0 0 0 1px var(--v3-line),
+    0 24px 60px -16px rgb(0 0 0 / 0.25);
+}
+
+.popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.popover-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--v3-text);
+}
+
+.popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.popover-body > * {
+  animation: popover-item 460ms cubic-bezier(0.34, 1.22, 0.5, 1) both;
+}
+
+.popover-body > :nth-child(1) {
+  animation-delay: 90ms;
+}
+
+.popover-body > :nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.popover-body > :nth-child(n + 3) {
+  animation-delay: 190ms;
+}
+
+@keyframes popover-item {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+html[data-vt]::view-transition-group(popover) {
+  animation: none;
+}
+
+:root[data-motion='off'] .popover-body > * {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover-body > * {
+    animation: none;
+  }
+}
+
+/* Sem contornos finos nem sombra "descolando": painéis se separam só pela cor do fundo. */
+.call-screen {
+  box-shadow: none !important;
+}
+
+.call-panel {
+  border-left: 0 !important;
+}
+
+.hub-account-card,
+.popover,
+.person-pop,
+:root[data-mode='light'] .popover {
+  box-shadow: 0 20px 50px -18px rgb(0 0 0 / 0.55);
+}
+
+:root[data-mode='light'] :is(.hub-account-card, .popover, .person-pop) {
+  box-shadow: 0 16px 40px -16px rgb(0 0 0 / 0.18);
+}
+
+.hub-account-card:not([data-open]) {
+  box-shadow: none;
+}
+
+:root[data-mode='light'] .popover {
+  background: #ffffff;
+}
