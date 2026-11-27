@@ -13,11 +13,12 @@ export interface EmbedContext {
   summary?: MeetingSummary | null | undefined;
 }
 
-// Cores do Screen: laranja quando está acontecendo, pêssego quando está marcado, cinza quando acabou.
+// Cores do Screen (paleta do site): coral na live ao vivo, lima na reunião aberta, azul na
+// marcada e cinza quando acabou.
 const COLORS = {
-  live: 0xff7a45,
-  open: 0xff7a45,
-  scheduled: 0xffb347,
+  live: 0xff5a4d,
+  open: 0xd7f56b,
+  scheduled: 0x8fb5ff,
   ended: 0x4e5058,
   canceled: 0x4e5058,
 } as const;
@@ -35,12 +36,33 @@ const footer = (webUrl: string) => {
 export const roomUrl = (webUrl: string, roomId: string) =>
   `${webUrl.replace(/\/$/, '')}/r/${roomId}`;
 
-const linkButton = (label: string, url: string, emoji?: string): Record<string, unknown>[] => [
+/** Guia público (sem login): para quem nunca usou. */
+const guideUrl = (webUrl: string) => `${webUrl.replace(/\/$/, '')}/features`;
+
+/** Botão principal (a sala) e, ao lado, "Como usar" levando ao guia. */
+const linkButton = (
+  label: string,
+  url: string,
+  emoji: string | undefined,
+  webUrl: string,
+): Record<string, unknown>[] => [
   {
     type: 1,
-    components: [{ type: 2, style: 5, label, url, ...(emoji ? { emoji: { name: emoji } } : {}) }],
+    components: [
+      { type: 2, style: 5, label, url, ...(emoji ? { emoji: { name: emoji } } : {}) },
+      { type: 2, style: 5, label: 'Como usar', url: guideUrl(webUrl) },
+    ],
   },
 ];
+
+/** "1 h 12 min", "45 min" (quanto a sala ficou aberta). */
+function duration(from: Date | null, to: Date | null): string | null {
+  if (!from || !to) return null;
+  const minutes = Math.max(1, Math.round((to.getTime() - from.getTime()) / 60_000));
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
 
 /**
  * Monta a mensagem pública de uma sala conforme o estado dela.
@@ -54,11 +76,14 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
   const channel = room.voiceChannelId ? `<#${room.voiceChannelId}>` : room.title;
 
   if (room.status !== 'OPEN') {
+    const lasted = duration(room.openedAt, room.endedAt);
     return {
       embeds: [
         {
           title: 'Live encerrada',
-          description: `A live em ${channel} terminou. Valeu a todo mundo que passou por lá!`,
+          description:
+            `A live em ${channel} terminou. Valeu a todo mundo que passou por lá!` +
+            (lasted ? `\nFicou no ar por **${lasted}**.` : ''),
           color: COLORS.ended,
           footer: footer(ctx.webUrl),
         },
@@ -74,7 +99,7 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
         title: `Live aberta: ${room.title.replace(/^Live - /, '')}`,
         description:
           `🔴 <@${room.createdBy}> abriu uma live em ${channel}.\n` +
-          'Entre no canal de voz e abra o **Screen** para mostrar câmera e tela.',
+          'Quem está na call abre o **Screen** pelo botão e mostra câmera e tela. Tudo começa desligado.',
         color: COLORS.live,
         fields: [
           { name: 'Participantes', value: String(ctx.participants), inline: true },
@@ -89,7 +114,7 @@ function buildLive(room: RoomRecord, ctx: EmbedContext): MessagePayload {
         footer: footer(ctx.webUrl),
       },
     ],
-    components: linkButton('Abrir sala', roomUrl(ctx.webUrl, room.id), '▶️'),
+    components: linkButton('Abrir sala', roomUrl(ctx.webUrl, room.id), '▶️', ctx.webUrl),
     allowed_mentions: { parse: [] },
   };
 }
@@ -143,7 +168,12 @@ function buildMeeting(room: RoomRecord, ctx: EmbedContext): MessagePayload {
   return {
     ...mention,
     embeds: [embed],
-    components: linkButton(open ? 'Entrar na reunião' : 'Ver sala', url, open ? '▶️' : '🗓️'),
+    components: linkButton(
+      open ? 'Entrar na reunião' : 'Ver sala',
+      url,
+      open ? '▶️' : '🗓️',
+      ctx.webUrl,
+    ),
   };
 }
 
@@ -219,6 +249,6 @@ export function buildMeetingNotice(
   return {
     ...mention,
     embeds: [embed],
-    components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id), '🗓️'),
+    components: linkButton('Ver sala', roomUrl(ctx.webUrl, room.id), '🗓️', ctx.webUrl),
   };
 }

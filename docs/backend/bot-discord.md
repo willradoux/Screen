@@ -85,7 +85,7 @@ Registrados por guilda (instantâneo) no `ready`. Todas as respostas são `ephem
 
 Todo comando que altera algo é **auditado** (`SETTINGS_UPDATED`, `MEETING_CREATED`, `MEETING_CANCELED`, `ROOM_ENDED`, com `meta.via = "command"`); comando recusado ou que só lê (`/config ver`, `/reuniao listar`) não gera registro.
 
-Implementação: `discord/commands/` (`definitions.ts` descreve, `router.ts` autoriza, `config-handler.ts` e `meeting-handler.ts` executam). Os handlers não importam o discord.js, por isso são testados sem rede.
+Implementação: `discord/commands/` (`definitions.ts` descreve, `router.ts` autoriza, `config-handler.ts`, `meeting-handler.ts` e `screen-handler.ts` executam). Os handlers não importam o discord.js, por isso são testados sem rede.
 
 ### `/config` (ADMIN)
 | Subcomando | Opções | Efeito |
@@ -117,6 +117,17 @@ Regras do `criar`/`agendar`:
 - Com `avisar` (padrão sim) é obrigatório ter `/config canal-avisos`; senão o comando recusa e **não cria** a reunião.
 - Se criar a reunião mas o envio do aviso falhar (bot sem permissão), a reunião existe e o admin é avisado na resposta.
 - Quem pode entrar (`allowedRoleIds`) é copiado de `/config cargo-reuniao` no momento da criação.
+
+### `/screen` (qualquer membro)
+Só lê: não abre, não cria e não muda nada. A resposta aparece só para quem pediu.
+
+| Subcomando | Efeito |
+|---|---|
+| `/screen link` | o link da live da call em que a pessoa está; fora de call (ou numa call sem live), explica como abrir |
+| `/screen salas` | lives abertas e reuniões (abertas primeiro, depois as agendadas por data), até 5 de cada, com o link |
+| `/screen ajuda` | o que é o Screen, o site e o guia público (`/features`) |
+
+Implementação: `discord/commands/screen-handler.ts`.
 
 Fuso: `America/Sao_Paulo` (configurável por `TIMEZONE`). Datas no passado são recusadas. O Discord renderiza horários com `<t:UNIX:F>`, então cada pessoa vê no fuso dela.
 

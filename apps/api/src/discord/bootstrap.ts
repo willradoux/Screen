@@ -18,6 +18,7 @@ import { DiscordBot } from './bot.js';
 import { DiscordOpsLogger } from './ops-logger.js';
 import { ConfigHandler } from './commands/config-handler.js';
 import { MeetingHandler } from './commands/meeting-handler.js';
+import { ScreenHandler } from './commands/screen-handler.js';
 import { CommandRouter } from './commands/router.js';
 import { DiscordJsGateway } from './discord-js-gateway.js';
 import type { DiscordGateway } from './gateway.js';
@@ -193,6 +194,12 @@ export function assembleDiscordSystem(
       guildId,
       webUrl: env.WEB_URL,
       timezone: env.TIMEZONE,
+    }),
+    screen: new ScreenHandler({
+      rooms: repos.rooms,
+      voice: voiceCache,
+      guildId,
+      webUrl: env.WEB_URL,
     }),
     logger,
   });

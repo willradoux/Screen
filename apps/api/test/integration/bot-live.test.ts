@@ -58,6 +58,8 @@ describe('entrada num canal da categoria de lives', () => {
             url: `${WEB_URL}/r/${room.id}`,
             emoji: { name: '▶️' },
           },
+          // Ao lado, o guia para quem nunca usou.
+          { type: 2, style: 5, label: 'Como usar', url: `${WEB_URL}/features` },
         ],
       },
     ]);

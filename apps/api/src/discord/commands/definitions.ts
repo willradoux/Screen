@@ -172,5 +172,18 @@ export function buildCommandDefinitions() {
     )
     .addSubcommand((s) => s.setName('listar').setDescription('Lista as próximas reuniões'));
 
-  return [config.toJSON(), reuniao.toJSON()];
+  // Para qualquer membro: só mostra (a resposta aparece só para quem pediu).
+  const screen = new SlashCommandBuilder()
+    .setName('screen')
+    .setDescription('Links do Screen: a sala da sua call, as salas abertas e ajuda')
+    .setContexts(0)
+    .addSubcommand((s) =>
+      s.setName('link').setDescription('O link da live da call em que você está'),
+    )
+    .addSubcommand((s) =>
+      s.setName('salas').setDescription('Lives abertas e próximas reuniões, com o link'),
+    )
+    .addSubcommand((s) => s.setName('ajuda').setDescription('O que é o Screen e como usar'));
+
+  return [config.toJSON(), reuniao.toJSON(), screen.toJSON()];
 }

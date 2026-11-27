@@ -171,7 +171,7 @@ describe('embeds', () => {
   it('visual: cores do Screen, ícone https no rodapé e emoji no botão', () => {
     const m = buildRoomMessage(live, ctx);
     const embed = m.embeds[0] as { color: number; footer: { text: string; icon_url?: string } };
-    expect(embed.color).toBe(0xff7a45);
+    expect(embed.color).toBe(0xff5a4d);
     expect(embed.footer).toEqual({
       text: 'Screen · Acelera DEV',
       icon_url: 'https://app.exemplo.com/icon-192.png',
@@ -182,10 +182,26 @@ describe('embeds', () => {
     expect((dev.embeds[0] as { footer: object }).footer).toEqual({ text: 'Screen · Acelera DEV' });
   });
 
-  it('live encerrada: sem botão', () => {
-    const m = buildRoomMessage({ ...live, status: 'ENDED' }, ctx);
+  it('live encerrada: sem botão, com quanto tempo ficou no ar', () => {
+    const m = buildRoomMessage(
+      {
+        ...live,
+        status: 'ENDED',
+        openedAt: new Date('2026-11-26T20:00:00Z'),
+        endedAt: new Date('2026-11-26T21:12:00Z'),
+      },
+      ctx,
+    );
     expect(m.embeds[0]!.title).toBe('Live encerrada');
+    expect(m.embeds[0]!.description).toContain('Ficou no ar por **1 h 12 min**');
     expect(m.components).toEqual([]);
+  });
+
+  it('botões: a sala e "Como usar" (o guia público)', () => {
+    const m = buildRoomMessage(live, ctx);
+    const json = JSON.stringify(m.components);
+    expect(json).toContain('"label":"Como usar"');
+    expect(json).toContain('https://app.exemplo.com/features');
   });
 
   it('reunião agendada, aberta, cancelada e encerrada', () => {

@@ -2,6 +2,7 @@ import { randomToken } from '../../src/shared/crypto.js';
 import { ConfigHandler } from '../../src/discord/commands/config-handler.js';
 import { MeetingHandler } from '../../src/discord/commands/meeting-handler.js';
 import { CommandRouter } from '../../src/discord/commands/router.js';
+import { ScreenHandler } from '../../src/discord/commands/screen-handler.js';
 import type { CommandActor, CommandCall } from '../../src/discord/commands/types.js';
 import type {
   ChannelInfo,
@@ -418,6 +419,7 @@ export function buildBot(opts: { mentionRoleId?: string; timezone?: string } = {
       webUrl: WEB_URL,
       timezone: opts.timezone ?? 'America/Sao_Paulo',
     }),
+    screen: new ScreenHandler({ rooms, voice: cache, guildId: GUILD_ID, webUrl: WEB_URL }),
     logger,
   });
 

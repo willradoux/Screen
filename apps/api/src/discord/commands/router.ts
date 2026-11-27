@@ -3,6 +3,7 @@ import type { Logger } from '../../shared/logger.js';
 import type { RoleResolver } from '../../modules/permissions/role-resolver.js';
 import type { ConfigHandler } from './config-handler.js';
 import type { MeetingHandler } from './meeting-handler.js';
+import type { ScreenHandler } from './screen-handler.js';
 import {
   UserError,
   type AutocompleteChoice,
@@ -16,11 +17,15 @@ export interface RouterDeps {
   roles: Pick<RoleResolver, 'resolve'>;
   config: ConfigHandler;
   meetings: MeetingHandler;
+  /** /screen (qualquer membro): link da sala, salas abertas e ajuda. */
+  screen: ScreenHandler;
   logger: Logger;
 }
 
 /** Papel mínimo para cada comando. Ver docs/backend/permissoes.md. */
 function requiredRole(call: CommandCall): Role {
+  // /screen só lê (link, salas, ajuda): qualquer membro do servidor.
+  if (call.command === 'screen') return 'MEMBER';
   if (call.command === 'config') return 'ADMIN';
   if (call.command === 'reuniao') {
     // Encerrar é de moderação; o resto (criar, agendar, cancelar, listar) é de admin.
@@ -47,6 +52,7 @@ export class CommandRouter {
 
       if (call.command === 'config') return await this.deps.config.handle(ctx, call);
       if (call.command === 'reuniao') return await this.deps.meetings.handle(ctx, call);
+      if (call.command === 'screen') return await this.deps.screen.handle(ctx, call);
       return { content: 'Comando desconhecido.' };
     } catch (err) {
       if (err instanceof UserError) return { content: `❌ ${err.message}` };
