@@ -176,7 +176,7 @@ export function LandingPage() {
         if (Math.abs(end - begin) > 50) go(ch + (end < begin ? 1 : -1));
       }}
     >
-      <Landscape />
+      <Landscape scene={themeInfo.scene} />
 
       <header className="lp-nav">
         <button

@@ -2992,3 +2992,16 @@ html[data-vt='theme']::view-transition-new(root) {
   animation-duration: 420ms;
   animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+/* Chat: a linha não ganha fundo ao passar o mouse (o balão já marca a mensagem) e a lixeira da
+   moderação fica ao lado do balão, nunca por cima do nome ou da hora. */
+.chat-msg:hover {
+  background: transparent;
+}
+
+.chat-msg-del {
+  position: static;
+  align-self: center;
+  flex: none;
+  margin-top: 22px;
+}

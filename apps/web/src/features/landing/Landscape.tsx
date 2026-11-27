@@ -1,3 +1,5 @@
+import { World } from './worlds';
+
 /** Ilha de pedra flutuando, com cristais no topo e raízes penduradas (SVG simples). */
 function Island({ className }: { className: string }) {
   return (
@@ -67,26 +69,29 @@ function Dragon() {
  * VHS por cima. As camadas mexem com o mouse; com som ligado, o sol e a grade pulsam no bumbo.
  * Com movimento reduzido ou animações desligadas, tudo fica parado.
  */
-export function Landscape() {
+export function Landscape({ scene = 'screen' }: { scene?: string }) {
+  // O reino do dragão é o mundo do tema Screen; os outros temas têm o seu (worlds.tsx).
+  const dragonRealm = scene === 'screen';
   return (
-    <div className="ls" aria-hidden="true">
+    <div className="ls" aria-hidden="true" data-world={scene}>
       <span className="ls-stars" />
       <span className="ls-shoot" />
       <span className="ls-sun" />
-      <Dragon />
+      {dragonRealm && <Dragon />}
       <svg className="ls-layer ls-far" viewBox="0 0 1600 300" preserveAspectRatio="none">
         <path d="M0 300V210l90-60 70 40 120-120 110 100 70-40 140 110 120-140 130 110 100-60 140 90 110-70 120 60 160-30v150z" />
       </svg>
-      <Castle className="ls-castle" />
+      {dragonRealm && <Castle className="ls-castle" />}
       <svg className="ls-layer ls-mid" viewBox="0 0 1600 300" preserveAspectRatio="none">
         <path d="M0 300V250l150-70 130 50 160-110 150 100 110-40 190 90 140-80 160 70 130-50 180 80v110z" />
       </svg>
+      <World scene={scene} />
       <span className="ls-haze" />
       <div className="ls-floor">
         <span className="ls-grid" />
       </div>
-      <Island className="ls-island ls-island-l" />
-      <Island className="ls-island ls-island-r" />
+      {dragonRealm && <Island className="ls-island ls-island-l" />}
+      {dragonRealm && <Island className="ls-island ls-island-r" />}
       <span className="ls-vhs" />
     </div>
   );
