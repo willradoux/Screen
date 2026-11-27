@@ -19,10 +19,13 @@ async function openTv() {
     </MemoryRouter>,
   );
   expect(screen.getByRole('dialog', { name: 'Carregando o Screen' })).toBeInTheDocument();
-  await userEvent.click(
-    await screen.findByRole('button', { name: 'entrar sem som' }, { timeout: 3000 }),
-  );
-  await userEvent.click(screen.getByRole('button', { name: 'Bora' }));
+  // O controle remoto sobe com a tecla de ligar (com som) e a de mudo; aqui, sem som.
+  expect(
+    await screen.findByRole('button', { name: 'Ligar a TV (com som)' }, { timeout: 3000 }),
+  ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'entrar sem som' }));
+  // A TV liga depois da animação do controle (apertar e o infravermelho chegar).
+  await userEvent.click(await screen.findByRole('button', { name: 'Bora' }, { timeout: 3000 }));
 }
 
 describe('LandingPage (/sobre): a TV', () => {
