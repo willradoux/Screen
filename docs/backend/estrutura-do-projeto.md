@@ -102,9 +102,16 @@ Erro: veja [erros.md](erros.md).
 
 ## Processo único, estado em memória
 
-O MVP roda em **uma instância**. Em memória ficam apenas:
+O MVP roda em **uma instância** da API. Em memória (some se a API reiniciar) ficam:
 
-- cache de voice states (reconstruído ao iniciar via fetch das guildas)
-- mapeamento de sockets por sala
+- cache de voice states do Discord (reconstruído ao iniciar via fetch das guildas) e cache de membros do login;
+- sockets por sala (Socket.IO sem adapter externo);
+- chat ao vivo: enquete ativa e pendentes, modo lento, quem está digitando e limites por pessoa (`realtime/chat.ts`);
+- fila de mãos levantadas (`moderation/hand-queue.ts`);
+- timers de presença, de sala vazia e de anúncio (`rooms/presence.ts`, `discord/live-handler.ts`, `rooms/announcer.ts`);
+- acompanhamento de mídia por pessoa (`rooms/media-session.ts`).
 
-Se for preciso escalar para várias instâncias: usar Redis adapter do Socket.IO e mover o cache de voz para Redis. Está listado em [03-roadmap.md](../03-roadmap.md), Fase 10.
+Para uma VPS isso basta: a API é leve (uma entrada por pessoa) e o gargalo é o LiveKit
+([capacidade.md](../infra/capacidade.md)). Rodar **duas instâncias da API ao mesmo tempo quebra**
+o chat, as mãos e os timers (cada uma teria o seu estado), então não escale a API por réplicas
+sem antes: usar o Redis adapter do Socket.IO e mover esse estado para o Redis. Está listado em [03-roadmap.md](../03-roadmap.md), Fase 10.
