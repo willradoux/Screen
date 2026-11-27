@@ -724,10 +724,14 @@ body {
     0 10px 30px rgb(0 0 0 / 0.2);
 }
 
-/* Quem fala: contorno lima (nada de brilho). */
+/* Quem fala: um contorno só, verde e liso (sem a cor do tema por baixo nem brilho). */
 .stage-tile[data-talking],
 .stage-tile:not([data-voice])[data-speaking] {
-  box-shadow: inset 0 0 0 3px var(--brand-400);
+  box-shadow: none;
+}
+
+.stage-tile::after {
+  box-shadow: inset 0 0 0 2px #23a55a;
 }
 
 /* Nome na miniatura: pílula escura embaixo à esquerda. */
