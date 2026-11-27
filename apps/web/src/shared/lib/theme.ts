@@ -2,13 +2,13 @@
  * Aparência do Screen em duas escolhas independentes:
  *
  * - **Modo** (`data-mode`): escuro (padrão) ou claro.
- * - **Cor** (`data-theme`): a cor dos detalhes (botão de entrar, chaves ligadas, item ativo,
- *   capas dos cards). O padrão é a do Screen: lima sobre quase-preto, como o logo.
+ * - **Tema** (`data-theme`): a estética inteira no escuro (fundo, painéis, destaque, o bichinho e a
+ *   TV da página de apresentação). Padrão: Screen (preto e lima).
  *
- * Para criar uma cor: adicione aqui, em `public/theme-init.js` e as cores em `styles/v3.css`.
+ * Para criar um tema: adicione aqui, em `public/theme-init.js` e as cores em `styles/premium.css`.
  */
 export type Mode = 'dark' | 'light';
-export type Theme = 'screem' | 'acelera';
+export type Theme = 'screem' | 'synthwave' | 'sunset' | 'acelera' | 'gelo';
 
 export interface ThemeInfo {
   value: Theme;
@@ -26,16 +26,37 @@ export const THEMES: ThemeInfo[] = [
   {
     value: 'screem',
     label: 'Screen',
-    text: 'Lima, como o logo. É o padrão.',
-    swatch: ['#d7f56b', '#b9e04a'],
-    bar: '#000000',
+    text: 'Preto e lima, estilo Spotify. É o padrão.',
+    swatch: ['#e2f986', '#b9e04a'],
+    bar: '#070707',
+  },
+  {
+    value: 'synthwave',
+    label: 'Synthwave',
+    text: 'Noite neon: rosa e violeta sobre roxo bem escuro.',
+    swatch: ['#ff5fa2', '#8b5cff'],
+    bar: '#0b0716',
+  },
+  {
+    value: 'sunset',
+    label: 'Pôr do sol',
+    text: 'Coral e rosa, quente, como o fim da tarde.',
+    swatch: ['#ffb35c', '#ff4f93'],
+    bar: '#0d0809',
   },
   {
     value: 'acelera',
     label: 'Acelera',
-    text: 'Turquesa, da Acelera DEV.',
-    swatch: ['#5ef0d0', '#00b39c'],
-    bar: '#000000',
+    text: 'Turquesa e azul, da Acelera DEV.',
+    swatch: ['#5ef0d0', '#00a6c8'],
+    bar: '#05100f',
+  },
+  {
+    value: 'gelo',
+    label: 'Gelo',
+    text: 'Azul gelo sobre azul-noite, frio e calmo.',
+    swatch: ['#c7ecff', '#7b9bff'],
+    bar: '#060a14',
   },
 ];
 
@@ -95,6 +116,12 @@ export function readMode(): Mode {
 
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
+  // A barra do navegador no celular acompanha o fundo do tema (no escuro).
+  if (document.documentElement.dataset.mode !== 'light') {
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', themeInfo(theme).bar);
+  }
 }
 
 export function applyMode(mode: Mode): void {
@@ -102,7 +129,7 @@ export function applyMode(mode: Mode): void {
   // Cor da barra do navegador no celular: a do fundo.
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', mode === 'light' ? '#f2f2f4' : '#070707');
+    ?.setAttribute('content', mode === 'light' ? '#f2f2f4' : themeInfo(readTheme()).bar);
 }
 
 export function saveTheme(theme: Theme): void {

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
-import { LOGO_H, LOGO_W } from './ScreenLogo';
+import { LOGO_H, LOGO_W, SQUIRCLE } from './ScreenLogo';
 
 /*
  * Ícone do topo vivo: o bonequinho do Screen com dois olhos "| |". A piscadinha é o olho da
@@ -161,8 +161,9 @@ export function LiveLogo({
 
   const mask = `live-logo-mask-${id}`;
   const fill = `live-logo-fill-${id}`;
-  // Marca (variação A do design): ladrilho grafite com os olhos na cor de destaque do tema.
+  // Marca: o bichinho num squircle com o degradê do tema e os olhos vazados ("| |" que pisca "<").
   if (color === 'brand') {
+    const shine = `live-logo-shine-${id}`;
     return (
       <svg
         ref={svgRef}
@@ -171,31 +172,33 @@ export function LiveLogo({
         className={`screen-logo live-logo ${className}`}
       >
         <defs>
-          <linearGradient id={fill} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" style={{ stopColor: 'var(--logo-tile-1, #1d1d20)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--logo-tile-2, #0f0f11)' }} />
+          <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style={{ stopColor: 'var(--logo-1, #e2f986)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--logo-2, #a9d63a)' }} />
           </linearGradient>
+          {/* Brilho suave no alto, como um ícone de app. */}
+          <linearGradient id={shine} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
+            <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
+            <path d={SQUIRCLE} fill="#fff" />
+            <g
+              ref={eyesRef}
+              fill="none"
+              stroke="#000"
+              strokeWidth="30"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d={LEFT_EYE} />
+              <path ref={rightRef} d={eyePath(0)} />
+            </g>
+          </mask>
         </defs>
-        <rect
-          x="2"
-          y="2"
-          width={LOGO_W - 4}
-          height={LOGO_H - 4}
-          rx="62"
-          fill={`url(#${fill})`}
-          style={{ stroke: 'var(--logo-edge, rgb(255 255 255 / 0.1))' }}
-          strokeWidth="4"
-        />
-        <g
-          ref={eyesRef}
-          fill="none"
-          style={{ stroke: 'var(--logo-eye, #d7f56b)' }}
-          strokeWidth="30"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d={LEFT_EYE} />
-          <path ref={rightRef} d={eyePath(0)} />
+        <g mask={`url(#${mask})`}>
+          <path d={SQUIRCLE} fill={`url(#${fill})`} />
+          <path d={SQUIRCLE} fill={`url(#${shine})`} />
         </g>
       </svg>
     );
@@ -209,7 +212,7 @@ export function LiveLogo({
     >
       <defs>
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
-          <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
+          <path d={SQUIRCLE} fill="#fff" />
           <g
             ref={eyesRef}
             fill="none"
@@ -223,7 +226,7 @@ export function LiveLogo({
           </g>
         </mask>
       </defs>
-      <rect width={LOGO_W} height={LOGO_H} rx="62" fill="currentColor" mask={`url(#${mask})`} />
+      <path d={SQUIRCLE} fill="currentColor" mask={`url(#${mask})`} />
     </svg>
   );
 }

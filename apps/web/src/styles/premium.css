@@ -2729,3 +2729,124 @@ details[open] > .person-head .person-more {
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Temas (Preferências ▸ Tema; lib: shared/lib/theme.ts). Cada tema muda o destaque, o degradê
+ * do bichinho (--logo-1/2) e, no escuro, o fundo e os painéis. O Screen é o padrão (acima).
+ * ------------------------------------------------------------------------------------- */
+
+:root[data-theme='screem'] {
+  --logo-1: #e2f986;
+  --logo-2: #a9d63a;
+}
+
+:root[data-theme='synthwave'] {
+  --brand-200: #ffd0e6;
+  --brand-300: #ff9cc8;
+  --brand-400: #ff5fa2;
+  --brand-500: #d94dff;
+  --brand-600: #a3126a;
+  --logo-1: #ff7ab8;
+  --logo-2: #8b5cff;
+  --bg-1: #ffb3d6;
+  --bg-3: #ff5fa2;
+  --bg-2: #6b3cff;
+}
+
+:root[data-theme='sunset'] {
+  --brand-200: #ffe0cc;
+  --brand-300: #ffb894;
+  --brand-400: #ff8a5c;
+  --brand-500: #ff5f6d;
+  --brand-600: #b3401a;
+  --logo-1: #ffbf5c;
+  --logo-2: #ff4f93;
+  --bg-1: #ffd59a;
+  --bg-3: #ff8a5c;
+  --bg-2: #ff4f93;
+}
+
+:root[data-theme='acelera'] {
+  --brand-200: #c6fbef;
+  --brand-300: #7ff3d9;
+  --brand-400: #2ee6c1;
+  --brand-500: #00c8b2;
+  --brand-600: #00806f;
+  --logo-1: #6ff3d6;
+  --logo-2: #00a6c8;
+  --logo-eye: #2ee6c1;
+}
+
+:root[data-theme='gelo'] {
+  --brand-200: #e3f4ff;
+  --brand-300: #bfe3ff;
+  --brand-400: #8fc8ff;
+  --brand-500: #7b9bff;
+  --brand-600: #2e5bb8;
+  --logo-1: #d6f1ff;
+  --logo-2: #7b9bff;
+  --bg-1: #d6f1ff;
+  --bg-3: #8fc8ff;
+  --bg-2: #5a6bff;
+}
+
+/* Superfícies de cada tema no escuro: o mesmo layout, com o preto puxado para a cor do tema. */
+:root[data-theme='synthwave']:not([data-mode='light']) {
+  --v3-bg: #0b0716;
+  --v3-panel: #120c22;
+  --v3-card: #191130;
+  --v3-card-hover: #20163c;
+  --v3-elev: #241943;
+  --v3-pill: #261b45;
+  --v3-pill-hover: #312357;
+  --v3-line: rgb(190 150 255 / 0.12);
+  --v3-text-2: #b4a9cc;
+  --v3-text-3: #9488b0;
+}
+
+:root[data-theme='sunset']:not([data-mode='light']) {
+  --v3-bg: #0d0809;
+  --v3-panel: #150d0f;
+  --v3-card: #1d1215;
+  --v3-card-hover: #25171b;
+  --v3-elev: #2a1a1e;
+  --v3-pill: #2c1b20;
+  --v3-pill-hover: #382228;
+  --v3-line: rgb(255 170 150 / 0.1);
+  --v3-text-2: #c2a9a6;
+  --v3-text-3: #a38c89;
+}
+
+:root[data-theme='acelera']:not([data-mode='light']) {
+  --v3-bg: #05100f;
+  --v3-panel: #0a1716;
+  --v3-card: #0f201e;
+  --v3-card-hover: #142825;
+  --v3-elev: #172d2a;
+  --v3-pill: #18302d;
+  --v3-pill-hover: #1f3b37;
+  --v3-line: rgb(120 240 210 / 0.1);
+  --v3-text-2: #a2bdb8;
+  --v3-text-3: #84a19c;
+}
+
+:root[data-theme='gelo']:not([data-mode='light']) {
+  --v3-bg: #060a14;
+  --v3-panel: #0b1120;
+  --v3-card: #11192c;
+  --v3-card-hover: #162035;
+  --v3-elev: #19243b;
+  --v3-pill: #1b273f;
+  --v3-pill-hover: #23314d;
+  --v3-line: rgb(160 200 255 / 0.11);
+  --v3-text-2: #a7b4cc;
+  --v3-text-3: #8794ad;
+}
+
+/* Synthwave: um brilho neon discreto no que está ativo (Spotify + synthwave, sem exagero). */
+:root[data-theme='synthwave']:not([data-mode='light'])
+  :is(.hub-link[data-active='true'], .panel-tab[aria-selected='true']) {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 95 162 / 0.25),
+    0 0 18px -6px rgb(255 95 162 / 0.45);
+}

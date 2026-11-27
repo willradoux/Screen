@@ -176,7 +176,12 @@
   width: min(118vmin, 1180px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: linear-gradient(180deg, #ffe08a 0%, var(--logo-1) 22%, var(--logo-2) 48%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--logo-1) 55%, #fff) 0%,
+    var(--logo-1) 22%,
+    var(--logo-2) 48%
+  );
   box-shadow: 0 0 calc(80px + var(--beat) * 70px) calc(10px + var(--beat) * 16px)
     color-mix(in srgb, var(--logo-2) 55%, transparent);
   /* Faixas que vão engrossando perto do horizonte (a metade de baixo some atrás do chão). */
@@ -351,18 +356,23 @@
 
 .ls-wing {
   transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: ls-flap 1.1s ease-in-out infinite;
+  animation: ls-flap 1.4s ease-in-out infinite;
+}
+
+/* Cada asa dobra a partir da raiz (o ombro), sem virar do avesso. */
+.ls-wing-front {
+  transform-origin: 0% 100%;
 }
 
 .ls-wing-back {
-  animation-delay: -0.15s;
-  opacity: 0.85;
+  transform-origin: 100% 100%;
+  animation-delay: -0.12s;
+  opacity: 0.8;
 }
 
 @keyframes ls-flap {
   50% {
-    transform: scaleY(-0.55);
+    transform: scaleY(0.45) skewX(-6deg);
   }
 }
 
@@ -2764,4 +2774,21 @@
   stroke: color-mix(in srgb, var(--logo-2) 75%, #fff);
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
+}
+
+/* Dragão: nervuras finas nas asas e o olho aceso na cor do tema. */
+.ls-dragon .ls-wing-bone {
+  fill: none;
+  stroke: color-mix(in srgb, var(--logo-2) 55%, transparent);
+  stroke-width: 0.8;
+}
+
+.ls-dragon .ls-dragon-eye {
+  fill: var(--logo-1);
+  stroke: none;
+  filter: drop-shadow(0 0 4px var(--logo-1));
+}
+
+.ls-dragon {
+  width: clamp(200px, 22vw, 340px);
 }

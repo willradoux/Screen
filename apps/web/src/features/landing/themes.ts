@@ -1,47 +1,37 @@
+import { nextTheme, readTheme, saveTheme, themeInfo, type Theme } from '../../shared/lib/theme';
+
 /*
- * Temas da página de apresentação (/sobre): mudam o céu, o sol, o neon e a TV. São só da LP
- * (não mexem no tema do site) e ficam salvos neste navegador.
+ * A LP usa o mesmo tema do site: o céu, o sol, o neon e a TV mudam junto. Trocar aqui troca no
+ * site também (fica salvo neste navegador). Cada tema do site tem o seu cenário em landing.css
+ * (`data-lp-theme`).
  */
 
+const SCENE: Record<Theme, string> = {
+  screem: 'screen',
+  synthwave: 'synthwave',
+  sunset: 'brasa',
+  acelera: 'acelera',
+  gelo: 'gelo',
+};
+
 export interface LpTheme {
-  id: string;
+  id: Theme;
+  /** Cenário da LP (o `data-lp-theme` do landing.css). */
+  scene: string;
   label: string;
-  /** Amostra do botão de tema (as duas cores do neon). */
   swatch: [string, string];
 }
 
-export const LP_THEMES: LpTheme[] = [
-  { id: 'screen', label: 'Screen', swatch: ['#d7f56b', '#9b7bff'] },
-  { id: 'acelera', label: 'Acelera', swatch: ['#5ef0d0', '#00b39c'] },
-  { id: 'synthwave', label: 'Synthwave', swatch: ['#ffb347', '#ff4f93'] },
-  { id: 'brasa', label: 'Brasa', swatch: ['#ffcf5a', '#ff4d2e'] },
-  { id: 'gelo', label: 'Gelo', swatch: ['#c7ecff', '#7b9bff'] },
-];
-
-const KEY = 'screem-lp-theme';
-
-export function readLpTheme(): string {
-  try {
-    const saved = localStorage.getItem(KEY);
-    if (LP_THEMES.some((t) => t.id === saved)) return saved!;
-  } catch {
-    // Sem armazenamento (janela anônima): vale o padrão.
-  }
-  return 'screen';
+export function lpTheme(id: Theme): LpTheme {
+  const t = themeInfo(id);
+  return { id: t.value, scene: SCENE[t.value], label: t.label, swatch: t.swatch };
 }
 
-export function saveLpTheme(id: string): void {
-  try {
-    localStorage.setItem(KEY, id);
-  } catch {
-    // Sem armazenamento: vale só nesta visita.
-  }
-}
+export const readLpTheme = (): Theme => readTheme();
 
-/** O tema seguinte (o botão do topo passa de um em um e volta ao primeiro). */
-export function nextLpTheme(id: string): string {
-  const i = LP_THEMES.findIndex((t) => t.id === id);
-  return LP_THEMES[(i + 1) % LP_THEMES.length]!.id;
+/** Troca o tema do site e da LP de uma vez (o seguinte da lista). */
+export function nextLpTheme(id: Theme): Theme {
+  const next = nextTheme(id);
+  saveTheme(next);
+  return next;
 }
-
-export const lpTheme = (id: string) => LP_THEMES.find((t) => t.id === id) ?? LP_THEMES[0]!;

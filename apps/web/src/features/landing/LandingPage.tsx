@@ -9,7 +9,7 @@ import '../../styles/landing.css';
 import { Boot } from './Boot';
 import { CHANNELS, ChannelEnd, ChannelFaq, ChannelFeatures, ChannelIntro } from './channels';
 import { Landscape } from './Landscape';
-import { lpTheme, nextLpTheme, readLpTheme, saveLpTheme } from './themes';
+import { lpTheme, nextLpTheme, readLpTheme } from './themes';
 import { motionOff } from './motion';
 import { Caption } from './scenes';
 import { Knob, Osd } from './tv-parts';
@@ -47,7 +47,7 @@ export function LandingPage() {
   const hovered = useRef<Element | null>(null);
   const count = CHANNELS.length;
   const sound = useSound(root);
-  // Tema da LP (céu, neon e TV): Screen, Acelera, Synthwave, Brasa e Gelo. Fica salvo aqui.
+  // Tema (o mesmo do site): muda o céu, o neon e a TV. O botão do topo troca os dois.
   const [theme, setTheme] = useState(readLpTheme);
   const themeInfo = lpTheme(theme);
 
@@ -154,7 +154,7 @@ export function LandingPage() {
     <div
       ref={root}
       className="lp"
-      data-lp-theme={theme}
+      data-lp-theme={themeInfo.scene}
       data-booted={booted || undefined}
       onWheel={onWheel}
       onPointerOver={onPointerOver}
@@ -192,9 +192,7 @@ export function LandingPage() {
             aria-label={`Tema: ${themeInfo.label}. Trocar o tema`}
             title="Trocar o tema"
             onClick={() => {
-              const next = nextLpTheme(theme);
-              setTheme(next);
-              saveLpTheme(next);
+              setTheme(nextLpTheme(theme));
               fx('channel');
             }}
           >

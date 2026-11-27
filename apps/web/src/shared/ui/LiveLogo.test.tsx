@@ -13,10 +13,10 @@ describe('bonequinho do topo (LiveLogo)', () => {
     const { container } = render(<LiveLogo />);
     const svg = container.querySelector('svg')!;
     expect(svg).toHaveAttribute('aria-hidden', 'true');
-    // Ladrilho grafite com os olhos na cor de destaque do tema (variação A do logo).
-    const eyes = svg.querySelectorAll('g path');
+    // O bichinho: squircle no degradê do tema, com os olhos vazados (máscara).
+    const eyes = svg.querySelectorAll('mask g path');
     expect(eyes).toHaveLength(2);
     expect(eyes[1]).toHaveAttribute('d', eyePath(0));
-    expect(svg.querySelector('g')?.getAttribute('style')).toContain('--logo-eye');
+    expect(svg.querySelector('stop')?.getAttribute('style')).toContain('--logo-1');
   });
 });

@@ -2,7 +2,7 @@ import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { animateSpring, prefersReducedMotion } from '../shared/lib/motion';
 import { AceleraMark } from '../shared/ui/AceleraMark';
 import { LEFT_EYE, eyePath, wink } from '../shared/ui/LiveLogo';
-import { LOGO_H, LOGO_W } from '../shared/ui/ScreenLogo';
+import { LOGO_H, LOGO_W, SQUIRCLE } from '../shared/ui/ScreenLogo';
 
 /** Evento para encerrar a abertura na hora (a página de apresentação usa). */
 import { SKIP_INTRO_EVENT } from '../shared/lib/intro';
@@ -112,13 +112,13 @@ export function Intro() {
       <div ref={popRef} className="intro-figure" style={{ transform: 'scale(0)', opacity: 0 }}>
         <svg ref={svgRef} viewBox={`0 0 ${LOGO_W} ${LOGO_H}`} className="intro-svg">
           <defs>
-            {/* O ícone do Screen (variação B: lima), visível no escuro e no claro. */}
+            {/* O bichinho no degradê do tema escolhido. */}
             <linearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#e2f986" />
-              <stop offset="1" stopColor="#c8ec4f" />
+              <stop offset="0" style={{ stopColor: 'var(--logo-1, #e2f986)' }} />
+              <stop offset="1" style={{ stopColor: 'var(--logo-2, #a9d63a)' }} />
             </linearGradient>
             <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
-              <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
+              <path d={SQUIRCLE} fill="#fff" />
               <g ref={glyphRef} className="intro-glyph">
                 <g
                   fill="none"
@@ -133,13 +133,7 @@ export function Intro() {
               </g>
             </mask>
           </defs>
-          <rect
-            width={LOGO_W}
-            height={LOGO_H}
-            rx="62"
-            fill={`url(#${fill})`}
-            mask={`url(#${mask})`}
-          />
+          <path d={SQUIRCLE} fill={`url(#${fill})`} mask={`url(#${mask})`} />
         </svg>
         <div className="intro-mark-acelera" data-show={mark || undefined}>
           {/* Só o nome: "ACELERA" no degradê da marca e "DEV" na cor do texto do modo. */}

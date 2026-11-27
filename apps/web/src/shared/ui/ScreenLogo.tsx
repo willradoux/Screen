@@ -12,6 +12,26 @@ import { useId } from 'react';
 export const LOGO_W = 302;
 export const LOGO_H = 238;
 
+/**
+ * Contorno do ladrilho: squircle (canto contínuo, como os ícones da Apple), no lugar de um
+ * retângulo de cantos redondos. `r` é o tamanho do canto.
+ */
+export function squircle(w = LOGO_W, h = LOGO_H, r = 84): string {
+  const k = 0.22 * r;
+  return [
+    `M${r} 0H${w - r}`,
+    `C${w - k} 0 ${w} ${k} ${w} ${r}`,
+    `V${h - r}`,
+    `C${w} ${h - k} ${w - k} ${h} ${w - r} ${h}`,
+    `H${r}`,
+    `C${k} ${h} 0 ${h - k} 0 ${h - r}`,
+    `V${r}`,
+    `C0 ${k} ${k} 0 ${r} 0Z`,
+  ].join('');
+}
+
+export const SQUIRCLE = squircle();
+
 export function ScreenLogo({
   className = 'h-10 w-auto',
   title,
@@ -30,7 +50,7 @@ export function ScreenLogo({
     <svg viewBox={`0 0 ${LOGO_W} ${LOGO_H}`} className={`screen-logo ${className}`} {...a11y}>
       <defs>
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width={LOGO_W} height={LOGO_H}>
-          <rect width={LOGO_W} height={LOGO_H} rx="62" fill="#fff" />
+          <path d={SQUIRCLE} fill="#fff" />
           <g className="logo-glyph">
             <rect className="logo-eye" x="84" y="74" width="32" height="90" rx="16" fill="#000" />
             <path
@@ -45,7 +65,7 @@ export function ScreenLogo({
           </g>
         </mask>
       </defs>
-      <rect width={LOGO_W} height={LOGO_H} rx="62" fill="currentColor" mask={`url(#${mask})`} />
+      <path d={SQUIRCLE} fill="currentColor" mask={`url(#${mask})`} />
     </svg>
   );
 }

@@ -30,22 +30,31 @@ function Castle({ className }: { className: string }) {
 }
 
 /**
- * O dragão: silhueta voando (desenho próprio). As asas batem com CSS; o corpo atravessa o céu
- * devagar, de vez em quando.
+ * O dragão (desenho próprio, em silhueta): cabeça com chifre e focinho, olho aceso na cor do
+ * tema, pescoço em curva, patas recolhidas, cauda longa com ponta de lança e asas de morcego com
+ * nervuras e borda recortada. As asas batem com CSS; ele atravessa o céu de tempos em tempos.
  */
 function Dragon() {
   return (
     <span className="ls-dragon">
-      <svg viewBox="0 0 200 100">
-        <path
-          className="ls-wing ls-wing-back"
-          d="M96 50C86 30 70 14 48 6c12 14 16 24 14 34 8-2 18 2 26 10z"
-        />
-        <path d="M60 55c20-10 50-10 70-3 10 3 20 2 30-4l12-6-4 8 10-1-14 9c-14 6-29 6-44 4-20 4-40 4-60-2-15-2-30 2-45 10 15-12 30-15 45-15z" />
-        <path
-          className="ls-wing ls-wing-front"
-          d="M110 50c2-20 10-36 26-46-5 16-3 26-7 36-6-2-12 2-16 10z"
-        />
+      <svg viewBox="0 0 320 200">
+        <g className="ls-wing ls-wing-back">
+          <path d="M168 112c-6-26-12-52-22-72-14-12-34-22-54-28 14 18 18 28 18 40 10-2 18 2 22 12 8 2 12 8 14 20 6 8 10 18 12 30z" />
+          <path
+            className="ls-wing-bone"
+            d="M164 110L146 40 92 12M146 40l-36 12M146 40l-14 24M146 40v44"
+          />
+        </g>
+        <path d="M24 146c36-6 68-26 104-34 22-6 48-6 70-4 16 0 24-12 32-24 6-10 12-18 22-22l-4-16 14 12c12 0 26 6 40 16l-12 6c-12 2-22 4-30 6-10 6-18 18-24 30-6 10-16 16-30 18l4 16h-10l-4-14c-16 2-34 2-48 0l2 16h-10l-4-18c-24-4-56 16-88 22z" />
+        <path d="M30 146L10 136l8 14-12 12 28-8z" />
+        <g className="ls-wing ls-wing-front">
+          <path d="M182 110c8-30 14-54 24-72 16-12 38-20 60-26-14 18-18 28-18 40-10-2-18 2-24 12-8 0-14 6-18 18-8 6-12 18-14 32z" />
+          <path
+            className="ls-wing-bone"
+            d="M190 110l16-72 60-26M206 38l42 14M206 38l18 26M206 38v44"
+          />
+        </g>
+        <circle className="ls-dragon-eye" cx="276" cy="68" r="3" />
       </svg>
     </span>
   );
