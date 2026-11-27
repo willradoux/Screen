@@ -52,9 +52,12 @@ export function Boot({ onStart }: { onStart: (sound: boolean) => void }) {
         </div>
         <p className="boot-name">screen</p>
         {!ready ? (
-          <div className="boot-bar" role="progressbar" aria-label="Carregando">
-            <span />
-          </div>
+          <>
+            <div className="boot-bar" role="progressbar" aria-label="Carregando">
+              <span />
+            </div>
+            <p className="boot-hint">carregando</p>
+          </>
         ) : (
           <p className="boot-hint">aperte o botão do controle para ligar a TV</p>
         )}
