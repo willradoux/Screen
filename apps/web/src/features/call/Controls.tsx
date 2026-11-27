@@ -291,15 +291,21 @@ export function Controls({
       aria-label="Controles da sala"
       className="relative flex flex-col items-center"
     >
+      {/* O menu de aparelhos sai de dentro da própria pílula: ela cresce para cima (mola) e as
+          opções sobem uma a uma, como a navbar do portfólio. */}
       {shownMenu && room && (
-        <DeviceMenu
-          key={shownMenu}
-          room={room}
-          kind={shownMenu}
-          closing={!menu}
-          onClose={() => setMenu(null)}
-          onError={onError}
-        />
+        <div className="dock-unfold" data-closing={!menu || undefined}>
+          <div className="dock-unfold-inner">
+            <DeviceMenu
+              key={shownMenu}
+              room={room}
+              kind={shownMenu}
+              closing={!menu}
+              onClose={() => setMenu(null)}
+              onError={onError}
+            />
+          </div>
+        </div>
       )}
       <div className="ctl-row">
         <div className="ctl-group" role="group" aria-label="Mídia">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { SKIP_INTRO_EVENT } from '../../shared/lib/intro';
@@ -10,6 +10,8 @@ import { Boot } from './Boot';
 import { CHANNELS, ChannelEnd, ChannelFaq, ChannelFeatures, ChannelIntro } from './channels';
 import { Landscape } from './Landscape';
 import { lpTheme, nextLpTheme, readLpTheme } from './themes';
+import { trackFor } from './tracks';
+import { readMode } from '../../shared/lib/theme';
 import { motionOff } from './motion';
 import { Caption } from './scenes';
 import { Knob, Osd } from './tv-parts';
@@ -46,10 +48,11 @@ export function LandingPage() {
   const touchY = useRef<number | null>(null);
   const hovered = useRef<Element | null>(null);
   const count = CHANNELS.length;
-  const sound = useSound(root);
-  // Tema (o mesmo do site): muda o céu, o neon e a TV. O botão do topo troca os dois.
+  // Tema (o mesmo do site): muda o céu, o neon, a TV e a música. O botão do topo troca os dois.
   const [theme, setTheme] = useState(readLpTheme);
   const themeInfo = lpTheme(theme);
+  const track = useMemo(() => trackFor(theme, readMode()), [theme]);
+  const sound = useSound(root, track);
 
   // Quem caiu aqui vindo do endereço principal não vê a abertura do app por cima do carregamento.
   useEffect(() => {
@@ -189,7 +192,7 @@ export function LandingPage() {
           <button
             type="button"
             className="lp-icon-btn lp-theme-btn"
-            aria-label={`Tema: ${themeInfo.label}. Trocar o tema`}
+            aria-label={`Tema: ${themeInfo.label} (música: ${track.name}). Trocar o tema`}
             title="Trocar o tema"
             onClick={() => {
               setTheme(nextLpTheme(theme));

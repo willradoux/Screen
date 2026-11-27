@@ -1,43 +1,32 @@
+import { DEFAULT_TRACK, type Track } from './tracks';
+
 /*
  * Trilha e efeitos da página de apresentação, gerados na hora com Web Audio (nada de arquivo de
- * música). Uma faixa ambiente original e calma, no clima synthwave: 76 BPM em lá menor
- * (Am7, Fmaj7, Cmaj7, G), com pad longo, baixo macio, um dedilhado espaçado com eco e um bumbo
- * abafado. Os botões tocam notas da mesma escala, no tempo da música.
+ * música). Cada tema tem a sua faixa original (tracks.ts): andamento, acordes, escala, timbre e
+ * bateria. A padrão é ambiente e calma, no clima synthwave: 76 BPM em lá menor (Am7, Fmaj7,
+ * Cmaj7, G), com pad longo, baixo macio, um dedilhado espaçado com eco e um bumbo abafado. Os
+ * botões tocam notas da escala da faixa, no tempo da música.
  *
  * O núcleo (`createVoices` + `playStep`) recebe qualquer BaseAudioContext, então dá para renderizar
  * offline (OfflineAudioContext) e medir. `Synthwave` cuida do relógio, do liga/desliga e dos efeitos.
  */
 
-export const BPM = 76;
-/** Duração de uma semicolcheia (1/16), em segundos. */
-export const STEP = 60 / BPM / 4;
+/** Andamento da faixa padrão. */
+export const BPM = DEFAULT_TRACK.bpm;
+/** Duração de uma semicolcheia (1/16) numa faixa, em segundos. */
+export const stepOf = (track: Track) => 60 / track.bpm / 4;
+/** Semicolcheia da faixa padrão. */
+export const STEP = stepOf(DEFAULT_TRACK);
 export const STEPS_PER_BAR = 16;
 const LOOP_BARS = 8;
 
-/** Lá menor, com sétimas (soa mais "ambiente"): Am7, Fmaj7, Cmaj7, G6. Notas em MIDI. */
-const PROGRESSION = [
-  [57, 60, 64, 67], // Am7
-  [53, 57, 60, 64], // Fmaj7
-  [48, 52, 55, 59], // Cmaj7
-  [55, 59, 62, 64], // G6
-] as const;
-
-/** Pentatônica de lá menor (as notas dos botões; qualquer uma soa bem com a trilha). */
-export const PENTATONIC = [69, 72, 74, 76, 79, 81, 84] as const;
-
-/** Dedilhado: em que semicolcheias do compasso toca e qual nota do acorde (índice). */
-const PLUCKS: [number, number][] = [
-  [0, 0],
-  [3, 2],
-  [6, 3],
-  [10, 1],
-  [12, 2],
-];
+/** Pentatônica de lá menor (as notas dos botões na faixa padrão). */
+export const PENTATONIC = DEFAULT_TRACK.scale;
 
 export const midiToHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
-export function chordFor(bar: number): readonly number[] {
-  return PROGRESSION[((bar % 4) + 4) % 4]!;
+export function chordFor(bar: number, track: Track = DEFAULT_TRACK): readonly number[] {
+  return track.chords[((bar % 4) + 4) % 4]!;
 }
 
 /** Piso para rampas exponenciais (não aceitam zero). */
@@ -88,10 +77,18 @@ export interface Voices {
   noise: AudioBuffer;
   /** Quando o bumbo tocou (para a tela pulsar junto). */
   kicks: number[];
+  /** A faixa que está tocando e a semicolcheia dela (segundos). */
+  track: Track;
+  step: number;
+  delay: DelayNode;
 }
 
 /** Monta os efeitos (reverb longo, eco) e liga tudo em `destination`. */
-export function createVoices(ctx: BaseAudioContext, destination: AudioNode): Voices {
+export function createVoices(
+  ctx: BaseAudioContext,
+  destination: AudioNode,
+  track: Track = DEFAULT_TRACK,
+): Voices {
   const bus = ctx.createGain();
   bus.gain.value = 1;
   bus.connect(destination);
@@ -99,24 +96,44 @@ export function createVoices(ctx: BaseAudioContext, destination: AudioNode): Voi
   const conv = ctx.createConvolver();
   conv.buffer = impulse(ctx, 3.6, 2.2);
   const reverb = ctx.createGain();
-  reverb.gain.value = 0.45;
+  reverb.gain.value = track.reverb;
   reverb.connect(conv).connect(bus);
 
   // Eco de 3/16 com o retorno abafado (soa como fita).
   const delay = ctx.createDelay(2);
-  delay.delayTime.value = STEP * 3;
+  delay.delayTime.value = stepOf(track) * 3;
   const fb = ctx.createGain();
   fb.gain.value = 0.42;
   const tone = ctx.createBiquadFilter();
   tone.type = 'lowpass';
   tone.frequency.value = 2000;
   const echo = ctx.createGain();
-  echo.gain.value = 0.35;
+  echo.gain.value = track.echo;
   echo.connect(delay);
   delay.connect(tone).connect(fb).connect(delay);
   tone.connect(bus);
 
-  return { ctx, bus, reverb, echo, noise: noiseBuffer(ctx), kicks: [] };
+  return {
+    ctx,
+    bus,
+    reverb,
+    echo,
+    noise: noiseBuffer(ctx),
+    kicks: [],
+    track,
+    step: stepOf(track),
+    delay,
+  };
+}
+
+/** Troca a faixa (efeitos e andamento acompanham, sem estalo). */
+export function useTrack(v: Voices, track: Track) {
+  const t = v.ctx.currentTime;
+  v.track = track;
+  v.step = stepOf(track);
+  v.reverb.gain.setTargetAtTime(track.reverb, t, 0.3);
+  v.echo.gain.setTargetAtTime(track.echo, t, 0.3);
+  v.delay.delayTime.setTargetAtTime(v.step * 3, t, 0.3);
 }
 
 function osc(
@@ -171,6 +188,57 @@ function shaker(v: Voices, t: number, level: number) {
   src.onended = () => src.disconnect();
 }
 
+/** Baixo curto e pulsante (uma colcheia), o motor das faixas anos 80. */
+function pulseBass(v: Voices, t: number, midi: number) {
+  const lp = v.ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(900, t);
+  lp.frequency.exponentialRampToValueAtTime(260, t + v.step * 1.6);
+  const g = v.ctx.createGain();
+  const end = envelope(g.gain, t, 0.16, 0.004, v.step * 1.6);
+  lp.connect(g).connect(v.bus);
+  osc(v.ctx, 'sawtooth', midiToHz(midi), t, end, lp);
+  osc(v.ctx, 'square', midiToHz(midi - 12), t, end, lp, 4);
+}
+
+/** Caixa: ruído com um "tom" grave, mandando bastante para o reverb (som de arena dos anos 80). */
+function snare(v: Voices, t: number, level: number) {
+  const src = v.ctx.createBufferSource();
+  src.buffer = v.noise;
+  const bp = v.ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 1800;
+  bp.Q.value = 0.7;
+  const g = v.ctx.createGain();
+  const end = envelope(g.gain, t, level, 0.003, 0.22);
+  src.connect(bp).connect(g);
+  g.connect(v.bus);
+  g.connect(v.reverb);
+  src.start(t, Math.random() * 0.5);
+  src.stop(end);
+  src.onended = () => src.disconnect();
+  const body = v.ctx.createGain();
+  body.connect(v.bus);
+  const bEnd = envelope(body.gain, t, level * 0.6, 0.002, 0.12);
+  const o = osc(v.ctx, 'triangle', 190, t, bEnd, body);
+  o.frequency.exponentialRampToValueAtTime(140, t + 0.1);
+}
+
+/** Chimbal fechado (contratempo). */
+function hat(v: Voices, t: number, level: number) {
+  const src = v.ctx.createBufferSource();
+  src.buffer = v.noise;
+  const hp = v.ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 8000;
+  const g = v.ctx.createGain();
+  const end = envelope(g.gain, t, level, 0.002, 0.05);
+  src.connect(hp).connect(g).connect(v.bus);
+  src.start(t, Math.random() * 0.5);
+  src.stop(end);
+  src.onended = () => src.disconnect();
+}
+
 /** Baixo longo e redondo (uma nota por meio compasso). */
 function bass(v: Voices, t: number, midi: number, seconds: number) {
   const lp = v.ctx.createBiquadFilter();
@@ -191,6 +259,7 @@ function pluck(
   t: number,
   midi: number,
   level: number,
+  wave: OscillatorType = 'triangle',
 ) {
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
@@ -201,7 +270,7 @@ function pluck(
   lp.connect(g);
   g.connect(out);
   for (const s of sends) g.connect(s);
-  osc(ctx, 'triangle', midiToHz(midi), t, end, lp);
+  osc(ctx, wave, midiToHz(midi), t, end, lp);
   osc(ctx, 'sine', midiToHz(midi + 12), t, end, lp, 3);
 }
 
@@ -209,17 +278,18 @@ function pluck(
 function pad(v: Voices, t: number, chord: readonly number[], seconds: number) {
   const lp = v.ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(500, t);
-  lp.frequency.linearRampToValueAtTime(1100, t + seconds * 0.6);
-  lp.frequency.linearRampToValueAtTime(600, t + seconds);
+  const [low, high] = v.track.padCutoff;
+  lp.frequency.setValueAtTime(low, t);
+  lp.frequency.linearRampToValueAtTime(high, t + seconds * 0.6);
+  lp.frequency.linearRampToValueAtTime(low * 1.2, t + seconds);
   const g = v.ctx.createGain();
   const end = envelope(g.gain, t, 0.035, 1.1, 1.4, seconds - 1.1);
   lp.connect(g);
   g.connect(v.bus);
   g.connect(v.reverb);
   for (const m of chord) {
-    osc(v.ctx, 'sawtooth', midiToHz(m - 12), t, end, lp, -7);
-    osc(v.ctx, 'sawtooth', midiToHz(m - 12), t, end, lp, 7);
+    osc(v.ctx, v.track.padWave, midiToHz(m - 12), t, end, lp, -7);
+    osc(v.ctx, v.track.padWave, midiToHz(m - 12), t, end, lp, 7);
   }
 }
 
@@ -227,17 +297,27 @@ function pad(v: Voices, t: number, chord: readonly number[], seconds: number) {
 export function playStep(v: Voices, step: number, t: number) {
   const bar = Math.floor(step / STEPS_PER_BAR) % LOOP_BARS;
   const i = step % STEPS_PER_BAR;
-  const chord = chordFor(bar);
-  const bar16 = STEP * STEPS_PER_BAR;
+  const tr = v.track;
+  const chord = chordFor(bar, tr);
+  const bar16 = v.step * STEPS_PER_BAR;
 
   // A trilha "entra" aos poucos: só pad e baixo nos 2 primeiros compassos de cada volta.
   const full = bar >= 2;
   if (i === 0) pad(v, t, chord, bar16 + 0.6);
-  if (i === 0 || i === 8) bass(v, t, chord[0]! - 24, bar16 / 2);
-  if (full && (i === 0 || i === 8)) kick(v, t, i === 0 ? 0.55 : 0.35);
-  if (full && i % 4 === 2) shaker(v, t, 0.025);
-  for (const [at, idx] of PLUCKS) {
-    if (at === i) pluck(v.ctx, v.bus, [v.echo, v.reverb], t, chord[idx]! + 12, full ? 0.05 : 0.035);
+  const drive = tr.drive;
+  if (drive?.bass8ths) {
+    if (i % 2 === 0) pulseBass(v, t, chord[0]! - 24);
+  } else if (i === 0 || i === 8) bass(v, t, chord[0]! - 24, bar16 / 2);
+  if (full && drive && drive.snare > 0 && (i === 4 || i === 12)) snare(v, t, drive.snare);
+  if (full && drive && drive.hats > 0 && i % 4 === 2) hat(v, t, drive.hats);
+  const onKick = tr.kicks === 4 ? i % 4 === 0 : tr.kicks === 2 ? i === 0 || i === 8 : false;
+  if (full && onKick) kick(v, t, i === 0 ? tr.kickLevel : tr.kickLevel * 0.65);
+  if (full && tr.shaker > 0 && i % 4 === 2) shaker(v, t, tr.shaker);
+  for (const [at, idx] of tr.plucks) {
+    if (at === i) {
+      const level = full ? tr.pluckLevel : tr.pluckLevel * 0.7;
+      pluck(v.ctx, v.bus, [v.echo, v.reverb], t, chord[idx]! + 12, level, tr.pluckWave);
+    }
   }
 }
 
@@ -252,9 +332,10 @@ export function playSfx(
   t = ctx.currentTime,
   note = 0,
   sends: AudioNode[] = [],
+  scale: readonly number[] = PENTATONIC,
 ) {
   if (kind === 'hover' || kind === 'click') {
-    const midi = PENTATONIC[((note % PENTATONIC.length) + PENTATONIC.length) % PENTATONIC.length]!;
+    const midi = scale[((note % scale.length) + scale.length) % scale.length]!;
     pluck(ctx, out, sends, t, kind === 'click' ? midi - 12 : midi, kind === 'click' ? 0.16 : 0.07);
     return;
   }
@@ -326,6 +407,8 @@ export class Synthwave {
   private next = 0;
   private timer = 0;
   private lastHover = 0;
+  /** Faixa nova esperando o começo do próximo compasso para entrar. */
+  private pending: Track | null = null;
   playing = false;
 
   constructor() {
@@ -379,8 +462,12 @@ export class Synthwave {
   private tick() {
     // Agenda o que cai nos próximos 150 ms (o relógio do áudio é que manda, não o setInterval).
     while (this.next < this.ctx.currentTime + 0.15) {
+      if (this.pending && this.step % STEPS_PER_BAR === 0) {
+        useTrack(this.voices, this.pending);
+        this.pending = null;
+      }
       playStep(this.voices, this.step, this.next);
-      this.next += STEP;
+      this.next += this.voices.step;
       this.step = (this.step + 1) % (STEPS_PER_BAR * LOOP_BARS);
     }
   }
@@ -399,9 +486,28 @@ export class Synthwave {
     let t = now;
     if (this.playing && (kind === 'hover' || kind === 'click')) {
       const ahead = this.next - now; // a próxima semicolcheia já agendada
-      t = ahead > 0 && ahead < STEP ? this.next : now;
+      t = ahead > 0 && ahead < this.voices.step ? this.next : now;
     }
-    playSfx(this.ctx, this.sfx, this.voices.noise, kind, t, note, [this.voices.echo]);
+    playSfx(
+      this.ctx,
+      this.sfx,
+      this.voices.noise,
+      kind,
+      t,
+      note,
+      [this.voices.echo],
+      this.voices.track.scale,
+    );
+  }
+
+  /**
+   * Troca a faixa (o tema mudou). Tocando, entra no começo do próximo compasso; parada, já fica
+   * valendo para quando ligar.
+   */
+  setTrack(track: Track) {
+    if (track.id === this.voices.track.id) return;
+    if (this.playing) this.pending = track;
+    else useTrack(this.voices, track);
   }
 
   /** Volume geral, de 0 a 1 (sobe e desce suave, sem estalo). */

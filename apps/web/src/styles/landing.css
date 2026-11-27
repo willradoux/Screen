@@ -2792,3 +2792,17 @@
 .ls-dragon {
   width: clamp(200px, 22vw, 340px);
 }
+
+/* Cenário "neon" (tema Synthwave do site): rosa e violeta sobre roxo bem escuro. */
+.lp[data-lp-theme='neon'] {
+  --logo-1: #ff7ab8;
+  --logo-2: #8b5cff;
+  --sky-1: #06030f;
+  --sky-2: #150a33;
+  --sky-3: #3b1466;
+  --rock-far: #1e0c3d;
+  --rock-mid: #14082b;
+  --rock-near: #090412;
+  --ground-1: #1a0833;
+  --ground-2: #070210;
+}

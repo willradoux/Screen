@@ -148,7 +148,7 @@ describe('Preferências', () => {
     await userEvent.click(within(modes).getByRole('radio', { name: 'Claro' }));
     expect(document.documentElement.dataset.mode).toBe('light');
     const colors = screen.getByRole('radiogroup', { name: 'Cor dos detalhes' });
-    // Os temas: Screen, Synthwave, Pôr do sol, Acelera e Gelo.
+    // Os temas: Screen, Synthwave, Pôr do sol, Acelera, Gelo e o Clássico (o de antes).
     expect(
       within(colors)
         .getAllByRole('radio')
@@ -159,6 +159,7 @@ describe('Preferências', () => {
       expect.stringContaining('Pôr do sol'),
       expect.stringContaining('Acelera'),
       expect.stringContaining('Gelo'),
+      expect.stringContaining('Clássico'),
     ]);
   });
 });

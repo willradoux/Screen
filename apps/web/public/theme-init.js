@@ -2,7 +2,7 @@
 // É um arquivo à parte porque a CSP do site não permite script dentro do HTML.
 // Padrão: modo escuro e a cor do Screen (lima).
 (function () {
-  var colors = { screem: 1, synthwave: 1, sunset: 1, acelera: 1, gelo: 1 };
+  var colors = { screem: 1, synthwave: 1, sunset: 1, acelera: 1, gelo: 1, classico: 1 };
   var theme = 'screem';
   var mode = 'dark';
   var motion = 'on';
@@ -19,11 +19,11 @@
   root.setAttribute('data-mode', mode);
   root.setAttribute('data-motion', motion);
   var bars = {
-    screem: '#070707',
-    synthwave: '#0b0716',
-    sunset: '#0d0809',
-    acelera: '#05100f',
-    gelo: '#060a14',
+    screem: '#000000',
+    synthwave: '#000000',
+    sunset: '#000000',
+    acelera: '#000000',
+    gelo: '#000000',
   };
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', mode === 'light' ? '#f2f2f4' : bars[theme]);

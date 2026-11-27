@@ -14,7 +14,7 @@
  * ------------------------------------------------------------------------------------- */
 
 :root {
-  --v3-bg: #070707;
+  --v3-bg: #000000;
   --v3-panel: #0f0f11;
   --v3-card: #151517;
   --v3-card-hover: #1b1b1e;
@@ -2613,44 +2613,49 @@ details[open] > .person-head .person-more {
 }
 
 /* ---------------------------------------------------------------------------------------
- * Sala no computador: a faixa de ícones, o palco e o painel (chat/pessoas) são painéis próprios,
- * com cantos arredondados e separados por uma faixa preta, como o menu lateral do site.
+ * Sala no computador: o palco é um painel elevado, arredondado, que parece estar por cima das
+ * duas laterais (a faixa de ícones e o painel de chat/pessoas), que ficam lisas no fundo.
  * ------------------------------------------------------------------------------------- */
 
 @media (min-width: 641px) {
   .call-frame {
-    padding: 0 8px 8px;
-    column-gap: 8px;
+    padding: 0 0 8px;
+    column-gap: 0;
   }
 
   .call-top {
     border-bottom: 0;
-    padding-left: 6px;
+    padding-left: 14px;
   }
 
-  .call-rail {
-    border-right: 0;
-    border-radius: 12px;
-    background: var(--v3-panel);
+  .call-rail,
+  .call-panel {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .call-main {
-    column-gap: 8px;
+    column-gap: 0;
   }
 
   .call-screen {
-    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+    border-radius: 14px;
     background: var(--v3-panel);
+    box-shadow:
+      0 0 0 1px var(--v3-line),
+      0 18px 50px -20px rgb(0 0 0 / 0.8);
   }
 
-  .call-panel {
-    border-left: 0;
-    border-radius: 12px;
-    background: var(--v3-panel);
+  /* Sem o painel aberto, o palco vai até a borda direita com a mesma folga da esquerda. */
+  .call-main:not([data-panel='open']) .call-screen {
+    margin-right: 8px;
   }
 
   .call-float {
-    --rail-w: calc(var(--call-nav) + 8px);
+    --rail-w: var(--call-nav);
   }
 }
 
@@ -2792,7 +2797,6 @@ details[open] > .person-head .person-more {
 
 /* Superfícies de cada tema no escuro: o mesmo layout, com o preto puxado para a cor do tema. */
 :root[data-theme='synthwave']:not([data-mode='light']) {
-  --v3-bg: #0b0716;
   --v3-panel: #120c22;
   --v3-card: #191130;
   --v3-card-hover: #20163c;
@@ -2805,7 +2809,6 @@ details[open] > .person-head .person-more {
 }
 
 :root[data-theme='sunset']:not([data-mode='light']) {
-  --v3-bg: #0d0809;
   --v3-panel: #150d0f;
   --v3-card: #1d1215;
   --v3-card-hover: #25171b;
@@ -2818,7 +2821,6 @@ details[open] > .person-head .person-more {
 }
 
 :root[data-theme='acelera']:not([data-mode='light']) {
-  --v3-bg: #05100f;
   --v3-panel: #0a1716;
   --v3-card: #0f201e;
   --v3-card-hover: #142825;
@@ -2831,7 +2833,6 @@ details[open] > .person-head .person-more {
 }
 
 :root[data-theme='gelo']:not([data-mode='light']) {
-  --v3-bg: #060a14;
   --v3-panel: #0b1120;
   --v3-card: #11192c;
   --v3-card-hover: #162035;
@@ -2849,4 +2850,145 @@ details[open] > .person-head .person-more {
   box-shadow:
     inset 0 0 0 1px rgb(255 95 162 / 0.25),
     0 0 18px -6px rgb(255 95 162 / 0.45);
+}
+
+/* Clássico: o tema de antes (laranja indo para o rosa), sobre o preto neutro. */
+:root[data-theme='classico'] {
+  --brand-200: #ffd8bf;
+  --brand-300: #ffb27a;
+  --brand-400: #ff7a45;
+  --brand-500: #f45d48;
+  --brand-600: #c2410c;
+  --logo-1: #ffb347;
+  --logo-2: #ff4f93;
+  --bg-1: #ffc35c;
+  --bg-3: #ff7a45;
+  --bg-2: #ff3d8b;
+}
+
+/* Fundo fixo: preto puro no escuro e quase-branco no claro, em todos os temas. O tema muda só os
+   componentes (painéis, cartões, pílulas, linhas e o destaque). */
+:root:not([data-mode='light']) {
+  --v3-bg: #000000;
+}
+
+:root[data-mode='light'] {
+  --v3-bg: #f2f2f4;
+  --v3-panel: color-mix(in oklab, var(--brand-400) 3%, #ffffff);
+  --v3-card: color-mix(in oklab, var(--brand-400) 7%, #f6f6f7);
+  --v3-card-hover: color-mix(in oklab, var(--brand-400) 10%, #eeeef0);
+  --v3-elev: color-mix(in oklab, var(--brand-400) 12%, #ececef);
+  --v3-pill: color-mix(in oklab, var(--brand-400) 12%, #e7e7ea);
+  --v3-pill-hover: color-mix(in oklab, var(--brand-400) 18%, #dcdce0);
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Animação "saindo de dentro" (a da navbar do portfólio): a pílula de controles cresce para
+ * cima com mola e vira um painel; o menu de aparelhos sai dela e as opções sobem em sequência.
+ * ------------------------------------------------------------------------------------- */
+
+.call-float {
+  --unfold-spring: cubic-bezier(0.34, 1.28, 0.5, 1);
+  transition:
+    border-radius 520ms var(--unfold-spring),
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+.call-float:has(.dock-unfold:not([data-closing])) {
+  border-radius: 26px;
+}
+
+.call-float [role='toolbar'] {
+  align-items: stretch;
+}
+
+.dock-unfold {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: dock-open 520ms var(--unfold-spring) both;
+}
+
+.dock-unfold[data-closing] {
+  animation: dock-close 220ms var(--ease-out) both;
+}
+
+.dock-unfold-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@keyframes dock-open {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+@keyframes dock-close {
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+/* O menu deixa de ser uma caixa solta: vira o conteúdo da pílula. */
+.dock-unfold .device-menu {
+  position: static;
+  width: auto;
+  max-height: min(50vh, 420px);
+  margin: 0 0 6px;
+  border-radius: 18px;
+  background: var(--v3-card);
+  padding: 8px;
+  box-shadow: none;
+  transform: none;
+  animation: none;
+}
+
+/* As opções sobem e aparecem uma depois da outra (e saem juntas). */
+.dock-unfold .device-menu > * {
+  animation: dock-item 460ms var(--unfold-spring) both;
+}
+
+.dock-unfold .device-menu > :nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.dock-unfold .device-menu > :nth-child(2) {
+  animation-delay: 180ms;
+}
+
+.dock-unfold .device-menu > :nth-child(n + 3) {
+  animation-delay: 240ms;
+}
+
+@keyframes dock-item {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+:root[data-motion='off'] .dock-unfold,
+:root[data-motion='off'] .dock-unfold .device-menu > *,
+:root[data-motion='off'] .call-float {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-unfold,
+  .dock-unfold .device-menu > * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* Troca de tema e de modo: cross-fade da página inteira (lib: saveTheme/saveMode). */
+html[data-vt='theme']::view-transition-old(root),
+html[data-vt='theme']::view-transition-new(root) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }

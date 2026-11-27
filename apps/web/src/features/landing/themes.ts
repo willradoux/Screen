@@ -8,7 +8,8 @@ import { nextTheme, readTheme, saveTheme, themeInfo, type Theme } from '../../sh
 
 const SCENE: Record<Theme, string> = {
   screem: 'screen',
-  synthwave: 'synthwave',
+  synthwave: 'neon',
+  classico: 'synthwave',
   sunset: 'brasa',
   acelera: 'acelera',
   gelo: 'gelo',

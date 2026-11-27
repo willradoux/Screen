@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Sfx, Synthwave } from './synthwave';
 import { motionOff } from './motion';
+import type { Track } from './tracks';
 
 /*
  * Som da página de apresentação: liga/desliga a trilha, volume (lembrado no navegador),
@@ -42,18 +43,22 @@ function saveSoundPref(on: boolean) {
  * Som da página: a trilha e os efeitos. O motor só nasce quando a pessoa liga a TV (o navegador
  * não deixa tocar antes de um clique) e o código dele só carrega nessa hora.
  */
-export function useSound(root: React.RefObject<HTMLDivElement | null>) {
+/** `track`: a faixa do tema atual (troca no próximo compasso quando o tema muda). */
+export function useSound(root: React.RefObject<HTMLDivElement | null>, track?: Track) {
   const [on, setOn] = useState(false);
   const [volume, setVolumeState] = useState(readVolume);
   const engine = useRef<Synthwave | null>(null);
   const want = useRef(readSoundPref());
   const volRef = useRef(volume);
+  const trackRef = useRef(track);
+  trackRef.current = track;
 
   const ensure = useCallback(async () => {
     if (!engine.current) {
       const { Synthwave } = await import('./synthwave');
       engine.current = new Synthwave();
       engine.current.setVolume(volRef.current / VOLUME_STEPS);
+      if (trackRef.current) engine.current.setTrack(trackRef.current);
       // Para medir o som no navegador durante o desenvolvimento.
       if (import.meta.env.DEV)
         (window as unknown as { __lpSound?: Synthwave }).__lpSound = engine.current;
@@ -103,6 +108,11 @@ export function useSound(root: React.RefObject<HTMLDivElement | null>) {
       el.style.setProperty('--beat', '0');
     };
   }, [on, root]);
+
+  // Tema novo: a música do tema entra no começo do próximo compasso.
+  useEffect(() => {
+    if (track) engine.current?.setTrack(track);
+  }, [track]);
 
   useEffect(() => () => engine.current?.close(), []);
 

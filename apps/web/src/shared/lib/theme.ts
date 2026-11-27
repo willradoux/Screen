@@ -8,7 +8,7 @@
  * Para criar um tema: adicione aqui, em `public/theme-init.js` e as cores em `styles/premium.css`.
  */
 export type Mode = 'dark' | 'light';
-export type Theme = 'screem' | 'synthwave' | 'sunset' | 'acelera' | 'gelo';
+export type Theme = 'screem' | 'synthwave' | 'sunset' | 'acelera' | 'gelo' | 'classico';
 
 export interface ThemeInfo {
   value: Theme;
@@ -28,35 +28,42 @@ export const THEMES: ThemeInfo[] = [
     label: 'Screen',
     text: 'Preto e lima, estilo Spotify. É o padrão.',
     swatch: ['#e2f986', '#b9e04a'],
-    bar: '#070707',
+    bar: '#000000',
   },
   {
     value: 'synthwave',
     label: 'Synthwave',
     text: 'Noite neon: rosa e violeta sobre roxo bem escuro.',
     swatch: ['#ff5fa2', '#8b5cff'],
-    bar: '#0b0716',
+    bar: '#000000',
   },
   {
     value: 'sunset',
     label: 'Pôr do sol',
     text: 'Coral e rosa, quente, como o fim da tarde.',
     swatch: ['#ffb35c', '#ff4f93'],
-    bar: '#0d0809',
+    bar: '#000000',
   },
   {
     value: 'acelera',
     label: 'Acelera',
     text: 'Turquesa e azul, da Acelera DEV.',
     swatch: ['#5ef0d0', '#00a6c8'],
-    bar: '#05100f',
+    bar: '#000000',
   },
   {
     value: 'gelo',
     label: 'Gelo',
     text: 'Azul gelo sobre azul-noite, frio e calmo.',
     swatch: ['#c7ecff', '#7b9bff'],
-    bar: '#060a14',
+    bar: '#000000',
+  },
+  {
+    value: 'classico',
+    label: 'Clássico',
+    text: 'O de antes: laranja indo para o rosa, como o primeiro logo.',
+    swatch: ['#ffb347', '#ff4f93'],
+    bar: '#000000',
   },
 ];
 
@@ -132,14 +139,29 @@ export function applyMode(mode: Mode): void {
     ?.setAttribute('content', mode === 'light' ? '#f2f2f4' : themeInfo(readTheme()).bar);
 }
 
+/**
+ * Troca com cross-fade (como no portfólio): a página velha some por cima da nova, então todas
+ * as cores mudam juntas. Sem a API do navegador ou com movimento desligado, troca na hora.
+ */
+function crossFade(apply: () => void): void {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  const reduce =
+    document.documentElement.dataset.motion === 'off' ||
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  if (reduce || typeof doc.startViewTransition !== 'function') return apply();
+  document.documentElement.dataset.vt = 'theme';
+  const done = doc.startViewTransition(apply) as { finished?: Promise<unknown> } | undefined;
+  void done?.finished?.finally(() => delete document.documentElement.dataset.vt);
+}
+
 export function saveTheme(theme: Theme): void {
   write(THEME_KEY, theme);
-  applyTheme(theme);
+  crossFade(() => applyTheme(theme));
 }
 
 export function saveMode(mode: Mode): void {
   write(MODE_KEY, mode);
-  applyMode(mode);
+  crossFade(() => applyMode(mode));
 }
 
 export function nextTheme(theme: Theme): Theme {
