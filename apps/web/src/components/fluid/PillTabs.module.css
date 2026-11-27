@@ -1,0 +1,57 @@
+/* Abas com a pílula que escorrega com mola (Fluid). Cores do Screen. */
+.list {
+  position: relative;
+  display: flex;
+  max-width: 100%;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--v3-card);
+  scrollbar-width: none;
+  isolation: isolate;
+}
+.pill {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 9px;
+  background: var(--v3-elev);
+  opacity: 0;
+}
+.pill[data-on] {
+  opacity: 1;
+}
+.tab {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--v3-text-2);
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.tab:hover {
+  color: var(--v3-text);
+}
+.tab[aria-selected='true'] {
+  color: var(--v3-text);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.count {
+  color: var(--v3-text-3);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}

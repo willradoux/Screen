@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Avatar, Card, PageTitle, Spinner } from '../../components/ui';
 import { StatTile } from '../../components/Widget';
+import { SegmentedPicker } from '../../components/fluid/SegmentedPicker';
 import { api } from '../../lib/api';
 import { describeError } from '../../lib/errors';
 import type { ServerStats } from '../../lib/types';
@@ -94,19 +95,12 @@ export function StatsPage() {
       <PageTitle
         description={`Participação no servidor nos últimos ${days} dias.`}
         action={
-          <div role="group" aria-label="Período" className="seg">
-            {PERIODS.map((p) => (
-              <button
-                key={p.days}
-                type="button"
-                aria-pressed={days === p.days}
-                onClick={() => setDays(p.days)}
-                className="seg-opt"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedPicker
+            label="Período"
+            value={String(days)}
+            onChange={(v) => setDays(Number(v))}
+            options={PERIODS.map((p) => ({ value: String(p.days), label: p.label }))}
+          />
         }
       >
         Estatísticas

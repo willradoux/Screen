@@ -25,6 +25,73 @@
   text-decoration: none;
 }
 
+/* ── Temas da LP (botão do topo; lib: pages/landing/themes.ts) ── */
+.lp,
+.lp[data-lp-theme='screen'] {
+  --logo-1: #d7f56b;
+  --logo-2: #9b7bff;
+  --sky-1: #05031a;
+  --sky-2: #110b38;
+  --sky-3: #33185e;
+  --rock-far: #1b1038;
+  --rock-mid: #120a28;
+  --rock-near: #0a0616;
+  --ground-1: #150a2c;
+  --ground-2: #06030f;
+}
+
+.lp[data-lp-theme='acelera'] {
+  --logo-1: #5ef0d0;
+  --logo-2: #00a6c8;
+  --sky-1: #020c14;
+  --sky-2: #06213a;
+  --sky-3: #0b3d55;
+  --rock-far: #0a2236;
+  --rock-mid: #071827;
+  --rock-near: #030b13;
+  --ground-1: #061a26;
+  --ground-2: #02070c;
+}
+
+.lp[data-lp-theme='synthwave'] {
+  --logo-1: #ffb347;
+  --logo-2: #ff4f93;
+  --sky-1: #05031a;
+  --sky-2: #120a3a;
+  --sky-3: #3a1160;
+  --rock-far: #1d0b3a;
+  --rock-mid: #12052a;
+  --rock-near: #08020f;
+  --ground-1: #1a0630;
+  --ground-2: #07020f;
+}
+
+.lp[data-lp-theme='brasa'] {
+  --logo-1: #ffcf5a;
+  --logo-2: #ff4d2e;
+  --sky-1: #0c0208;
+  --sky-2: #2a0612;
+  --sky-3: #5a0f1c;
+  --rock-far: #2a0a12;
+  --rock-mid: #1a050b;
+  --rock-near: #0b0205;
+  --ground-1: #22060c;
+  --ground-2: #080104;
+}
+
+.lp[data-lp-theme='gelo'] {
+  --logo-1: #c7ecff;
+  --logo-2: #7b9bff;
+  --sky-1: #030612;
+  --sky-2: #0b1838;
+  --sky-3: #1d2f66;
+  --rock-far: #13204a;
+  --rock-mid: #0c1534;
+  --rock-near: #050a1a;
+  --ground-1: #0c1636;
+  --ground-2: #03060f;
+}
+
 /* ── Cenário synthwave ── */
 .lp {
   --beat: 0;
@@ -37,13 +104,13 @@
   overflow: hidden;
   background: linear-gradient(
     180deg,
-    #05031a 0%,
-    #120a3a 30%,
-    #3a1160 50%,
-    color-mix(in srgb, var(--logo-2) 55%, #3a1160) 60%,
-    color-mix(in srgb, var(--logo-1) 65%, #5a1a50) 64%,
-    #12051f 64.2%,
-    #07020f 100%
+    var(--sky-1) 0%,
+    var(--sky-2) 30%,
+    var(--sky-3) 50%,
+    color-mix(in srgb, var(--logo-2) 55%, var(--sky-3)) 60%,
+    color-mix(in srgb, var(--logo-1) 65%, var(--sky-3)) 64%,
+    var(--ground-1) 64.2%,
+    var(--ground-2) 100%
   );
 }
 
@@ -139,7 +206,7 @@
 .ls-far {
   bottom: 35.8%;
   height: 22%;
-  fill: #1d0b3a;
+  fill: var(--rock-far);
   stroke: color-mix(in srgb, var(--logo-2) 85%, #fff);
   stroke-width: 2;
   filter: drop-shadow(0 0 6px var(--logo-2));
@@ -154,7 +221,7 @@
 .ls-mid {
   bottom: 35.8%;
   height: 12%;
-  fill: #12052a;
+  fill: var(--rock-mid);
   stroke: color-mix(in srgb, var(--logo-1) 80%, #fff);
   stroke-width: 1.5;
   filter: drop-shadow(0 0 4px var(--logo-1));
@@ -184,7 +251,7 @@
   bottom: 0;
   height: 36%;
   overflow: hidden;
-  background: linear-gradient(180deg, #1a0630, #07020f 70%);
+  background: linear-gradient(180deg, var(--ground-1), var(--ground-2) 70%);
   perspective: 260px;
   perspective-origin: 50% 0%;
 }
@@ -212,32 +279,103 @@
   }
 }
 
-.ls-palm {
+/* Castelo no alto da montanha do fundo, com as janelas acesas na cor do tema. */
+.ls-castle {
   position: absolute;
-  bottom: 28%;
-  width: clamp(80px, 13vw, 180px);
-  color: #08020f;
-  fill: #08020f;
-  transform-origin: 50% 100%;
-  animation: ls-sway 6s ease-in-out infinite;
-}
-
-.ls-palm-l {
   left: 2%;
-  translate: calc(var(--px) * -40px) 0;
+  bottom: calc(35.8% + 9%);
+  width: clamp(70px, 9vw, 140px);
+  fill: var(--rock-far);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--logo-2) 70%, transparent));
+  translate: calc(var(--px) * -18px) 0;
 }
 
-.ls-palm-r {
-  right: 3%;
-  width: clamp(60px, 9vw, 130px);
+.ls-window {
+  fill: var(--logo-1);
+  filter: drop-shadow(0 0 4px var(--logo-1));
+}
+
+/* Ilhas de pedra flutuando, com cristais que brilham na cor do tema. */
+.ls-island {
+  position: absolute;
+  width: clamp(110px, 16vw, 240px);
+  color: var(--rock-near);
+  fill: var(--rock-near);
+  filter: drop-shadow(0 18px 30px rgb(0 0 0 / 0.45));
+  animation: ls-float 7s ease-in-out infinite;
+}
+
+.ls-crystal {
+  fill: color-mix(in srgb, var(--logo-1) 75%, #fff);
+  filter: drop-shadow(0 0 6px var(--logo-1));
+}
+
+.ls-island-l {
+  left: 3%;
+  bottom: 30%;
+  translate: calc(var(--px) * -40px) calc(var(--py) * -10px);
+}
+
+.ls-island-r {
+  right: 4%;
+  bottom: 52%;
+  width: clamp(80px, 11vw, 170px);
   scale: -1 1;
-  animation-delay: -2s;
-  translate: calc(var(--px) * -40px) 0;
+  animation-delay: -3s;
+  translate: calc(var(--px) * -34px) calc(var(--py) * -8px);
 }
 
-@keyframes ls-sway {
+@keyframes ls-float {
   50% {
-    transform: rotate(-2.5deg);
+    transform: translateY(-14px);
+  }
+}
+
+/* O dragão: atravessa o céu devagar, da direita para a esquerda, de tempos em tempos. */
+.ls-dragon {
+  position: absolute;
+  top: 2.5%;
+  left: 100%;
+  z-index: 1;
+  width: clamp(150px, 17vw, 270px);
+  color: var(--rock-near);
+  fill: var(--rock-near);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--logo-2) 45%, transparent));
+  animation: ls-fly 38s linear infinite;
+  animation-delay: -6s;
+}
+
+.ls-dragon svg {
+  overflow: visible;
+}
+
+.ls-wing {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ls-flap 1.1s ease-in-out infinite;
+}
+
+.ls-wing-back {
+  animation-delay: -0.15s;
+  opacity: 0.85;
+}
+
+@keyframes ls-flap {
+  50% {
+    transform: scaleY(-0.55);
+  }
+}
+
+@keyframes ls-fly {
+  0% {
+    transform: translate(0, 0) scaleX(-1);
+  }
+  45% {
+    transform: translate(-70vw, 2vh) scaleX(-1);
+  }
+  60%,
+  100% {
+    transform: translate(-130vw, -1vh) scaleX(-1);
   }
 }
 
@@ -252,7 +390,8 @@
 }
 
 @media (max-width: 640px) {
-  .ls-palm-r {
+  .ls-island-r,
+  .ls-castle {
     display: none;
   }
   .ls-sun {
@@ -2610,4 +2749,19 @@
   .tv-features li > span:last-child {
     display: none;
   }
+}
+
+.lp-theme-dot {
+  height: 16px;
+  width: 16px;
+  flex: none;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25);
+}
+
+/* Contorno neon fino no dragão (sem ele, a silhueta some no céu escuro). */
+.ls-dragon path {
+  stroke: color-mix(in srgb, var(--logo-2) 75%, #fff);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
 }

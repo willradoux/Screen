@@ -25,7 +25,7 @@
   --v3-text-2: #a6a6ae;
   --v3-text-3: #8b8b94; /* 5,6:1 sobre #0f0f11 */
   --v3-line: rgb(255 255 255 / 0.08);
-  --v3-r: 16px;
+  --v3-r: 12px;
   --p-coral: #ff8a7a;
   --p-coral-strong: #ff5a4d;
   --logo-tile-1: #1d1d20;
@@ -132,7 +132,7 @@ body {
 .hub-sidebar,
 .hub-main,
 .hub-mobilebar {
-  border-radius: 20px;
+  border-radius: 14px;
   background: var(--v3-panel);
 }
 
@@ -283,7 +283,7 @@ body {
 
 .sp-card {
   gap: 3px;
-  border-radius: 20px;
+  border-radius: 14px;
   background: var(--v3-card);
   padding: 12px 12px 16px;
 }
@@ -698,7 +698,7 @@ body {
 /* Miniaturas: sem câmera, tingidas com a cor da pessoa; avatar grande e vidrado no meio. */
 .stage-tile,
 .stage-tile-empty {
-  border-radius: 18px;
+  border-radius: 12px;
   background: #141416;
 }
 
@@ -847,7 +847,7 @@ body {
 
 /* Campo de mensagem: pílula grande; enviar é a bolinha lima. */
 .chat-compose {
-  border-radius: 20px;
+  border-radius: 14px;
   background: var(--v3-card);
   padding: 6px 6px 6px 18px;
   box-shadow: inset 0 0 0 1px var(--v3-line);
@@ -905,7 +905,7 @@ body {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 12px;
   background:
     radial-gradient(45% 55% at 50% 38%, rgb(255 255 255 / 0.18), transparent 70%),
     linear-gradient(180deg, var(--tint-1), var(--tint-2));
@@ -1000,7 +1000,7 @@ body {
   width: 100%;
   align-items: flex-start;
   gap: 12px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--v3-card);
   padding: 16px 18px;
   font-size: 15px;
@@ -1056,7 +1056,7 @@ body {
   display: grid;
   aspect-ratio: 8 / 7;
   place-items: center;
-  border-radius: 22px;
+  border-radius: 14px;
   background:
     radial-gradient(45% 50% at 50% 42%, rgb(255 255 255 / 0.14), transparent 70%),
     linear-gradient(180deg, var(--tint-1), var(--tint-2));
@@ -1186,7 +1186,7 @@ body {
  * ------------------------------------------------------------------------------------- */
 
 .stat-tile {
-  border-radius: 20px !important;
+  border-radius: 14px !important;
   padding: 22px 24px;
 }
 
@@ -1291,7 +1291,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 24px 48px;
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--v3-card);
   box-shadow: inset 0 0 0 1px var(--v3-line);
   padding: clamp(22px, 3vw, 40px) clamp(22px, 3vw, 44px);
@@ -1375,7 +1375,7 @@ body {
 
 .meet-row {
   margin-top: 8px;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 14px 16px;
   cursor: pointer;
   transition: background-color 180ms var(--ease-out);
@@ -1507,7 +1507,7 @@ body {
 }
 
 .am-form {
-  border-radius: 22px !important;
+  border-radius: 14px !important;
   padding: 26px 28px !important;
 }
 
@@ -1517,7 +1517,7 @@ body {
 }
 
 .am-cal {
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--v3-card);
   padding: 24px 26px 26px;
 }
@@ -1667,7 +1667,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--v3-card);
   padding: 16px 18px;
 }
@@ -1996,7 +1996,7 @@ body {
 }
 
 .set-card {
-  border-radius: 22px !important;
+  border-radius: 14px !important;
   padding: 24px 26px !important;
 }
 
@@ -2128,7 +2128,7 @@ input[type='checkbox'].toggle-input:checked::after {
 }
 
 .stats-card {
-  border-radius: 22px !important;
+  border-radius: 14px !important;
   padding: 24px 26px !important;
 }
 
@@ -2248,7 +2248,7 @@ input[type='checkbox'].toggle-input:checked::after {
 }
 
 .guide-step {
-  border-radius: 22px;
+  border-radius: 14px;
   background: var(--v3-card);
   padding: 24px 26px 26px;
 }
@@ -2506,7 +2506,7 @@ details[open] > .person-head .person-more {
 }
 
 .status-card {
-  border-radius: 22px !important;
+  border-radius: 14px !important;
   background: var(--v3-card) !important;
   padding: 28px !important;
 }
@@ -2528,7 +2528,7 @@ details[open] > .person-head .person-more {
   width: 100%;
   align-items: center;
   gap: 16px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--v3-card);
   box-shadow: inset 0 0 0 1px var(--v3-line);
   padding: 14px 18px;
@@ -2603,6 +2603,129 @@ details[open] > .person-head .person-more {
 
 @media (max-width: 640px) and (pointer: coarse) {
   .call-float [aria-label^='Tela:'] {
+    display: none;
+  }
+}
+
+.panel-tabs-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Sala no computador: a faixa de ícones, o palco e o painel (chat/pessoas) são painéis próprios,
+ * com cantos arredondados e separados por uma faixa preta, como o menu lateral do site.
+ * ------------------------------------------------------------------------------------- */
+
+@media (min-width: 641px) {
+  .call-frame {
+    padding: 0 8px 8px;
+    column-gap: 8px;
+  }
+
+  .call-top {
+    border-bottom: 0;
+    padding-left: 6px;
+  }
+
+  .call-rail {
+    border-right: 0;
+    border-radius: 12px;
+    background: var(--v3-panel);
+  }
+
+  .call-main {
+    column-gap: 8px;
+  }
+
+  .call-screen {
+    border-radius: 12px;
+    background: var(--v3-panel);
+  }
+
+  .call-panel {
+    border-left: 0;
+    border-radius: 12px;
+    background: var(--v3-panel);
+  }
+
+  .call-float {
+    --rail-w: calc(var(--call-nav) + 8px);
+  }
+}
+
+/* A pílula de controles fica presa à área do palco (coluna 2 da grade), centralizada nela; com o
+   painel aberto, centraliza no espaço que sobra à esquerda do painel. */
+@media (min-width: 641px) {
+  .call-frame .call-float {
+    grid-column: 2;
+    grid-row: 2;
+    left: calc(50% - var(--panel-w, 0px) / 2 - 4px);
+    bottom: 22px;
+  }
+
+  .call-frame[data-panel] .call-float {
+    --panel-w: 22.5rem;
+  }
+}
+
+/* Login: as miniaturas da call têm a inicial, o nome em pílula e o microfone, como na sala. */
+.login2-grid li > span.login2-face {
+  display: grid;
+  height: 30%;
+  width: auto;
+  aspect-ratio: 1;
+  place-items: center;
+  font-size: clamp(16px, 2.2vw, 30px);
+  color: color-mix(in oklab, var(--tint-2) 55%, #000);
+}
+
+.login2-grid li > .login2-name,
+.login2-grid li > .login2-mic {
+  height: auto;
+  aspect-ratio: auto;
+  box-shadow: none;
+  position: absolute;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgb(10 10 12 / 0.62);
+  color: #fff;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.login2-grid li > .login2-name {
+  left: 10px;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+}
+
+.login2-grid li > .login2-mic {
+  right: 10px;
+  padding: 4px;
+  color: var(--p-coral);
+}
+
+.login2-grid li > .login2-mic[data-on] {
+  color: #fff;
+}
+
+.login2-dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 999px;
+  background: var(--brand-400);
+}
+
+@media (max-width: 860px) {
+  .login2-grid li > .login2-name {
+    font-size: 11px;
+  }
+
+  .login2-grid li > .login2-mic {
     display: none;
   }
 }

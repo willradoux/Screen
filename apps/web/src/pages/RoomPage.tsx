@@ -32,6 +32,7 @@ import { playSound } from '../lib/sounds';
 import { Icon } from '../components/Icon';
 import { StatusBadge } from '../components/RoomCard';
 import { LogoMark } from '../components/Wordmark';
+import { PillTabs } from '../components/fluid/PillTabs';
 import { secondsLeft } from '../room/sessionReducer';
 import { defaultSessionDeps, useRoomSession, type SessionDeps } from '../room/useRoomSession';
 import { useAudienceSubscriptions } from '../room/useAudienceSubscriptions';
@@ -506,28 +507,20 @@ function ConnectedRoom({
               <span />
             </div>
             <div className="call-panel-head">
-              <div role="tablist" aria-label="Painel" className="panel-tabs">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={side === 'chat'}
-                  onClick={() => setSide('chat')}
-                  className="panel-tab"
-                >
-                  Chat
-                  {side !== 'chat' && unread > 0 && (
-                    <span className="panel-tab-count tabular"> · {unread}</span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={side === 'people'}
-                  onClick={() => setSide('people')}
-                  className="panel-tab"
-                >
-                  Pessoas <span className="panel-tab-count tabular">{tiles.length}</span>
-                </button>
+              <div className="panel-tabs-wrap">
+                <PillTabs
+                  label="Painel"
+                  value={side}
+                  onChange={(v) => setSide(v as 'chat' | 'people')}
+                  tabs={[
+                    {
+                      value: 'chat',
+                      label: 'Chat',
+                      ...(side !== 'chat' && unread > 0 ? { count: unread } : {}),
+                    },
+                    { value: 'people', label: 'Pessoas', count: tiles.length },
+                  ]}
+                />
               </div>
               <button
                 type="button"

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { PageTitle } from '../components/ui';
+import { PillTabs } from '../components/fluid/PillTabs';
 import { ADMIN_STEPS, MEMBER_STEPS, type Step } from './FeaturesPage';
 
 type Audience = 'membros' | 'moderacao' | 'admins';
@@ -42,20 +43,13 @@ export function GuidePage() {
     <>
       <PageTitle description="Como usar o screen, do primeiro clique à moderação.">Guia</PageTitle>
 
-      <div role="tablist" aria-label="Pra quem" className="seg mb-6">
-        {AUDIENCES.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            role="tab"
-            aria-selected={who === a.id}
-            aria-pressed={who === a.id}
-            onClick={() => setWho(a.id)}
-            className="seg-opt"
-          >
-            {a.label}
-          </button>
-        ))}
+      <div className="mb-6 w-fit max-w-full">
+        <PillTabs
+          label="Pra quem"
+          value={who}
+          onChange={(v) => setWho(v as Audience)}
+          tabs={AUDIENCES.map((a) => ({ value: a.id, label: a.label }))}
+        />
       </div>
 
       <section aria-label={current.label} className="guide-steps stagger">

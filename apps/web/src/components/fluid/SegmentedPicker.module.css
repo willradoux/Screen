@@ -1,0 +1,63 @@
+/* Escolha com a pílula que escorrega com mola (Fluid). Cores do Screen. */
+.root {
+  position: relative;
+  display: inline-flex;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--v3-card);
+  isolation: isolate;
+}
+.pill {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 9px;
+  background: var(--v3-elev);
+}
+.pill[data-ready='false'] {
+  visibility: hidden;
+}
+.option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--v3-text-2);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 160ms ease;
+}
+.option:hover {
+  color: var(--v3-text);
+}
+.option[aria-checked='true'] {
+  color: var(--v3-text);
+}
+.option:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .root {
+    display: flex;
+    width: 100%;
+  }
+  .option {
+    flex: 1 0 auto;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}

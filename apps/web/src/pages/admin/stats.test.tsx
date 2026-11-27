@@ -48,7 +48,7 @@ describe('StatsPage', () => {
     ]);
     expect(screen.getByRole('img', { name: 'Tempo conectado por dia' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '90 dias' }));
+    await userEvent.click(screen.getByRole('radio', { name: '90 dias' }));
     await waitFor(() => expect(get).toHaveBeenLastCalledWith(90));
   });
 

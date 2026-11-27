@@ -29,12 +29,19 @@ export function LoginPage() {
 
   return (
     <div className="login2">
-      {/* Uma call de mentira: seis pessoas nas cores pastel, uma falando (contorno lima). */}
+      {/* Uma call do Screen com o pessoal da comunidade: cada um na sua cor, o Marujo falando. */}
       <div className="login2-art" aria-hidden="true">
         <ul className="login2-grid">
-          {MOSAIC.map((t, i) => (
-            <li key={i} style={tintStyle(t)} data-speaking={i === 1 || undefined}>
-              <span />
+          {CALL.map((p) => (
+            <li key={p.name} style={tintStyle(p.tint)} data-speaking={p.speaking || undefined}>
+              <span className="login2-face">{p.name.slice(0, 1)}</span>
+              <span className="login2-name">
+                {p.speaking && <i className="login2-dot" />}
+                {p.name}
+              </span>
+              <span className="login2-mic" data-on={p.mic || undefined}>
+                <Icon name={p.mic ? 'mic' : 'mic_off'} size="1rem" />
+              </span>
             </li>
           ))}
         </ul>
@@ -77,12 +84,12 @@ export function LoginPage() {
   );
 }
 
-/** As seis pessoas do mosaico: lilás, ciano, marrom, azul, verde e grafite. */
-const MOSAIC = [
-  { hue: 280, sat: 0.32 },
-  { hue: 190, sat: 0.55 },
-  { hue: 14, sat: 0.24 },
-  { hue: 218, sat: 0.45 },
-  { hue: 112, sat: 0.22 },
-  { hue: 240, sat: 0.06 },
+/** Quem aparece na call do login: gente da comunidade Acelera DEV. */
+const CALL = [
+  { name: 'PC', tint: { hue: 112, sat: 0.22 }, mic: true, speaking: false },
+  { name: 'Marujo', tint: { hue: 280, sat: 0.32 }, mic: true, speaking: true },
+  { name: 'Scharp', tint: { hue: 14, sat: 0.24 }, mic: false, speaking: false },
+  { name: 'Flazo', tint: { hue: 218, sat: 0.45 }, mic: false, speaking: false },
+  { name: 'Will', tint: { hue: 190, sat: 0.55 }, mic: true, speaking: false },
+  { name: 'Duds', tint: { hue: 6, sat: 0.5 }, mic: false, speaking: false },
 ];

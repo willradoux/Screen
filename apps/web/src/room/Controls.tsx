@@ -6,6 +6,8 @@ import {
   type Room as LiveKitRoom,
 } from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
+import { MorphIcon } from '../components/fluid/MorphIcon';
+import { isMorphIcon } from '../components/fluid/morphIcons';
 import { Icon, type IconName } from '../components/Icon';
 import { setDeafened, useAudioPrefs } from '../lib/audioPrefs';
 import { NORMAL_PROFILE, type PublishProfile } from '../lib/bigRoom';
@@ -102,11 +104,16 @@ function RoundButton({
         data-off={off || undefined}
         data-danger={danger || undefined}
       >
-        <Icon
-          name={busy ? 'progress_activity' : icon}
-          size="1.35rem"
-          className={busy ? 'animate-spin' : ''}
-        />
+        {/* Microfone, câmera, tela e som da sala mudam de desenho com mola (Fluid). */}
+        {!busy && isMorphIcon(icon) ? (
+          <MorphIcon name={icon} />
+        ) : (
+          <Icon
+            name={busy ? 'progress_activity' : icon}
+            size="1.35rem"
+            className={busy ? 'animate-spin' : ''}
+          />
+        )}
       </span>
     </button>
   );

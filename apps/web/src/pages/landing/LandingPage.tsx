@@ -9,6 +9,7 @@ import '../../styles/landing.css';
 import { Boot } from './Boot';
 import { CHANNELS, ChannelEnd, ChannelFaq, ChannelFeatures, ChannelIntro } from './channels';
 import { Landscape } from './Landscape';
+import { lpTheme, nextLpTheme, readLpTheme, saveLpTheme } from './themes';
 import { motionOff } from './motion';
 import { Caption } from './scenes';
 import { Knob, Osd } from './tv-parts';
@@ -46,6 +47,9 @@ export function LandingPage() {
   const hovered = useRef<Element | null>(null);
   const count = CHANNELS.length;
   const sound = useSound(root);
+  // Tema da LP (céu, neon e TV): Screen, Acelera, Synthwave, Brasa e Gelo. Fica salvo aqui.
+  const [theme, setTheme] = useState(readLpTheme);
+  const themeInfo = lpTheme(theme);
 
   // Quem caiu aqui vindo do endereço principal não vê a abertura do app por cima do carregamento.
   useEffect(() => {
@@ -150,6 +154,7 @@ export function LandingPage() {
     <div
       ref={root}
       className="lp"
+      data-lp-theme={theme}
       data-booted={booted || undefined}
       onWheel={onWheel}
       onPointerOver={onPointerOver}
@@ -181,6 +186,27 @@ export function LandingPage() {
           <span>screen</span>
         </button>
         <div className="lp-nav-end">
+          <button
+            type="button"
+            className="lp-icon-btn lp-theme-btn"
+            aria-label={`Tema: ${themeInfo.label}. Trocar o tema`}
+            title="Trocar o tema"
+            onClick={() => {
+              const next = nextLpTheme(theme);
+              setTheme(next);
+              saveLpTheme(next);
+              fx('channel');
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className="lp-theme-dot"
+              style={{
+                background: `linear-gradient(135deg, ${themeInfo.swatch[0]}, ${themeInfo.swatch[1]})`,
+              }}
+            />
+            <span className="lp-icon-label">{themeInfo.label}</span>
+          </button>
           <a
             href="https://github.com/willradoux/Screen"
             target="_blank"
