@@ -2832,16 +2832,14 @@ details[open] > .person-head .person-more {
  * cima com mola e vira um painel; o menu de aparelhos sai dela e as opções sobem em sequência.
  * ------------------------------------------------------------------------------------- */
 
+/* A forma não muda: o mesmo canto fechada e aberta (metade da altura da barra fechada, então
+   fechada é uma pílula). Abrir só estica a barra para cima, como o cartão da conta. */
 .call-float {
   --unfold-spring: cubic-bezier(0.34, 1.28, 0.5, 1);
+  border-radius: 30px;
   transition:
-    border-radius 520ms var(--unfold-spring),
     opacity 160ms var(--ease-out),
     transform 200ms var(--ease-out);
-}
-
-.call-float:has(.dock-unfold:not([data-closing])) {
-  border-radius: 26px;
 }
 
 .call-float [role='toolbar'] {
@@ -2883,9 +2881,10 @@ details[open] > .person-head .person-more {
   width: auto;
   max-height: min(50vh, 420px);
   margin: 0 0 6px;
-  border-radius: 18px;
-  background: var(--v3-card);
-  padding: 8px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--v3-line);
+  background: transparent;
+  padding: 6px 4px 8px;
   box-shadow: none;
   transform: none;
   animation: none;
@@ -3435,4 +3434,30 @@ select {
 .stage-caption ::selection {
   background: rgb(255 255 255 / 0.3);
   color: #ffffff;
+}
+
+/* A barra da chamada é sempre escura (fica por cima do vídeo): por dentro dela valem as cores do
+   modo escuro também no claro (senão a bolinha clareia e o ícone claro some). */
+:root[data-mode='light'] .call-float {
+  --v3-panel: #111113;
+  --v3-card: #161618;
+  --v3-card-hover: #1c1c1f;
+  --v3-elev: #1c1c1f;
+  --v3-pill: #232325;
+  --v3-pill-hover: #2c2c2e;
+  --v3-line: rgb(255 255 255 / 0.09);
+  --v3-text: #f5f5f7;
+  --v3-text-2: #a1a1a6;
+  --v3-text-3: #8e8e93;
+  --c-white: #ffffff;
+  --color-white: #ffffff;
+  --focus-ring: rgb(255 255 255 / 0.55);
+  --color-zinc-200: #dedede;
+  --color-zinc-300: #bdbdbd;
+  --color-zinc-400: #9c9c9c;
+  --color-zinc-500: #8e8e93;
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --v3-accent: var(--brand-400);
+  color: #f5f5f7;
 }
