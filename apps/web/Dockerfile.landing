@@ -23,7 +23,7 @@ RUN npm ci --ignore-scripts \
  && rm -rf mediapipe backgrounds sw.js noise-gate.worklet.js manifest.webmanifest
 # Os outros arquivos da pasta public (ícones, theme-init.js) são pedidos ao app pelo Caddy, iguais.
 
-FROM nginx:1.27-alpine
+FROM nginx:1.29-alpine
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/web/dist-landing /usr/share/nginx/html
 EXPOSE 80
